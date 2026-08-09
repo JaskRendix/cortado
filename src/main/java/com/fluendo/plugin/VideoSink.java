@@ -172,16 +172,20 @@ public class VideoSink extends Sink {
         } else if (name.equals("keep-aspect")) {
             keepAspect = String.valueOf(value).equals("true");
         } else if (name.equals("ignore-aspect")) {
-            ignoreAspect = value.toString().equals("true");
+            ignoreAspect = String.valueOf(value).equals("true");
         } else if (name.equals("scale")) {
             scale = String.valueOf(value).equals("true");
         } else if (name.equals("bounds")) {
             bounds = (Rectangle) value;
-            Debug.info("Video bounding rectangle: x=" + 
-                bounds.x + ", y=" +
-                bounds.y + ", w=" +
-                bounds.width + ", h=" +
-                bounds.height);
+            if (bounds != null) {
+                Debug.info("Video bounding rectangle: x=" +
+                    bounds.x + ", y=" +
+                    bounds.y + ", w=" +
+                    bounds.width + ", h=" +
+                    bounds.height);
+            } else {
+                Debug.info("Video bounding rectangle cleared");
+            }
         } else {
             return super.setProperty(name, value);
         }
