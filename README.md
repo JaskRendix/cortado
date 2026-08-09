@@ -1,4 +1,4 @@
-# Cortado: Modernized Standalone Java Ogg Player & Pipeline
+# Cortado: Java Ogg Media Pipeline
 
 **Cortado** is a classic open-source Java media streaming engine originally developed by [Fluendo](http://www.fluendo.com/) and hosted by [Xiph.org](https://www.xiph.org/) (view the original repository on [Xiph GitLab](https://gitlab.xiph.org/xiph/cortado)). Historically, Cortado was widely known as a browser-based Java Applet capable of streaming Ogg media (Theora video, Vorbis audio, and Kate subtitles) directly inside web pages.
 
