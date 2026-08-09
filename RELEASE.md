@@ -1,34 +1,31 @@
-== Cortado applet ==
+# Cortado applet
 
-Release notes for Cortado 0.6.0, "Increasing increase"
-        
- 
-=== Features of this release ===
-    
+Release notes for Cortado 0.6.0, *"Increasing increase"*
+
+## Features of this release
+
 Please refer to the NEWS file for an overview of changes.
 
-=== Download ===
+## Download
 
-You can find source releases and built applets of cortado in the 
+You can find source releases and built applets of cortado in the  
 download directory:
 
-  http://downloads.xiph.org/releases/cortado/
+<http://downloads.xiph.org/releases/cortado/>
 
-=== Cortado Homepage ===
+## Cortado Homepage
 
 More details can be found on the project's website:
 
-  http://theora.org/cortado/
+<http://theora.org/cortado/>
 
-=== Support and Bugs ===
+## Support and Bugs
 
 We use an issue tracker for bug reports and feature requests:
 
-  https://trac.xiph.org/
+<https://trac.xiph.org/>
 
-=== Developers ===
+## Developers
 
-All code is in GIT and can be checked out from there.
-It is hosted on http://git.xiph.org/?p=cortado.git
-        
- 
+All code is in GIT and can be checked out from there.  
+It is hosted on <http://git.xiph.org/?p=cortado.git>

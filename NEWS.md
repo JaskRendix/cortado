@@ -1,106 +1,88 @@
-Changes since 0.6.0:
-      * Migrate build system to Maven
-      * Integrate JUnit 5 and add unit tests for core utilities
+# Changes
 
-Changes since 0.5.2
-      * support for Theora files with 4:4:4 and 4:2:2 sampling
-      * Reinforced compatibility with Java 1.1
-      * Improved support for videos with dropped frames
-      * Much improved support for Kate subtitles (including menu to
-        select subtitle stream)
-      * More robust scanning for stream duration
-      * Fixed Vorbis surround sound
-      * Release binaries should export a subset of the HTML5
-        media API again
+## Changes since 0.6.0
+- Migrate build system to Maven  
+- Integrate JUnit 5 and add unit tests for core utilities
 
+## Changes since 0.5.2
+- support for Theora files with 4:4:4 and 4:2:2 sampling  
+- Reinforced compatibility with Java 1.1  
+- Improved support for videos with dropped frames  
+- Much improved support for Kate subtitles (including menu to select subtitle stream)  
+- More robust scanning for stream duration  
+- Fixed Vorbis surround sound  
+- Release binaries should export a subset of the HTML5 media API again
 
-Changes since 0.5.1
-      * make keepAspect ignorable again
-      * minor optimizations in the decoder
-      * buffer tweaks to prevent unwanted frame drops
-      * contents of plugins.ini moved into code to work around
-        resource-loading problems in ancient JVMs
-      * fix problems with several audio streams
-      * optimizations in YUV-to-RGB code
+## Changes since 0.5.1
+- make keepAspect ignorable again  
+- minor optimizations in the decoder  
+- buffer tweaks to prevent unwanted frame drops  
+- contents of plugins.ini moved into code to work around resource-loading problems in ancient JVMs  
+- fix problems with several audio streams  
+- optimizations in YUV-to-RGB code
 
+## Changes since 0.5.0
+- Fix for ticket #1565: Cortado doesn't handle incomplete packets correctly  
+- On very slow machines that can't handle video in realtime, completely skip decoding of inter frames and process keyframes only to ensure smooth audio decoding  
+- Improved support for older VMs
 
-Changes since 0.5.0:
+## Changes since 0.2.2
+- Support for files encoded with Theora 1.1  
+- Faster YUV to RGB conversion with better results  
+- Correct a bug in the iDCT10 implementation  
+- Basic support for embedded Ogg Kate streams  
+- Seeking fixed for files with an Ogg Skeleton track  
+- Maintained compatibility with the Microsoft VM
 
-      * Fix for ticket #1565: Cortado doesn't handle
-        incomplete packets correctly.
-      * On very slow machines that can't handle video in realtime,
-        completely skip decoding of inter frames and process
-        keyframes only to ensure smooth audio decoding.
-      * Improved support for older VMs.
+## Changes since 0.2.1
+- add statusHeight property  
+- add autoPlay property  
+- add documentBase property  
+- add showStatus property  
+- add hideTimeout property  
+- add JavaScript methods  
+- seek slider is easier to manipulate  
+- framerate property is removed  
+- fix locking behaviour  
+- seek slider disabled on Microsoft VM  
+- set User-Agent and add SVN info to About dialog  
+- extensively tested on Windows XP and 2000 with Microsoft VM  
+- extensively tested on Linux, Windows XP and 2000 with Sun VM  
+  1.4.0_01, 1.4.2_12, 1.5.0_03, 1.5.0_06, 1.5.0_09
 
-Changes since 0.2.2:
+### Bugs fixed since 0.2.1
+- 390 : README not inline with code  
+- 423 : cortado: playback of ogg audio  
+- 63 : stops after a few frames on certain browser/jdk combinations  
+- 149 : cortado 0.1.0 freeze because of javax.sound  
+- 155 : implement pause/play in cortado, with javascript methods  
+- 157 : Cortado is not doing any playback if the file has no audio while the applet is loaded with audio=true parameter  
+- 317 : cortado should do typefinding on its input instead of relying on mime type from server  
+- 384 : Cortado: Only play on click ­[in video-window]  
+- 389 : Cortado needs option to make status bar always visible  
+- 390 : README not inline with code  
+- 470 : stop() method raise a java.security.AccessControlException when calling
 
-      * Support for files encoded with Theora 1.1
-      * Faster YUV to RGB conversion with better results
-      * Correct a bug in the iDCT10 implementation
-      * Basic support for embedded Ogg Kate streams
-      * Seeking fixed for files with an Ogg Skeleton track
-      * Maintained compatibility with the Microsoft VM
+## Changes since 0.2.0
+- Documentation updates  
+- Very preliminary Annodex support
 
-Changes since 0.2.1:
-    
-      * add statusHeight property
-      * add autoPlay property
-      * add documentBase property
-      * add showStatus property
-      * add hideTimeout property
-      * add JavaScript methods
-      * seek slider is easier to manipulate
-      * framerate property is removed
-      * fix locking behaviour
-      * seek slider disabled on Microsoft VM
-      * set User-Agent and add SVN info to About dialog
-      * extensively tested on Windows XP and 2000 with Microsoft VM
-      * extensively tested on Linux, Windows XP and 2000 with Sun VM 
-               1.4.0_01, 1.4.2_12, 1.5.0_03, 1.5.0_06, 1.5.0_09
+### Bugs fixed since 0.2.0
+- 390 : README not inline with code
 
-Bugs fixed since 0.2.1:
-    
-      * 390 : README not inline with code
-      * 423 : cortado: playback of ogg audio
-      * 63 : stops after a few frames on certain browser/jdk combinations
-      * 149 : cortado 0.1.0 freeze because of javax.sound
-      * 155 : implement pause/play in cortado, with javascript methods
-      * 157 : Cortado is not doing any playback if the file has no audio while
-              the applet is loaded with audio=true parameter
-      * 317 : cortado should do typefinding on its input instead of relying on
-              mime type from server
-      * 384 : Cortado: Only play on click ­[in video-window]
-      * 389 : Cortado needs option to make status bar always visible
-      * 390 : README not inline with code
-      * 470 : stop() method raise a java.security.AccessControlException when
-              calling
+## Changes since 0.1.2
+- Seeking in on-demand files and streams  
+- Deadlock fixes  
+- Build now uses ant  
+- Shutdown fixes  
+- Autoplugging based on mimetype; makes local file playback work  
+- Autodect audio backend from sun.audio or javax.sound
 
-Changes since 0.2.0:
+### Bugs fixed since 0.1.2
+- 265 : NullPointerException  
+- 142 : JPEG applet's internal buffering produces "lag"  
+- 367 : cortado fails to build on ubuntu dapper
 
-      * Documentation updates
-      * Very preliminary Annodex support
-
-Bugs fixed since 0.2.0:
-    
-      * 390 : README not inline with code
-   
-Changes since 0.1.2:
-
-      * Seeking in on-demand files and streams
-      * Deadlock fixes
-      * Build now uses ant
-      * Shutdown fixes
-      * Autoplugging based on mimetype; makes local file playback work
-      * Autodect audio backend from sun.audio or javax.sound
-
-Bugs fixed since 0.1.2:
-    
-      * 265 : NullPointerException
-      * 142 : JPEG applet's internal buffering produces "lag"
-      * 367 : cortado fails to build on ubuntu dapper
-
-Changes since 0.1.0:
-
-      * multiple instances of cortado now work correctly
-      * various playback and buffering fixes
+## Changes since 0.1.0
+- multiple instances of cortado now work correctly  
+- various playback and buffering fixes

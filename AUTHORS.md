@@ -1,13 +1,13 @@
-Contributors to the Cortado project:
+# Contributors to the Cortado project
 
-* Wim Taymans
-* Thomas Vander Stichele
-* Tim Starling
-* Gregory Maxwell    
-* J^
-* Benjamin Schwartz
-* Robin Watts
-* Maik Merten
-* oggkoggk
-* Philip Heron
-* JaskRendix (Giorgio)
+- **Wim Taymans**  
+- **Thomas Vander Stichele**  
+- **Tim Starling**  
+- **Gregory Maxwell**  
+- **J^**  
+- **Benjamin Schwartz**  
+- **Robin Watts**  
+- **Maik Merten**  
+- **oggkoggk**  
+- **Philip Heron**  
+- **JaskRendix (Giorgio)**  
