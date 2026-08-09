@@ -1,0 +1,60 @@
+/* JKate
+ * Copyright (C) 2008 ogg.k.ogg.k <ogg.k.ogg.k@googlemail.com>
+ *
+ * Parts of JKate are based on code by Wim Taymans <wim@fluendo.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Library General Public License
+ * as published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Library General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Library General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+package com.fluendo.jkate;
+
+public class KateCurveType {
+    public static final KateCurveType KATE_CURVE_NONE = new KateCurveType();
+    public static final KateCurveType KATE_CURVE_STATIC = new KateCurveType();
+    public static final KateCurveType KATE_CURVE_LINEAR = new KateCurveType();
+    public static final KateCurveType KATE_CURVE_CATMULL_ROM_SPLINE = new KateCurveType();
+    public static final KateCurveType KATE_CURVE_BEZIER_CUBIC_SPLINE = new KateCurveType();
+    public static final KateCurveType KATE_CURVE_BSPLINE = new KateCurveType();
+
+    // Legacy references for backward compatibility
+    public static final KateCurveType kate_curve_none = KATE_CURVE_NONE;
+    public static final KateCurveType kate_curve_static = KATE_CURVE_STATIC;
+    public static final KateCurveType kate_curve_linear = KATE_CURVE_LINEAR;
+    public static final KateCurveType kate_curve_catmull_rom_spline = KATE_CURVE_CATMULL_ROM_SPLINE;
+    public static final KateCurveType kate_curve_bezier_cubic_spline = KATE_CURVE_BEZIER_CUBIC_SPLINE;
+    public static final KateCurveType kate_curve_bspline = KATE_CURVE_BSPLINE;
+
+    private static final KateCurveType[] LIST = {
+        KATE_CURVE_NONE,
+        KATE_CURVE_STATIC,
+        KATE_CURVE_LINEAR,
+        KATE_CURVE_CATMULL_ROM_SPLINE,
+        KATE_CURVE_BEZIER_CUBIC_SPLINE,
+        KATE_CURVE_BSPLINE,
+    };
+
+    private KateCurveType() {
+    }
+
+    /**
+     * Create a KateCurveType object from an integer.
+     */
+    public static KateCurveType CreateCurveType(int idx) throws KateException {
+        if (idx < 0 || idx >= LIST.length) {
+            throw new KateException("Curve type " + idx + " out of bounds");
+        }
+        return LIST[idx];
+    }
+}

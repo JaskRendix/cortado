@@ -1,0 +1,98 @@
+/* JKate
+ * Copyright (C) 2008 ogg.k.ogg.k <ogg.k.ogg.k@googlemail.com>
+ *
+ * Parts of JKate are based on code by Wim Taymans <wim@fluendo.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Library General Public License
+ * as published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Library General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Library General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+package com.fluendo.jkate;
+
+import java.util.Objects;
+
+/**
+ * RGBA color definition.
+ */
+public class Color {
+    public byte r;
+    public byte g;
+    public byte b;
+    public byte a;
+
+    public Color() {
+    }
+
+    public Color(byte r, byte g, byte b, byte a) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+        this.a = a;
+    }
+
+    public byte getR() {
+        return r;
+    }
+
+    public void setR(byte r) {
+        this.r = r;
+    }
+
+    public byte getG() {
+        return g;
+    }
+
+    public void setG(byte g) {
+        this.g = g;
+    }
+
+    public byte getB() {
+        return b;
+    }
+
+    public void setB(byte b) {
+        this.b = b;
+    }
+
+    public byte getA() {
+        return a;
+    }
+
+    public void setA(byte a) {
+        this.a = a;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Color color = (Color) o;
+        return r == color.r && g == color.g && b == color.b && a == color.a;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(r, g, b, a);
+    }
+
+    @Override
+    public String toString() {
+        return "Color{" +
+                "r=" + r +
+                ", g=" + g +
+                ", b=" + b +
+                ", a=" + a +
+                '}';
+    }
+}
