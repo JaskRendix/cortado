@@ -17,6 +17,9 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
-        
-    - name: Build and Test with Maven
-      run: mvn clean verify -Dmaven.compiler.showDeprecation=true
+
+    - name: Install xvfb
+      run: sudo apt-get update && sudo apt-get install -y xvfb
+
+    - name: Build and Test with Maven (headful mode)
+      run: xvfb-run -a mvn clean verify -Dmaven.compiler.showDeprecation=true
