@@ -1,13 +1,13 @@
 /* JOrbis
  * Copyright (C) 2000 ymnk, JCraft,Inc.
- *  
+ * 
  * Written by: 2000 ymnk<ymnk@jcaft.com>
- *   
+ *  
  * Many thanks to 
- *   Monty <monty@xiph.org> and 
- *   The XIPHOPHORUS Company http://www.xiph.org/ .
+ *  Monty <monty@xiph.org> and 
+ *  The XIPHOPHORUS Company http://www.xiph.org/ .
  * JOrbis has been based on their awesome works, Vorbis codec.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -25,18 +25,65 @@
 
 package com.jcraft.jorbis;
 
-class Residue2 extends Residue0{
-  int forward(Block vb,Object vl, float[][] in, int ch){
+class Residue2 extends Residue0 {
+  @Override
+  int forward(Block vb, Object vl, float[][] in, int ch) {
     System.err.println("Residue0.forward: not implemented");
     return 0;
   }
 
-  int inverse(Block vb, Object vl, float[][] in, int[] nonzero, int ch){
-//System.err.println("Residue0.inverse");
-    int i=0;
-    for(i=0;i<ch;i++)if(nonzero[i]!=0)break;
-    if(i==ch)return(0); /* no nonzero vectors */
+  @Override
+  int inverse(Block vb, Object vl, float[][] in, int[] nonzero, int ch) {
+    int i = 0;
+    for (i = 0; i < ch; i++) {
+      if (nonzero[i] != 0)
+        break;
+    }
+    if (i == ch)
+      return 0; /* no nonzero vectors */
 
-    return(_2inverse(vb,vl,in, ch));
+    return _2inverse(vb, vl, in, ch);
+  }
+
+  static int _2inverse(Block vb, Object vl, float[][] in, int ch) {
+    int i, k, l, s;
+    LookResidue0 look = (LookResidue0) vl;
+    InfoResidue0 info = look.info;
+
+    int samples_per_partition = info.grouping;
+    int partitions_per_word = look.phrasebook.dim;
+    int n = info.end - info.begin;
+
+    int partvals = n / samples_per_partition;
+    int partwords = (partvals + partitions_per_word - 1) / partitions_per_word;
+
+    int[][] partword = new int[partwords][];
+    for (s = 0; s < look.stages; s++) {
+      for (i = 0, l = 0; i < partvals; l++) {
+        if (s == 0) {
+          int temp = look.phrasebook.decode(vb.opb);
+          if (temp == -1) {
+            return 0;
+          }
+          partword[l] = look.decodemap[temp];
+          if (partword[l] == null) {
+            return 0;
+          }
+        }
+
+        for (k = 0; k < partitions_per_word && i < partvals; k++, i++) {
+          int offset = info.begin + i * samples_per_partition;
+          if ((info.secondstages[partword[l][k]] & (1 << s)) != 0) {
+            CodeBook stagebook = look.fullbooks[look.partbooks[partword[l][k]][s]];
+            if (stagebook != null) {
+              if (stagebook.decodevv_add(in, offset, ch, vb.opb, samples_per_partition) == -1) {
+                return 0;
+              }
+            }
+          }
+        }
+      }
+    }
+    return 0;
   }
 }

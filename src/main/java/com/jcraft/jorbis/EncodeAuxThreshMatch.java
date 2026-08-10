@@ -1,13 +1,13 @@
 /* JOrbis
  * Copyright (C) 2000 ymnk, JCraft,Inc.
- *  
+ * 
  * Written by: 2000 ymnk<ymnk@jcaft.com>
- *   
+ *  
  * Many thanks to 
- *   Monty <monty@xiph.org> and 
- *   The XIPHOPHORUS Company http://www.xiph.org/ .
+ *  Monty <monty@xiph.org> and 
+ *  The XIPHOPHORUS Company http://www.xiph.org/ .
  * JOrbis has been based on their awesome works, Vorbis codec.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -25,9 +25,44 @@
 
 package com.jcraft.jorbis;
 
-class EncodeAuxThreshMatch{
-  float[] quantthresh;
-  int[]   quantmap;
-  int     quantvals; 
-  int     threshvals; 
+public class EncodeAuxThreshMatch {
+    float[] quantthresh;
+    int[] quantmap;
+    int quantvals;
+    int threshvals;
+
+    public EncodeAuxThreshMatch() {
+    }
+
+    public float[] getQuantthresh() {
+        return quantthresh;
+    }
+
+    public void setQuantthresh(float[] quantthresh) {
+        this.quantthresh = quantthresh;
+    }
+
+    public int[] getQuantmap() {
+        return quantmap;
+    }
+
+    public void setQuantmap(int[] quantmap) {
+        this.quantmap = quantmap;
+    }
+
+    public int getQuantvals() {
+        return quantvals;
+    }
+
+    public void setQuantvals(int quantvals) {
+        this.quantvals = quantvals;
+    }
+
+    public int getThreshvals() {
+        return threshvals;
+    }
+
+    public void setThreshvals(int threshvals) {
+        this.threshvals = threshvals;
+    }
 }

@@ -268,7 +268,7 @@ public class VorbisFile{
 	  os.clear();
 	   return -1;
 	}
-	if(vi.synthesis_headerin(vc, op)!=0){
+	if(vi.synthesisHeaderIn(vc, op)!=0){
 	  System.err.println("Illegal header in logical bitstream.");
 	  //goto bail_header;
 	  vi.clear();
@@ -718,19 +718,18 @@ public class VorbisFile{
       }
       else{
 	// return nominal if set
-	if(vi[i].bitrate_nominal>0){
-	  return vi[i].bitrate_nominal;
-	}
-	else{
-	  if(vi[i].bitrate_upper>0){
-	    if(vi[i].bitrate_lower>0){
-	      return (vi[i].bitrate_upper+vi[i].bitrate_lower)/2;
-	    }else{
-	      return vi[i].bitrate_upper;
-	    }
-	  }
-	  return(-1);
-	}
+  if (vi[i].getBitrateNominal() > 0) {
+      return vi[i].getBitrateNominal();
+  } else {
+      if (vi[i].getBitrateUpper() > 0) {
+          if (vi[i].getBitrateLower() > 0) {
+              return (vi[i].getBitrateUpper() + vi[i].getBitrateLower()) / 2;
+          } else {
+              return vi[i].getBitrateUpper();
+          }
+      }
+      return -1;
+    }
       }
     }
   }
@@ -740,7 +739,7 @@ public class VorbisFile{
   public int bitrate_instant(){
     int _link=(seekable?current_link:0);
     if(samptrack==0)return(-1);
-    int ret=(int)(bittrack/samptrack*vi[_link].rate+.5);
+    int ret=(int)(bittrack/samptrack*vi[_link].getRate() + .5);
     bittrack=0.f;
     samptrack=0.f;
     return(ret);
@@ -805,7 +804,7 @@ public class VorbisFile{
       return(acc);
     }
     else{
-      return((float)(pcmlengths[i])/vi[i].rate);
+      return ((float) (pcmlengths[i]) / vi[i].getRate());
     }
   }
 
@@ -971,7 +970,7 @@ public class VorbisFile{
       float[][] pcm;
       int target=(int)(pos-pcm_offset);
       float[][][] _pcm=new float[1][][];
-      int[] _index=new int[getInfo(-1).channels];
+      int[] _index=new int[getInfo(-1).getChannels()];
       int samples=vd.synthesis_pcmout(_pcm, _index);
       pcm=_pcm[0];
 
@@ -1019,7 +1018,7 @@ public class VorbisFile{
 
     // enough information to convert time offset to pcm offset
     {
-      long target=(long)(pcm_total+(seconds-time_total)*vi[link].rate);
+      long target=(long)(pcm_total+(seconds-time_total)*vi[link].getRate());
       return(pcm_seek(target));
     }
 
@@ -1061,7 +1060,7 @@ public class VorbisFile{
       }
     }
 
-    return((float)time_total+(float)(pcm_offset-pcm_total)/vi[link].rate);
+    return((float)time_total+(float)(pcm_offset-pcm_total)/vi[link].getRate());
   }
 
   //  link:   -1) return the vorbis_info struct for the bitstream section
@@ -1167,12 +1166,12 @@ public class VorbisFile{
       if(decode_ready){
 	float[][] pcm;
 	float[][][] _pcm=new float[1][][];
-	int[] _index=new int[getInfo(-1).channels];
+	int[] _index=new int[getInfo(-1).getChannels()];
 	int samples=vd.synthesis_pcmout(_pcm, _index);
 	pcm=_pcm[0];
 	if(samples!=0){
 	  // yay! proceed to pack data into the byte buffer
-	  int channels=getInfo(-1).channels;
+	  int channels=getInfo(-1).getChannels();
 	  int bytespersample=word * channels;
 	  if(samples>length/bytespersample)samples=length/bytespersample;
 	

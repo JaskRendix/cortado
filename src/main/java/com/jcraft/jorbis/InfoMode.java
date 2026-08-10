@@ -1,13 +1,13 @@
 /* JOrbis
  * Copyright (C) 2000 ymnk, JCraft,Inc.
- *  
+ * 
  * Written by: 2000 ymnk<ymnk@jcaft.com>
- *   
+ *  
  * Many thanks to 
- *   Monty <monty@xiph.org> and 
- *   The XIPHOPHORUS Company http://www.xiph.org/ .
+ *  Monty <monty@xiph.org> and 
+ *  The XIPHOPHORUS Company http://www.xiph.org/ .
  * JOrbis has been based on their awesome works, Vorbis codec.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -25,9 +25,41 @@
 
 package com.jcraft.jorbis;
 
-class InfoMode{
-  int blockflag;
-  int windowtype;
-  int transformtype;
-  int mapping;
+public class InfoMode {
+    private int blockflag;
+    private int windowtype;
+    private int transformtype;
+    private int mapping;
+
+    public int getBlockflag() {
+        return blockflag;
+    }
+
+    public void setBlockflag(int blockflag) {
+        this.blockflag = blockflag;
+    }
+
+    public int getWindowtype() {
+        return windowtype;
+    }
+
+    public void setWindowtype(int windowtype) {
+        this.windowtype = windowtype;
+    }
+
+    public int getTransformtype() {
+        return transformtype;
+    }
+
+    public void setTransformtype(int transformtype) {
+        this.transformtype = transformtype;
+    }
+
+    public int getMapping() {
+        return mapping;
+    }
+
+    public void setMapping(int mapping) {
+        this.mapping = mapping;
+    }
 }

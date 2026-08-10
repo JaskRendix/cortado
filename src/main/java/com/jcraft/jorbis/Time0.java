@@ -1,13 +1,13 @@
 /* JOrbis
  * Copyright (C) 2000 ymnk, JCraft,Inc.
- *  
+ * 
  * Written by: 2000 ymnk<ymnk@jcaft.com>
- *   
+ *  
  * Many thanks to 
- *   Monty <monty@xiph.org> and 
- *   The XIPHOPHORUS Company http://www.xiph.org/ .
+ *  Monty <monty@xiph.org> and 
+ *  The XIPHOPHORUS Company http://www.xiph.org/ .
  * JOrbis has been based on their awesome works, Vorbis codec.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -25,14 +25,38 @@
 
 package com.jcraft.jorbis;
 
-import com.jcraft.jogg.*;
+import com.jcraft.jogg.Buffer;
 
-class Time0 extends FuncTime{
-  void pack(Object i, Buffer opb){}
-  Object unpack(Info vi , Buffer opb){return "";}
-  Object look(DspState vd, InfoMode mi, Object i){return "";}
-  void free_info(Object i){}
-  void free_look(Object i){}
-  int forward(Block vb, Object i){return 0;}
-  int inverse(Block vb, Object i, float[] in, float[] out){return 0;}
+class Time0 extends FuncTime {
+    @Override
+    void pack(Object i, Buffer opb) {
+    }
+
+    @Override
+    Object unpack(Info vi, Buffer opb) {
+        return "";
+    }
+
+    @Override
+    Object look(DspState vd, InfoMode mi, Object i) {
+        return "";
+    }
+
+    @Override
+    void freeInfo(Object i) {
+    }
+
+    @Override
+    void freeLook(Object i) {
+    }
+
+    @Override
+    int forward(Block vb, Object i) {
+        return 0;
+    }
+
+    @Override
+    int inverse(Block vb, Object i, float[] in, float[] out) {
+        return 0;
+    }
 }

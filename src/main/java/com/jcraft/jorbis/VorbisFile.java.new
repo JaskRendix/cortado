@@ -227,7 +227,7 @@ public class VorbisFile{
 	  os.clear();
 	   return -1;
 	}
-	if(vi.synthesis_headerin(vc, op)!=0){
+	if(vi.synthesisHeaderIn(vc, op)!=0){
 	  System.err.println("Illegal header in logical bitstream.");
 	  //goto bail_header;
 	  vi.clear();
@@ -677,7 +677,7 @@ System.out.println("ret="+ret);
   public int bitrate_instant(){
     int _link=(seekable?current_link:0);
     if(samptrack==0)return(-1);
-    int ret=(int)(bittrack/samptrack*vi[_link].rate+.5);
+    int ret=(int)(bittrack/samptrack*vi[_link].getRate() + .5);
     bittrack=0.f;
     samptrack=0.f;
     return(ret);

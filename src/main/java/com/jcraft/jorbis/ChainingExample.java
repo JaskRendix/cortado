@@ -1,13 +1,13 @@
 /* JOrbis
  * Copyright (C) 2000 ymnk, JCraft,Inc.
- *  
+ * 
  * Written by: 2000 ymnk<ymnk@jcaft.com>
- *   
+ *  
  * Many thanks to 
  *   Monty <monty@xiph.org> and 
  *   The XIPHOPHORUS Company http://www.xiph.org/ .
  * JOrbis has been based on their awesome works, Vorbis codec.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -25,37 +25,33 @@
 
 package com.jcraft.jorbis;
 
-class ChainingExample{
-  public static void main(String[] arg){
-    VorbisFile ov=null;
+public final class ChainingExample {
 
-    try{
-      ov=new VorbisFile(System.in, null, -1);
-    }
-    catch(Exception e){
-      System.err.println(e);
-      return;
-    }
+    public static void main(String[] args) {
+        VorbisFile ov = null;
 
-    if(ov.seekable()){
-      System.out.println("Input bitstream contained "+ov.streams()+" logical bitstream section(s).");
-      System.out.println("Total bitstream playing time: "+ov.time_total(-1)+" seconds\n");
-    }
-    else{
-      System.out.println("Standard input was not seekable.");
-      System.out.println("First logical bitstream information:\n");
-    }
+        try {
+            ov = new VorbisFile(System.in, null, -1);
+            if (ov.seekable()) {
+                System.out.printf("Input bitstream contained %d logical bitstream section(s).%n", ov.streams());
+                System.out.printf("Total bitstream playing time: %.2f seconds%n%n", ov.time_total(-1));
+            } else {
+                System.out.println("Standard input was not seekable.");
+                System.out.println("First logical bitstream information:%n");
+            }
 
-    for(int i=0;i<ov.streams();i++){
-      Info vi=ov.getInfo(i);
-      System.out.println("\tlogical bitstream section "+(i+1)+" information:");
-      System.out.println("\t\t"+vi.rate+"Hz "+vi.channels+" channels bitrate "+
-                         (ov.bitrate(i)/1000)+"kbps serial number="+ov.serialnumber(i));
-      System.out.print("\t\tcompressed length: "+ov.raw_total(i)+" bytes ");
-      System.out.println(" play time: "+ov.time_total(i)+"s");
-      Comment vc=ov.getComment(i);
-      System.out.println(vc);
+            for (int i = 0; i < ov.streams(); i++) {
+                Info vi = ov.getInfo(i);
+                System.out.printf("\tlogical bitstream section %d information:%n", i + 1);
+                System.out.printf("\t\t%dHz %d channels bitrate %dkbps serial number=%d%n",
+                        vi.getRate(), vi.getChannels(), ov.bitrate(i) / 1000, ov.serialnumber(i));
+                System.out.printf("\t\tcompressed length: %d bytes play time: %.2fs%n",
+                        ov.raw_total(i), ov.time_total(i));
+                Comment vc = ov.getComment(i);
+                System.out.println(vc);
+            }
+        } catch (Exception e) {
+            System.err.println(e);
+        }
     }
-    //clear(&ov);
-  }
 }

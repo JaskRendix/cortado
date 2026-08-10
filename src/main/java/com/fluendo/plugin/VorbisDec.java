@@ -46,7 +46,7 @@ public class VorbisDec extends Element implements OggPayload {
 
     @Override
     public int takeHeader(Packet op) {
-        int ret = vi.synthesis_headerin(vc, op);
+        int ret = vi.synthesisHeaderIn(vc, op);
         if (ret < 0)
             return ret;
         byte header = op.packet_base[op.packet];
@@ -126,7 +126,7 @@ public class VorbisDec extends Element implements OggPayload {
         if (gp < 0)
             return -1;
 
-        return gp * Clock.SECOND / vi.rate;
+        return gp * Clock.SECOND / vi.getRate();
     }
 
     private final Pad srcPad = new Pad(Pad.SRC, "src") {
@@ -182,7 +182,7 @@ public class VorbisDec extends Element implements OggPayload {
             }
 
             if (packet < 3) {
-                if (vi.synthesis_headerin(vc, op) < 0) {
+                if (vi.synthesisHeaderIn(vc, op) < 0) {
                     Debug.log(Debug.ERROR, "This Ogg bitstream does not contain Vorbis audio data.");
                     return ERROR;
                 }
@@ -190,16 +190,16 @@ public class VorbisDec extends Element implements OggPayload {
                     vd.synthesis_init(vi);
                     vb.init(vd);
 
-                    Debug.log(Debug.INFO, "vorbis rate: " + vi.rate);
-                    Debug.log(Debug.INFO, "vorbis channels: " + vi.channels);
+                    Debug.log(Debug.INFO, "vorbis rate: " + vi.getRate());
+                    Debug.log(Debug.INFO, "vorbis channels: " + vi.getChannels());
 
-                    _index = new int[vi.channels];
+                    _index = new int[vi.getChannels()];
 
                     caps = new Caps("audio/raw");
                     caps.setFieldInt("width", 16);
                     caps.setFieldInt("depth", 16);
-                    caps.setFieldInt("rate", vi.rate);
-                    caps.setFieldInt("channels", vi.channels);
+                    caps.setFieldInt("rate", vi.getRate());
+                    caps.setFieldInt("channels", vi.getChannels());
                 }
                 buf.free();
                 packet++;
@@ -213,9 +213,9 @@ public class VorbisDec extends Element implements OggPayload {
 
                 timestamp = buf.timestamp;
                 if (timestamp != -1) {
-                    offset = timestamp * vi.rate / Clock.SECOND;
+                    offset = timestamp * vi.getRate() / Clock.SECOND;
                 } else {
-                    timestamp = offset * Clock.SECOND / vi.rate;
+                    timestamp = offset * Clock.SECOND / vi.getRate();
                 }
 
                 int samples;
@@ -228,7 +228,7 @@ public class VorbisDec extends Element implements OggPayload {
 
                 while ((samples = vd.synthesis_pcmout(_pcmf, _index)) > 0) {
                     float[][] pcmf = _pcmf[0];
-                    int numbytes = samples * 2 * vi.channels;
+                    int numbytes = samples * 2 * vi.getChannels();
                     int k = 0;
 
                     buf.ensureSize(numbytes);
@@ -241,7 +241,7 @@ public class VorbisDec extends Element implements OggPayload {
                     discont = false;
 
                     for (int j = 0; j < samples; j++) {
-                        for (int i = 0; i < vi.channels; i++) {
+                        for (int i = 0; i < vi.getChannels(); i++) {
                             int val = (int) (pcmf[i][_index[i] + j] * 32767.0);
                             if (val > 32767)
                                 val = 32767;

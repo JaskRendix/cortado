@@ -1,13 +1,13 @@
 /* JOrbis
  * Copyright (C) 2000 ymnk, JCraft,Inc.
- *  
+ * 
  * Written by: 2000 ymnk<ymnk@jcaft.com>
- *   
+ *  
  * Many thanks to 
- *   Monty <monty@xiph.org> and 
- *   The XIPHOPHORUS Company http://www.xiph.org/ .
+ *  Monty <monty@xiph.org> and 
+ *  The XIPHOPHORUS Company http://www.xiph.org/ .
  * JOrbis has been based on their awesome works, Vorbis codec.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -26,10 +26,13 @@
 package com.jcraft.jorbis;
 
 public class JOrbisException extends Exception {
-  public JOrbisException () {
-    super();
-  }
-  public JOrbisException (String s) {
-    super ("JOrbis: "+s);
-  }
+    private static final long serialVersionUID = 1L;
+
+    public JOrbisException() {
+        super();
+    }
+
+    public JOrbisException(String s) {
+        super("JOrbis: " + s);
+    }
 }

@@ -1,13 +1,13 @@
 /* JOrbis
  * Copyright (C) 2000 ymnk, JCraft,Inc.
- *  
+ * 
  * Written by: 2000 ymnk<ymnk@jcaft.com>
- *   
+ *  
  * Many thanks to 
  *   Monty <monty@xiph.org> and 
  *   The XIPHOPHORUS Company http://www.xiph.org/ .
  * JOrbis has been based on their awesome works, Vorbis codec.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -26,227 +26,204 @@
 package com.jcraft.jorbis;
 
 import com.jcraft.jogg.*;
+import java.nio.charset.StandardCharsets;
 
-// the comments are not part of vorbis_info so that vorbis_info can be
-// static storage
-public class Comment{
-  private static byte[] _vorbis="vorbis".getBytes();
+public class Comment {
+    private static final byte[] VORBIS_BYTES = "vorbis".getBytes(StandardCharsets.UTF_8);
 
-  private static final int OV_EFAULT=-129;
-  private static final int OV_EIMPL=-130;
+    private static final int OV_EFAULT = -129;
+    private static final int OV_EIMPL = -130;
 
-  // unlimited user comment fields.  libvorbis writes 'libvorbis'
-  // whatever vendor is set to in encode
-  public byte[][] user_comments;
-  public int[] comment_lengths; 
-  public int comments;
-  public byte[] vendor;
+    public byte[][] user_comments;
+    public int[] comment_lengths; 
+    public int comments;
+    public byte[] vendor;
 
-  public void init(){
-    user_comments=null;
-    comments=0;
-    vendor=null;
-  }
-
-  public void add(String comment){
-    add(comment.getBytes());
-  }
-
-  private void add(byte[] comment){
-    byte[][] foo=new byte[comments+2][];
-    if(user_comments!=null){
-      System.arraycopy(user_comments, 0, foo, 0, comments);
+    public void init() {
+        user_comments = null;
+        comments = 0;
+        vendor = null;
     }
-    user_comments=foo;
 
-    int[] goo=new int[comments+2];
-    if(comment_lengths!=null){
-      System.arraycopy(comment_lengths, 0, goo, 0, comments);
+    public void add(String comment) {
+        add(comment.getBytes(StandardCharsets.UTF_8));
     }
-    comment_lengths=goo;
 
-    byte[] bar=new byte[comment.length+1];
-    System.arraycopy(comment, 0, bar, 0, comment.length);
-    user_comments[comments]=bar;
-    comment_lengths[comments]=comment.length;
-    comments++;
-    user_comments[comments]=null;
-  }
+    private void add(byte[] comment) {
+        byte[][] foo = new byte[comments + 2][];
+        if (user_comments != null) {
+            System.arraycopy(user_comments, 0, foo, 0, comments);
+        }
+        user_comments = foo;
 
-  public void add_tag(String tag, String contents){
-    if(contents==null) contents="";
-    add(tag+"="+contents);
-  }
+        int[] goo = new int[comments + 2];
+        if (comment_lengths != null) {
+            System.arraycopy(comment_lengths, 0, goo, 0, comments);
+        }
+        comment_lengths = goo;
 
-/*
-  private void add_tag(byte[] tag, byte[] contents){
-    byte[] foo=new byte[tag.length+contents.length+1];
-    int j=0; 
-    for(int i=0; i<tag.length; i++){foo[j++]=tag[i];}
-    foo[j++]=(byte)'='; j++;
-    for(int i=0; i<contents.length; i++){foo[j++]=tag[i];}
-    add(foo);
-  }
-*/
- 
-  // This is more or less the same as strncasecmp - but that doesn't exist
-  // * everywhere, and this is a fairly trivial function, so we include it
-  static boolean tagcompare(byte[] s1, byte[] s2, int n){
-    int c=0;
-    byte u1, u2;
-    while(c < n){
-      u1=s1[c]; u2=s2[c];
-      if(u1>='A')u1=(byte)(u1-'A'+'a');
-      if(u2>='A')u2=(byte)(u2-'A'+'a');
-      if(u1!=u2){ return false; }
-      c++;
+        byte[] bar = new byte[comment.length + 1];
+        System.arraycopy(comment, 0, bar, 0, comment.length);
+        user_comments[comments] = bar;
+        comment_lengths[comments] = comment.length;
+        comments++;
+        user_comments[comments] = null;
     }
-    return true;
-  }
 
-  public String query(String tag){
-    return query(tag, 0);
-  }
-
-  public String query(String tag, int count){
-    int foo=query(tag.getBytes(), count);
-    if(foo==-1)return null;
-    byte[] comment=user_comments[foo];
-    for(int i=0; i<comment_lengths[foo]; i++){
-      if(comment[i]=='='){
-        return new String(comment, i+1, comment_lengths[foo]-(i+1));
-      }
+    public void add_tag(String tag, String contents) {
+        if (contents == null) contents = "";
+        add(tag + "=" + contents);
     }
-    return null;
-  }
 
-  private int query(byte[] tag, int count){
-    int i=0;
-    int found = 0;
-    int taglen = tag.length;
-    byte[] fulltag = new byte[taglen+2];
-    System.arraycopy(tag, 0, fulltag, 0, tag.length);
-    fulltag[tag.length]=(byte)'=';
-
-    for(i=0;i<comments;i++){
-      if(tagcompare(user_comments[i], fulltag, taglen)){
-        if(count==found){
- 	  // We return a pointer to the data, not a copy
-          //return user_comments[i] + taglen + 1;
-          return i;
-	}
-        else{ found++; }
-      }
+    static boolean tagcompare(byte[] s1, byte[] s2, int n) {
+        int c = 0;
+        byte u1, u2;
+        while (c < n) {
+            u1 = s1[c]; 
+            u2 = s2[c];
+            if (u1 >= 'A' && u1 <= 'Z') u1 = (byte) (u1 - 'A' + 'a');
+            if (u2 >= 'A' && u2 <= 'Z') u2 = (byte) (u2 - 'A' + 'a');
+            if (u1 != u2) { return false; }
+            c++;
+        }
+        return true;
     }
-    return -1;
-  }
 
-  int unpack(Buffer opb){
-    int vendorlen=opb.read(32);
-    if(vendorlen<0){
-      //goto err_out;
-      clear();
-      return(-1);
+    public String query(String tag) {
+        return query(tag, 0);
     }
-    vendor=new byte[vendorlen+1];
-    opb.read(vendor,vendorlen);
-    comments=opb.read(32);
-    if(comments<0){
-      //goto err_out;
-      clear();
-      return(-1);
+
+    public String query(String tag, int count) {
+        int foo = query(tag.getBytes(StandardCharsets.UTF_8), count);
+        if (foo == -1) return null;
+        byte[] comment = user_comments[foo];
+        for (int i = 0; i < comment_lengths[foo]; i++) {
+            if (comment[i] == '=') {
+                return new String(comment, i + 1, comment_lengths[foo] - (i + 1), StandardCharsets.UTF_8);
+            }
+        }
+        return null;
     }
-    user_comments=new byte[comments+1][];
-    comment_lengths=new int[comments+1];
-	    
-    for(int i=0;i<comments;i++){
-      int len=opb.read(32);
-      if(len<0){
-	//goto err_out;
-	clear();
-	return(-1);
-      }
-      comment_lengths[i]=len;
-      user_comments[i]=new byte[len+1];
-      opb.read(user_comments[i], len);
-    }	  
-    if(opb.read(1)!=1){
-      //goto err_out; // EOP check
-      clear();
-      return(-1);
 
+    private int query(byte[] tag, int count) {
+        int found = 0;
+        int taglen = tag.length;
+        byte[] fulltag = new byte[taglen + 2];
+        System.arraycopy(tag, 0, fulltag, 0, tag.length);
+        fulltag[tag.length] = (byte) '=';
+
+        for (int i = 0; i < comments; i++) {
+            if (tagcompare(user_comments[i], fulltag, taglen)) {
+                if (count == found) {
+                    return i;
+                } else { 
+                    found++; 
+                }
+            }
+        }
+        return -1;
     }
-    return(0);
-//  err_out:
-//    comment_clear(vc);
-//    return(-1);
-  }
 
-  int pack(Buffer opb){
-    byte[] temp="Xiphophorus libVorbis I 20000508".getBytes();
-
-    // preamble
-    opb.write(0x03,8);
-    opb.write(_vorbis);
-
-    // vendor
-    opb.write(temp.length,32);
-    opb.write(temp);
-
-    // comments
-
-    opb.write(comments,32);
-    if(comments!=0){
-      for(int i=0;i<comments;i++){
-	if(user_comments[i]!=null){
-	  opb.write(comment_lengths[i],32);
-	  opb.write(user_comments[i]);
-	}
-	else{
-	  opb.write(0,32);
-	}
-      }
+    int unpack(Buffer opb) {
+        int vendorlen = opb.read(32);
+        if (vendorlen < 0) {
+            clear();
+            return -1;
+        }
+        vendor = new byte[vendorlen + 1];
+        opb.read(vendor, vendorlen);
+        comments = opb.read(32);
+        if (comments < 0) {
+            clear();
+            return -1;
+        }
+        user_comments = new byte[comments + 1][];
+        comment_lengths = new int[comments + 1];
+             
+        for (int i = 0; i < comments; i++) {
+            int len = opb.read(32);
+            if (len < 0) {
+                clear();
+                return -1;
+            }
+            comment_lengths[i] = len;
+            user_comments[i] = new byte[len + 1];
+            opb.read(user_comments[i], len);
+        }   
+        if (opb.read(1) != 1) {
+            clear();
+            return -1;
+        }
+        return 0;
     }
-    opb.write(1,1);
-    return(0);
-  }
 
-  public int header_out(Packet op){
-    Buffer opb=new Buffer();
-    opb.writeinit();
+    int pack(Buffer opb) {
+        byte[] temp = "Xiphophorus libVorbis I 20000508".getBytes(StandardCharsets.UTF_8);
 
-    if(pack(opb)!=0) return OV_EIMPL;
+        opb.write(0x03, 8);
+        opb.write(VORBIS_BYTES);
 
-    op.packet_base = new byte[opb.bytes()];
-    op.packet=0;
-    op.bytes=opb.bytes();
-    System.arraycopy(opb.buffer(), 0, op.packet_base, 0, op.bytes);
-    op.b_o_s=0;
-    op.e_o_s=0;
-    op.granulepos=0;
-    return 0;
-  }
- 
-  void clear(){
-    for(int i=0;i<comments;i++)
-      user_comments[i]=null;
-    user_comments=null;
-    vendor=null;
-  }
+        opb.write(temp.length, 32);
+        opb.write(temp);
 
-  public String getVendor(){
-    return new String(vendor, 0, vendor.length-1);
-  }
-  public String getComment(int i){
-    if(comments<=i)return null;
-    return new String(user_comments[i], 0, user_comments[i].length-1);
-  }
-  public String toString(){
-    String foo="Vendor: "+new String(vendor, 0, vendor.length-1);
-    for(int i=0; i<comments; i++){
-      foo=foo+"\nComment: "+new String(user_comments[i], 0, user_comments[i].length-1);
+        opb.write(comments, 32);
+        if (comments != 0) {
+            for (int i = 0; i < comments; i++) {
+                if (user_comments[i] != null) {
+                    opb.write(comment_lengths[i], 32);
+                    opb.write(user_comments[i]);
+                } else {
+                    opb.write(0, 32);
+                }
+            }
+        }
+        opb.write(1, 1);
+        return 0;
     }
-    foo=foo+"\n";
-    return foo;
-  }
+
+    public int header_out(Packet op) {
+        Buffer opb = new Buffer();
+        opb.writeinit();
+
+        if (pack(opb) != 0) return OV_EIMPL;
+
+        op.packet_base = new byte[opb.bytes()];
+        op.packet = 0;
+        op.bytes = opb.bytes();
+        System.arraycopy(opb.buffer(), 0, op.packet_base, 0, op.bytes);
+        op.b_o_s = 0;
+        op.e_o_s = 0;
+        op.granulepos = 0;
+        return 0;
+    }
+     
+    void clear() {
+        if (user_comments != null) {
+            for (int i = 0; i < comments; i++) {
+                user_comments[i] = null;
+            }
+        }
+        user_comments = null;
+        vendor = null;
+    }
+
+    public String getVendor() {
+        return new String(vendor, 0, vendor.length - 1, StandardCharsets.UTF_8);
+    }
+
+    public String getComment(int i) {
+        if (comments <= i) return null;
+        return new String(user_comments[i], 0, user_comments[i].length - 1, StandardCharsets.UTF_8);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Vendor: ").append(new String(vendor, 0, vendor.length - 1, StandardCharsets.UTF_8));
+        for (int i = 0; i < comments; i++) {
+            sb.append("\nComment: ").append(new String(user_comments[i], 0, user_comments[i].length - 1, StandardCharsets.UTF_8));
+        }
+        sb.append("\n");
+        return sb.toString();
+    }
 }

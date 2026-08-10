@@ -1,13 +1,13 @@
 /* JOrbis
  * Copyright (C) 2000 ymnk, JCraft,Inc.
- *  
+ * 
  * Written by: 2000 ymnk<ymnk@jcaft.com>
- *   
+ *  
  * Many thanks to 
- *   Monty <monty@xiph.org> and 
- *   The XIPHOPHORUS Company http://www.xiph.org/ .
+ *  Monty <monty@xiph.org> and 
+ *  The XIPHOPHORUS Company http://www.xiph.org/ .
  * JOrbis has been based on their awesome works, Vorbis codec.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -25,16 +25,22 @@
 
 package com.jcraft.jorbis;
 
-import com.jcraft.jogg.*;
+import com.jcraft.jogg.Buffer;
 
-abstract class FuncTime{
-  public static FuncTime[] time_P={new Time0()};
+abstract class FuncTime {
+    public static final FuncTime[] TIME_P = {new Time0()};
 
-  abstract void pack(Object i, Buffer opb);
-  abstract Object unpack(Info vi , Buffer opb);
-  abstract Object look(DspState vd, InfoMode vm, Object i);
-  abstract void free_info(Object i);
-  abstract void free_look(Object i);
-  abstract int forward(Block vb, Object i);
-  abstract int inverse(Block vb, Object i, float[] in, float[] out);
+    abstract void pack(Object i, Buffer opb);
+
+    abstract Object unpack(Info vi, Buffer opb);
+
+    abstract Object look(DspState vd, InfoMode vm, Object i);
+
+    abstract void freeInfo(Object i);
+
+    abstract void freeLook(Object i);
+
+    abstract int forward(Block vb, Object i);
+
+    abstract int inverse(Block vb, Object i, float[] in, float[] out);
 }

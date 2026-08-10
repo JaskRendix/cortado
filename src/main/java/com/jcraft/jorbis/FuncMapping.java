@@ -1,13 +1,13 @@
 /* JOrbis
  * Copyright (C) 2000 ymnk, JCraft,Inc.
- *  
+ * 
  * Written by: 2000 ymnk<ymnk@jcaft.com>
- *   
+ *  
  * Many thanks to 
- *   Monty <monty@xiph.org> and 
- *   The XIPHOPHORUS Company http://www.xiph.org/ .
+ *  Monty <monty@xiph.org> and 
+ *  The XIPHOPHORUS Company http://www.xiph.org/ .
  * JOrbis has been based on their awesome works, Vorbis codec.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -25,16 +25,20 @@
 
 package com.jcraft.jorbis;
 
-import com.jcraft.jogg.*;
+import com.jcraft.jogg.Buffer;
 
-abstract class FuncMapping{
-  public static FuncMapping[] mapping_P={new Mapping0()};
+abstract class FuncMapping {
+    public static final FuncMapping[] MAPPING_P = {new Mapping0()};
 
-  abstract void pack(Info info , Object imap, Buffer buffer);
-  abstract Object unpack(Info info , Buffer buffer);
-  abstract Object look(DspState vd, InfoMode vm, Object m);
-  abstract void free_info(Object imap);
-  abstract void free_look(Object imap);
-//  abstract int forward(Block vd, Object lm);
-  abstract int inverse(Block vd, Object lm);
+    abstract void pack(Info info, Object imap, Buffer buffer);
+
+    abstract Object unpack(Info info, Buffer buffer);
+
+    abstract Object look(DspState vd, InfoMode vm, Object m);
+
+    abstract void freeInfo(Object imap);
+
+    abstract void freeLook(Object imap);
+
+    abstract int inverse(Block vd, Object lm);
 }

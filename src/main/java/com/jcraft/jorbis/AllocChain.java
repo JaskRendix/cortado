@@ -25,7 +25,7 @@
 
 package com.jcraft.jorbis;
 
-class AllocChain{
-  Object ptr;
-  AllocChain next;
-};
+public final class AllocChain {
+    public Object ptr;
+    public AllocChain next;
+}

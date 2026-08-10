@@ -1,13 +1,13 @@
 /* JOrbis
  * Copyright (C) 2000 ymnk, JCraft,Inc.
- *  
+ * 
  * Written by: 2000 ymnk<ymnk@jcaft.com>
- *   
+ *  
  * Many thanks to 
- *   Monty <monty@xiph.org> and 
- *   The XIPHOPHORUS Company http://www.xiph.org/ .
+ *  Monty <monty@xiph.org> and 
+ *  The XIPHOPHORUS Company http://www.xiph.org/ .
  * JOrbis has been based on their awesome works, Vorbis codec.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -16,7 +16,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Library General Public License for more details.
+ * GNU Library General Public License for Name details.
  * 
  * You should have received a copy of the GNU Library General Public
  * License along with this program; if not, write to the Free Software
@@ -25,21 +25,26 @@
 
 package com.jcraft.jorbis;
 
-import com.jcraft.jogg.*;
+import com.jcraft.jogg.Buffer;
 
-abstract class FuncFloor{
-//  public static FuncFloor[] floor_P={new Floor0()};
-  public static FuncFloor[] floor_P={new Floor0(),new Floor1()};
+abstract class FuncFloor {
+    public static final FuncFloor[] FLOOR_P = { new Floor0(), new Floor1() };
 
-  abstract void pack(Object i, Buffer opb);
-  abstract Object unpack(Info vi, Buffer opb);
-  abstract Object look(DspState vd, InfoMode mi, Object i);
-//  abstract Object state(Object i);
-  abstract void free_info(Object i);
-  abstract void free_look(Object i);
-  abstract void free_state(Object vs);
-  abstract int forward(Block vb, Object i, float[] in, float[] out, Object vs);
-//  abstract int inverse(Block vb, Object i, float[] out);
-  abstract Object inverse1(Block vb, Object i, Object memo);
-  abstract int inverse2(Block vb, Object i, Object memo, float[] out);
+    abstract void pack(Object i, Buffer opb);
+
+    abstract Object unpack(Info vi, Buffer opb);
+
+    abstract Object look(DspState vd, InfoMode mi, Object i);
+
+    abstract void freeInfo(Object i);
+
+    abstract void freeLook(Object i);
+
+    abstract void freeState(Object vs);
+
+    abstract int forward(Block vb, Object i, float[] in, float[] out, Object vs);
+
+    abstract Object inverse1(Block vb, Object i, Object memo);
+
+    abstract int inverse2(Block vb, Object i, Object memo, float[] out);
 }
