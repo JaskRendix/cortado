@@ -230,7 +230,7 @@ class VideoSinkTest {
     void testVideoResourceRendering() throws Exception {
         java.io.InputStream stream = getClass().getResourceAsStream("/media/test-video-only.ogv");
         assertNotNull(stream, "Test resource /media/test-video-only.ogv must be present");
-
+        
         byte[] data = stream.readAllBytes();
         stream.close();
         assertTrue(data.length > 0, "Video asset should contain data");
@@ -243,7 +243,7 @@ class VideoSinkTest {
 
         Buffer buf = new Buffer();
         buf.object = new java.awt.image.MemoryImageSource(320, 240, new int[320 * 240], 0, 320);
-
+        
         assertEquals(Pad.OK, sink.render(buf), "VideoSink should successfully render frames derived from media streams");
     }
 }
