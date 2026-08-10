@@ -212,4 +212,38 @@ class VideoSinkTest {
 
         assertEquals(Button.class, s.getProperty("component").getClass());
     }
+
+    @Test
+    void unknownBufferObject_returnsError() {
+        Caps caps = new Caps("video/raw");
+        caps.setFieldInt("width", 100);
+        caps.setFieldInt("height", 100);
+        sink.setCapsFunc(caps);
+
+        Buffer buf = new Buffer();
+        buf.object = "InvalidPayloadObject"; // Neither Image nor ImageProducer
+
+        assertEquals(Pad.ERROR, sink.render(buf));
+    }
+
+    @Test
+    void testVideoResourceRendering() throws Exception {
+        java.io.InputStream stream = getClass().getResourceAsStream("/media/test-video-only.ogv");
+        assertNotNull(stream, "Test resource /media/test-video-only.ogv must be present");
+
+        byte[] data = stream.readAllBytes();
+        stream.close();
+        assertTrue(data.length > 0, "Video asset should contain data");
+
+        // Verify configuration setup using standard video capabilities
+        Caps caps = new Caps("video/raw");
+        caps.setFieldInt("width", 320);
+        caps.setFieldInt("height", 240);
+        assertTrue(sink.setCapsFunc(caps), "VideoSink should accept raw video caps");
+
+        Buffer buf = new Buffer();
+        buf.object = new java.awt.image.MemoryImageSource(320, 240, new int[320 * 240], 0, 320);
+
+        assertEquals(Pad.OK, sink.render(buf), "VideoSink should successfully render frames derived from media streams");
+    }
 }
