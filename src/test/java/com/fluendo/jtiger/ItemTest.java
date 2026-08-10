@@ -2,100 +2,181 @@ package com.fluendo.jtiger;
 
 import com.fluendo.jkate.Event;
 import com.fluendo.jkate.Info;
+import com.fluendo.jkate.Bitmap;
+import com.fluendo.jkate.Palette;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class ItemTest {
 
-    private Event dummyEvent;
-    private MockComponent mockComponent;
+    private Event ev;
+    private MockComponent component;
+    private Dimension dim;
 
     @BeforeEach
     void setUp() {
-        mockComponent = new MockComponent();
-        dummyEvent = createDummyEvent();
-        if (dummyEvent != null) {
-            dummyEvent.start_time = 1.0;
-            dummyEvent.end_time = 5.0;
-            dummyEvent.text = "Hello Subtitle".getBytes(StandardCharsets.UTF_8);
+        component = new MockComponent();
+        dim = new Dimension(640, 480);
+
+        ev = createEvent();
+        ev.start_time = 1.0;
+        ev.end_time = 5.0;
+        ev.text = "Hello Subtitle".getBytes(StandardCharsets.UTF_8);
+    }
+
+    @Nested
+    @DisplayName("Constructor behavior")
+    class ConstructorTests {
+
+        @Test
+        @DisplayName("Item initializes inactive and not dirty")
+        void constructorInitialState() {
+            Item item = new Item(ev);
+            assertFalse(item.isActive());
+            assertFalse(item.isDirty());
         }
     }
 
-    @Test
-    void testItemCreationAndInitialState() {
-        Item item = new Item(dummyEvent);
-        assertFalse(item.isActive());
-        assertFalse(item.isDirty()); // Initialized to false per constructor logic
+    @Nested
+    @DisplayName("Lifecycle update behavior")
+    class UpdateTests {
+
+        @Test
+        @DisplayName("Before start time → active=false, returns true")
+        void beforeStartTime() {
+            Item item = new Item(ev);
+            assertTrue(item.update(component, dim, 0.5));
+            assertFalse(item.isActive());
+        }
+
+        @Test
+        @DisplayName("During event → active=true, dirty=true")
+        void duringEvent() {
+            Item item = new Item(ev);
+            assertTrue(item.update(component, dim, 2.0));
+            assertTrue(item.isActive());
+            assertTrue(item.isDirty());
+        }
+
+        @Test
+        @DisplayName("After end time → active=false, returns false")
+        void afterEndTime() {
+            Item item = new Item(ev);
+            assertFalse(item.update(component, dim, 6.0));
+            assertFalse(item.isActive());
+        }
     }
 
-    @Test
-    void testItemLifecycleUpdate() {
-        Item item = new Item(dummyEvent);
-        Dimension dim = new Dimension(640, 480);
+    @Nested
+    @DisplayName("Rendering behavior")
+    class RenderingTests {
 
-        // Before start time
-        boolean activeBefore = item.update(mockComponent, dim, 0.5);
-        assertTrue(activeBefore);
-        assertFalse(item.isActive());
+        @Test
+        @DisplayName("Render executes without throwing and clears dirty flag")
+        void renderClearsDirty() {
+            Item item = new Item(ev);
+            item.update(component, dim, 2.0); // activate
 
-        // Within lifetime
-        boolean activeDuring = item.update(mockComponent, dim, 2.0);
-        assertTrue(activeDuring);
-        assertTrue(item.isActive());
-        assertTrue(item.isDirty());
+            BufferedImage img = new BufferedImage(640, 480, BufferedImage.TYPE_INT_ARGB);
 
-        // After end time (should trigger destruction returning false)
-        boolean activeAfter = item.update(mockComponent, dim, 6.0);
-        assertFalse(activeAfter);
-        assertFalse(item.isActive());
+            assertDoesNotThrow(() -> item.render(component, img));
+            assertFalse(item.isDirty());
+        }
+
+        @Test
+        @DisplayName("Render does nothing when inactive")
+        void renderInactiveDoesNothing() {
+            Item item = new Item(ev);
+            BufferedImage img = new BufferedImage(640, 480, BufferedImage.TYPE_INT_ARGB);
+
+            assertDoesNotThrow(() -> item.render(component, img));
+            assertFalse(item.isActive());
+        }
+
+        @Test
+        @DisplayName("Background image is created when event has bitmap + palette")
+        void backgroundImageCreated() throws Exception {
+            // Build bitmap
+            Bitmap kb = new Bitmap();
+            kb.width = 2;
+            kb.height = 2;
+            kb.bpp = 8;
+            kb.pixels = new byte[]{0, 1, 1, 0};
+            ev.bitmap = kb;
+
+            // Build palette via reflection
+            Palette palette = new Palette();
+            populatePaletteWithTwoColors(palette);
+            ev.palette = palette;
+
+            Item item = new Item(ev);
+            item.update(component, dim, 2.0);
+
+            BufferedImage img = new BufferedImage(640, 480, BufferedImage.TYPE_INT_ARGB);
+
+            assertDoesNotThrow(() -> item.render(component, img));
+            assertFalse(item.isDirty());
+        }
     }
 
-    @Test
-    void testItemRenderExecution() {
-        Item item = new Item(dummyEvent);
-        Dimension dim = new Dimension(640, 480);
-        item.update(mockComponent, dim, 2.0); // Make active
+    private void populatePaletteWithTwoColors(Palette palette) throws Exception {
+        Field colorsField = Palette.class.getDeclaredField("colors");
+        colorsField.setAccessible(true);
 
-        BufferedImage img = new BufferedImage(640, 480, BufferedImage.TYPE_INT_RGB);
-        assertDoesNotThrow(() -> item.render(mockComponent, img));
-        assertFalse(item.isDirty());
+        Class<?> colorClass = colorsField.getType().getComponentType();
+        Object colorArray = Array.newInstance(colorClass, 2);
+
+        Object c1 = createColorInstance(colorClass, (byte)255, (byte)0, (byte)0, (byte)255);
+        Object c2 = createColorInstance(colorClass, (byte)0, (byte)255, (byte)0, (byte)255);
+
+        Array.set(colorArray, 0, c1);
+        Array.set(colorArray, 1, c2);
+
+        colorsField.set(palette, colorArray);
     }
 
-    private Event createDummyEvent() {
+    private Object createColorInstance(Class<?> colorClass, byte r, byte g, byte b, byte a) throws Exception {
         try {
-            Constructor<Event> constructor = Event.class.getDeclaredConstructor(Info.class);
-            constructor.setAccessible(true);
-            
-            Info info = null;
-            try {
-                info = Info.class.getDeclaredConstructor().newInstance();
-            } catch (Exception ignored) {
-                if (Info.class.getDeclaredConstructors().length > 0) {
-                    Constructor<?> c = Info.class.getDeclaredConstructors()[0];
-                    c.setAccessible(true);
-                    Object[] args = new Object[c.getParameterCount()];
-                    info = (Info) c.newInstance(args);
-                }
-            }
-            return constructor.newInstance(info);
-        } catch (Exception e) {
-            try {
-                java.lang.invoke.MethodHandles.Lookup lookup = java.lang.invoke.MethodHandles.privateLookupIn(Event.class, java.lang.invoke.MethodHandles.lookup());
-                return (Event) lookup.unreflectConstructor(Event.class.getDeclaredConstructor()).invokeWithArguments();
-            } catch (Throwable ignored) {}
-            return null;
+            return colorClass.getDeclaredConstructor(byte.class, byte.class, byte.class, byte.class)
+                    .newInstance(r, g, b, a);
+        } catch (NoSuchMethodException e) {
+            Object instance = colorClass.getDeclaredConstructor().newInstance();
+            setFieldIfExists(instance, "r", r);
+            setFieldIfExists(instance, "g", g);
+            setFieldIfExists(instance, "b", b);
+            setFieldIfExists(instance, "a", a);
+            return instance;
         }
     }
 
-    // --- Headless Test Double ---
-    private static class MockComponent extends Component {
-        // Keeps component alive for AWT operations during testing without display server
+    private void setFieldIfExists(Object obj, String fieldName, byte value) {
+        try {
+            Field f = obj.getClass().getDeclaredField(fieldName);
+            f.setAccessible(true);
+            f.setByte(obj, value);
+        } catch (Exception ignored) {}
     }
+
+    private Event createEvent() {
+        try {
+            Constructor<Event> ctor = Event.class.getDeclaredConstructor(Info.class);
+            ctor.setAccessible(true);
+            return ctor.newInstance(new Info());
+        } catch (Throwable ignored) {
+            return new Event(null);
+        }
+    }
+
+    private static class MockComponent extends Component {}
 }
