@@ -1,4 +1,4 @@
-/* Copyright (C) <2008> ogg.k.ogg.k <ogg.k.ogg.k@googlemail.com>
+/* Copyright (C) <2008> ogg.k.ogg.k <ogg.k.ogg.k@googlecode.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -18,9 +18,13 @@
 
 package com.fluendo.plugin;
 
-import java.awt.*;
-import com.fluendo.jst.*;
-import com.fluendo.utils.*;
+import java.awt.Component;
+import java.awt.Frame;
+import java.util.logging.Logger;
+import com.fluendo.jst.Element;
+import com.fluendo.jst.Event;
+import com.fluendo.jst.Pad;
+import com.fluendo.jst.Buffer;
 
 /**
  * This is a base overlay element, just passes images from sink to source.
@@ -28,18 +32,20 @@ import com.fluendo.utils.*;
  * images as they go from sink to source.
  */
 public class Overlay extends Element {
+    private static final Logger LOGGER = Logger.getLogger(Overlay.class.getName());
+
     protected Component component;
 
     private final Pad videoSrcPad = new Pad(Pad.SRC, "videosrc") {
         @Override
-        protected boolean eventFunc(com.fluendo.jst.Event event) {
+        protected boolean eventFunc(Event event) {
             return videoSinkPad.pushEvent(event);
         }
     };
 
     private final Pad videoSinkPad = new Pad(Pad.SINK, "videosink") {
         @Override
-        protected boolean eventFunc(com.fluendo.jst.Event event) {
+        protected boolean eventFunc(Event event) {
             return videoSrcPad.pushEvent(event);
         }
 
@@ -48,16 +54,16 @@ public class Overlay extends Element {
          * and sends it to the video source pad.
          */
         @Override
-        protected int chainFunc(com.fluendo.jst.Buffer buf) {
+        protected int chainFunc(Buffer buf) {
             int result;
 
-            Debug.log(Debug.DEBUG, parent.getName() + " <<< " + buf);
+            LOGGER.fine(() -> (parent != null ? parent.getName() : "Overlay") + " <<< " + buf);
 
             overlay(buf);
 
             result = videoSrcPad.push(buf);
             if (result != Pad.OK) {
-                Debug.log(Debug.WARNING, parent.getName() + ": failed to push buffer to video source pad: " + result);
+                LOGGER.warning(() -> (parent != null ? parent.getName() : "Overlay") + ": failed to push buffer to video source pad: " + result);
             }
 
             return result;
@@ -71,7 +77,6 @@ public class Overlay extends Element {
 
     public Overlay() {
         super();
-
         addPad(videoSinkPad);
         addPad(videoSrcPad);
     }
@@ -81,38 +86,33 @@ public class Overlay extends Element {
      * class wants onto the incoming image.
      * By default, the image is passed without alteration.
      */
-    protected void overlay(com.fluendo.jst.Buffer buf) {
+    protected void overlay(Buffer buf) {
         /* straight pass through by default */
     }
 
     @Override
     public boolean setProperty(String name, java.lang.Object value) {
-        if (name.equals("component")) {
+        if ("component".equals(name)) {
             component = (Component) value;
         } else {
             return super.setProperty(name, value);
         }
-
         return true;
     }
 
     @Override
     public java.lang.Object getProperty(String name) {
-        if (name.equals("component")) {
+        if ("component".equals(name)) {
             return component;
         } else {
             return super.getProperty(name);
         }
     }
 
-    /* From the video sink code, I do not understand what this does semantically,
-       the frame would be 0x0 sized. Maybe just to avoid possible null dereference,
-       but I suspect there might be something more clever, so it goes in for safety */
     @Override
     protected int changeState(int transition) {
         if (currentState == STOP && pendingState == PAUSE && component == null) {
-            Frame frame = new Frame();
-            component = (Component) frame;
+            component = new Frame();
         }
         return super.changeState(transition);
     }
