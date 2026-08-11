@@ -18,7 +18,7 @@
 
 package com.fluendo.jst;
 
-import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.List;
 import com.fluendo.utils.Debug;
 
@@ -47,7 +47,7 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
   protected boolean flushing;
   protected java.lang.Object streamLock = new java.lang.Object();
   int mode;
-  private final List<CapsListener> capsListeners = new ArrayList<>();
+  private final List<CapsListener> capsListeners = new CopyOnWriteArrayList<>();
 
   protected Caps caps;
 
@@ -109,19 +109,18 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
     if (thisName == null)
       thisName = "";
 
-    // return "Pad: "+parentName+":"+thisName+" ["+super.toString()+"]";
     return "Pad: " + parentName + ":" + thisName;
   }
 
-  public synchronized void addCapsListener(CapsListener listener) {
+  public void addCapsListener(CapsListener listener) {
     capsListeners.add(listener);
   }
 
-  public synchronized void removeCapsListener(CapsListener listener) {
+  public void removeCapsListener(CapsListener listener) {
     capsListeners.remove(listener);
   }
 
-  private synchronized void doCapsListeners(Caps caps) {
+  private void doCapsListeners(Caps caps) {
     for (CapsListener listener : capsListeners) {
       listener.capsChanged(caps);
     }
@@ -351,7 +350,6 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
   }
 
   public boolean pauseTask() {
-    taskState = T_PAUSE;
     synchronized (streamLock) {
       taskState = T_PAUSE;
     }
@@ -368,9 +366,11 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
       t = thread;
       thread = null;
     }
-    try {
-      t.join();
-    } catch (InterruptedException ie) {
+    if (t != null) {
+      try {
+        t.join();
+      } catch (InterruptedException ie) {
+      }
     }
 
     return true;
