@@ -18,10 +18,19 @@
 
 package com.fluendo.player;
 
-import java.awt.*;
-import java.awt.image.*;
-import java.awt.event.*;
-import java.util.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.Rectangle;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.image.MemoryImageSource;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Status extends Component implements MouseListener,
         MouseMotionListener {
@@ -93,7 +102,7 @@ public class Status extends Component implements MouseListener,
 
     private int subtitlesWidth; // width of the subtitles icon or zero if hidden
 
-    private Vector listeners = new Vector();
+    private final List<StatusListener> listeners = new ArrayList<>();
 
     public Image createImage(Component comp, String s, int w, int h) {
         int[] pixels = new int[w * h];
@@ -113,34 +122,34 @@ public class Status extends Component implements MouseListener,
     }
 
     public void addStatusListener(StatusListener l) {
-        listeners.addElement(l);
+        listeners.add(l);
     }
 
     public void removeStatusListener(StatusListener l) {
-        listeners.removeElement(l);
+        listeners.remove(l);
     }
 
     public void notifyNewState(int newState) {
-        for (Enumeration e = listeners.elements(); e.hasMoreElements();) {
-            ((StatusListener) e.nextElement()).onState(newState);
+        for (StatusListener listener : listeners) {
+            listener.onState(newState);
         }
     }
 
     public void notifySeek(double position) {
-        for (Enumeration e = listeners.elements(); e.hasMoreElements();) {
-            ((StatusListener) e.nextElement()).onSeek(position);
+        for (StatusListener listener : listeners) {
+            listener.onSeek(position);
         }
     }
 
     public void notifyAudio() {
-        for (Enumeration e = listeners.elements(); e.hasMoreElements();) {
-            ((StatusListener) e.nextElement()).onAudio();
+        for (StatusListener listener : listeners) {
+            listener.onAudio();
         }
     }
 
     public void notifySubtitles(int x, int y) {
-        for (Enumeration e = listeners.elements(); e.hasMoreElements();) {
-            ((StatusListener) e.nextElement()).onSubtitles(x, y);
+        for (StatusListener listener : listeners) {
+            listener.onSubtitles(x, y);
         }
     }
 
