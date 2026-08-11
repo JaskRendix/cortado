@@ -18,8 +18,9 @@
 
 package com.fluendo.jst;
 
-import java.util.*;
-import com.fluendo.utils.*;
+import java.util.ArrayList;
+import java.util.List;
+import com.fluendo.utils.Debug;
 
 public class Pad extends com.fluendo.jst.Object implements Runnable
 {
@@ -47,7 +48,7 @@ public class Pad extends com.fluendo.jst.Object implements Runnable
   protected boolean flushing;
   protected java.lang.Object streamLock =  new java.lang.Object();
   int mode;
-  private Vector capsListeners = new Vector();
+  private final List<CapsListener> capsListeners = new ArrayList<>();
 
   protected Caps caps;
   
@@ -114,16 +115,15 @@ public class Pad extends com.fluendo.jst.Object implements Runnable
 
   public synchronized void addCapsListener(CapsListener listener)
   {
-    capsListeners.addElement (listener);
+    capsListeners.add (listener);
   }
   public synchronized void removeCapsListener(CapsListener listener)
   {
-    capsListeners.removeElement (listener);
+    capsListeners.remove (listener);
   }
   private synchronized void doCapsListeners(Caps caps)
   {
-    for (Enumeration e = capsListeners.elements(); e.hasMoreElements();) {
-      CapsListener listener = (CapsListener) e.nextElement();
+    for (CapsListener listener : capsListeners) {
       listener.capsChanged (caps);
     }
   }
@@ -140,11 +140,11 @@ public class Pad extends com.fluendo.jst.Object implements Runnable
 
     synchronized (newPeer) {
       if (newPeer.direction != SINK)
-	return false;
+ return false;
 
       /* peer was connected */
       if (newPeer.peer != null)
-	return false;
+ return false;
 
       peer = newPeer;
       peer.peer = this;
@@ -197,13 +197,13 @@ public class Pad extends com.fluendo.jst.Object implements Runnable
         synchronized (streamLock) {
           setFlushing (false);
           result = eventFunc (event);
-	}
+ }
         break;
       case Event.NEWSEGMENT:
       case Event.EOS:
         synchronized (streamLock) {
-	  result = eventFunc (event);
-	}
+    result = eventFunc (event);
+ }
         break;
       case Event.SEEK:
         result = eventFunc (event);
@@ -245,14 +245,14 @@ public class Pad extends com.fluendo.jst.Object implements Runnable
     synchronized (streamLock) {
       synchronized (this) {
         if (flushing) 
-	  return WRONG_STATE;
+    return WRONG_STATE;
 
-	if (buffer.caps != null && buffer.caps != caps) {
-	  if (!setCaps(buffer.caps)) {
-	    buffer.free();
-	    return NOT_NEGOTIATED;
-	  }
-	}
+  if (buffer.caps != null && buffer.caps != caps) {
+    if (!setCaps(buffer.caps)) {
+      buffer.free();
+      return NOT_NEGOTIATED;
+    }
+  }
       }
       int res = chainFunc(buffer); 
       return res;
@@ -326,21 +326,21 @@ public class Pad extends com.fluendo.jst.Object implements Runnable
     synchronized (streamLock) {
       while (taskState != T_STOP) {
         while (taskState == T_PAUSE) {
-	  Debug.debug(parent.getName() + ":" + this.getName() + " paused, waiting...");
-	  try {
-	    streamLock.wait();
-	  }
-	  catch (InterruptedException ie) {}
-	}
+    Debug.debug(parent.getName() + ":" + this.getName() + " paused, waiting...");
+    try {
+      streamLock.wait();
+    }
+    catch (InterruptedException ie) {}
+  }
         if (taskState == T_STOP) 
-	  break;
+    break;
 
-	try {
-          taskFunc();
-	}
-	catch (Throwable t) {
-          t.printStackTrace();
-	}
+  try {
+            taskFunc();
+  }
+  catch (Throwable t) {
+            t.printStackTrace();
+  }
       }
     }
   }
