@@ -18,16 +18,20 @@
 
 package com.fluendo.plugin;
 
-import java.util.*;
-import com.fluendo.jst.*;
-import com.fluendo.utils.*;
+import java.util.ArrayList;
+import java.util.List;
+import com.fluendo.jst.Element;
+import com.fluendo.jst.Event;
+import com.fluendo.jst.Pad;
+import com.fluendo.jst.Buffer;
+import com.fluendo.utils.Debug;
 
 /**
  * This element receives data from N sinks, and selects one of them
  * to send from its source.
  */
 public class Selector extends Element {
-    private final Vector<Pad> sinks = new Vector<>();
+    private final List<Pad> sinks = new ArrayList<>();
     private int selected = -1;
     private Pad selectedPad = null;
 
@@ -36,22 +40,14 @@ public class Selector extends Element {
          * Pushes the event to every sink.
          */
         @Override
-        protected boolean eventFunc(com.fluendo.jst.Event event) {
+        protected boolean eventFunc(Event event) {
             boolean ret = true;
-            for (int n = 0; n < sinks.size(); ++n) {
-                ret &= sinks.elementAt(n).pushEvent(event);
+            for (Pad sink : sinks) {
+                ret &= sink.pushEvent(event);
             }
             return ret;
         }
     };
-
-    private int findPad(Pad pad) {
-        for (int n = 0; n < sinks.size(); ++n) {
-            if (sinks.elementAt(n) == pad)
-                return n;
-        }
-        return -1;
-    }
 
     /**
      * Requests a new sink pad to be created for the given peer.
@@ -60,7 +56,7 @@ public class Selector extends Element {
     public Pad requestSinkPad(Pad peer) {
         Pad pad = new Pad(Pad.SINK, "sink" + sinks.size()) {
             @Override
-            protected boolean eventFunc(com.fluendo.jst.Event event) {
+            protected boolean eventFunc(Event event) {
                 if (selectedPad == this) {
                     return srcPad.pushEvent(event);
                 }
@@ -68,7 +64,7 @@ public class Selector extends Element {
             }
 
             @Override
-            protected int chainFunc(com.fluendo.jst.Buffer buf) {
+            protected int chainFunc(Buffer buf) {
                 int result = Pad.OK;
 
                 Debug.debug("Selector got " + buf.caps + " buffer on " + this.toString());
@@ -87,7 +83,7 @@ public class Selector extends Element {
             }
         };
 
-        sinks.addElement(pad);
+        sinks.add(pad);
         addPad(pad);
         return pad;
     }
@@ -103,16 +99,17 @@ public class Selector extends Element {
     @Override
     public boolean setProperty(String name, java.lang.Object value) {
         if (name.equals("selected")) {
-            int new_selected = Integer.parseInt(value.toString());
-            Debug.info("Selector: request to select " + new_selected + " (from " + selected + "), within 0-" + (sinks.size() - 1));
-            if (new_selected != selected) {
+            int newSelected = Integer.parseInt(value.toString());
+            Debug.info("Selector: request to select " + newSelected + " (from " + selected + "), within 0-" + (sinks.size() - 1));
+            
+            if (newSelected != selected) {
                 srcPad.pushEvent(Event.newFlushStart());
-                if (new_selected < 0 || new_selected >= sinks.size()) {
+                if (newSelected < 0 || newSelected >= sinks.size()) {
                     selected = -1;
                     selectedPad = null;
                 } else {
-                    selected = new_selected;
-                    selectedPad = sinks.elementAt(selected);
+                    selected = newSelected;
+                    selectedPad = sinks.get(selected);
                 }
                 srcPad.pushEvent(Event.newFlushStop());
             }
