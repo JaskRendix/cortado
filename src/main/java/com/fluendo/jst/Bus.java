@@ -18,95 +18,102 @@
 
 package com.fluendo.jst;
 
-import java.util.*;
-import com.fluendo.utils.*;
+import java.util.ArrayList;
+import java.util.List;
+import com.fluendo.utils.Debug;
 
 public class Bus {
-  private Vector queue;
-  private Vector handlers;
-  private boolean flushing;
-  private BusSyncHandler syncHandler;
+    private final List<Message> queue;
+    private final List<BusHandler> handlers;
+    private boolean flushing;
+    private BusSyncHandler syncHandler;
 
-  public Bus() {
-    queue = new Vector();
-    handlers = new Vector();
-    flushing = false;
-  }
-
-  public synchronized void addHandler (BusHandler handler) {
-    handlers.addElement (handler);
-  }
-  public synchronized void removeHandler (BusHandler handler) {
-    handlers.removeElement (handler);
-  }
-
-  public synchronized void setSyncHandler (BusSyncHandler handler) {
-    syncHandler = handler;
-  }
-
-  private void notifyHandlers (Vector handlers, Message message) {
-    Debug.debug("Bus.notifyHandlers: " + message);
-    for (Enumeration e = handlers.elements(); e.hasMoreElements();)
-    {
-      BusHandler handler = (BusHandler) e.nextElement();
-      Debug.debug("Notifying " + handler);
-      handler.handleMessage (message);
+    public Bus() {
+        queue = new ArrayList<>();
+        handlers = new ArrayList<>();
+        flushing = false;
     }
-  }
 
-  public void post(Message message) {
-    boolean post = true;
-    BusSyncHandler handler;
-
-    Debug.debug("Bus.post: " + message);
-
-    synchronized (this) {
-      if (flushing)
-	return;
-      handler = syncHandler;
+    public synchronized void addHandler(BusHandler handler) {
+        if (handler != null && !handlers.contains(handler)) {
+            handlers.add(handler);
+        }
     }
-    post = (handler == null || handler.handleSyncMessage (message) == BusSyncHandler.PASS);
 
-    synchronized (this) {
-      if (post && !flushing) {
-        queue.addElement (message);
+    public synchronized void removeHandler(BusHandler handler) {
+        handlers.remove(handler);
+    }
+
+    public synchronized void setSyncHandler(BusSyncHandler handler) {
+        syncHandler = handler;
+    }
+
+    private void notifyHandlers(List<BusHandler> targetHandlers, Message message) {
+        Debug.debug("Bus.notifyHandlers: " + message);
+        for (BusHandler handler : targetHandlers) {
+            Debug.debug("Notifying " + handler);
+            handler.handleMessage(message);
+        }
+    }
+
+    public void post(Message message) {
+        boolean post;
+        BusSyncHandler handler;
+
+        Debug.debug("Bus.post: " + message);
+
+        synchronized (this) {
+            if (flushing) {
+                return;
+            }
+            handler = syncHandler;
+        }
+        
+        post = (handler == null || handler.handleSyncMessage(message) == BusSyncHandler.PASS);
+
+        synchronized (this) {
+            if (post && !flushing) {
+                queue.add(message);
+                notifyAll();
+            }
+        }
+    }
+
+    public synchronized Message peek() {
+        if (queue.isEmpty() || flushing) {
+            return null;
+        }
+        return queue.get(0);
+    }
+
+    public synchronized Message pop() {
+        if (queue.isEmpty() || flushing) {
+            return null;
+        }
+        return queue.remove(0);
+    }
+
+    public synchronized Message poll(long timeout) {
+        if (queue.isEmpty() && !flushing) {
+            try {
+                wait(timeout);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        return pop();
+    }
+
+    public synchronized void setFlushing(boolean flush) {
+        flushing = flush;
+        queue.clear();
         notifyAll();
-      }
     }
-  }
-  public synchronized Message peek() {
-    if (queue.isEmpty() || flushing)
-      return null;
-    return (Message) queue.firstElement();
-  }
-  public synchronized Message pop() {
-    Message ret;
 
-    if (queue.isEmpty() || flushing)
-      return null;
-    ret = (Message) queue.elementAt(0);
-    queue.removeElementAt(0);
-    return ret;
-  }
-  public synchronized Message poll(long timeout) {
-    if (queue.isEmpty() && !flushing) {
-      try {
-        wait(timeout);
-      }
-      catch (InterruptedException e) {}
+    public void waitAndDispatch() {
+        Message msg = poll(0);
+        if (msg != null) {
+            notifyHandlers(handlers, msg);
+        }
     }
-    return pop();
-  }
-  public synchronized void setFlushing (boolean flush) {
-    flushing = flush;
-    queue.setSize(0);
-    notifyAll();
-  }
-  public void waitAndDispatch() {
-    Message msg;
-
-    msg = poll (0);
-    if (msg != null)
-      notifyHandlers (handlers, msg);
-  }
 }
