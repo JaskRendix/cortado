@@ -19,16 +19,21 @@
 
 package com.fluendo.plugin;
 
-import java.awt.*;
-import com.fluendo.codecs.*;
-import com.fluendo.jst.*;
-import com.fluendo.utils.*;
+import java.awt.Component;
+import java.awt.image.BufferedImage;
+import java.util.logging.Logger;
+import com.fluendo.codecs.SmokeCodec;
+import com.fluendo.jst.Element;
+import com.fluendo.jst.Pad;
+import com.fluendo.jst.Caps;
 
 public class SmokeDec extends Element {
+    private static final Logger LOGGER = Logger.getLogger(SmokeDec.class.getName());
+
     private Component component;
-    private MediaTracker mediaTracker;
     private SmokeCodec smoke;
-    private int width, height;
+    private int width;
+    private int height;
 
     private final Pad srcPad = new Pad(Pad.SRC, "src") {
         @Override
@@ -46,12 +51,10 @@ public class SmokeDec extends Element {
                 case com.fluendo.jst.Event.FLUSH_START:
                     result = srcPad.pushEvent(event);
                     synchronized (streamLock) {
-                        Debug.log(Debug.INFO, "synced " + this);
+                        LOGGER.info("synced " + this);
                     }
                     break;
                 case com.fluendo.jst.Event.FLUSH_STOP:
-                    result = srcPad.pushEvent(event);
-                    break;
                 case com.fluendo.jst.Event.EOS:
                 case com.fluendo.jst.Event.NEWSEGMENT:
                 default:
@@ -64,15 +67,18 @@ public class SmokeDec extends Element {
         @Override
         protected int chainFunc(com.fluendo.jst.Buffer buf) {
             int ret;
-            Image img = null;
 
-            img = smoke.decode(buf.data, buf.offset, buf.length);
+            BufferedImage img = smoke.decode(buf.data, buf.offset, buf.length);
+
             if (img != null) {
-                if (img.getWidth(null) != width || img.getHeight(null) != height) {
-                    width = img.getWidth(null);
-                    height = img.getHeight(null);
+                int imgW = img.getWidth();
+                int imgH = img.getHeight();
 
-                    Debug.log(Debug.INFO, "smoke frame: " + width + "," + height);
+                if (imgW != width || imgH != height) {
+                    width = imgW;
+                    height = imgH;
+
+                    LOGGER.info("smoke frame: " + width + "," + height);
 
                     caps = new Caps("video/raw");
                     caps.setFieldInt("width", width);
@@ -85,8 +91,8 @@ public class SmokeDec extends Element {
 
                 ret = srcPad.push(buf);
             } else {
-                if ((smoke.flags & SmokeCodec.KEYFRAME) != 0) {
-                    Debug.log(Debug.WARNING, "could not decode jpeg image");
+                if ((smoke.getFlags() & SmokeCodec.KEYFRAME) != 0) {
+                    LOGGER.warning("could not decode jpeg image");
                 }
                 buf.free();
                 ret = OK;
@@ -97,21 +103,18 @@ public class SmokeDec extends Element {
 
     public SmokeDec() {
         super();
-
         addPad(srcPad);
         addPad(sinkPad);
+        this.smoke = new SmokeCodec();
     }
 
     @Override
     public boolean setProperty(String name, java.lang.Object value) {
         if (name.equals("component")) {
             component = (Component) value;
-            mediaTracker = new MediaTracker(component);
-            smoke = new SmokeCodec(component, mediaTracker);
         } else {
             return false;
         }
-
         return true;
     }
 
@@ -135,7 +138,7 @@ public class SmokeDec extends Element {
 
     @Override
     public int typeFind(byte[] data, int offset, int length) {
-        if (data[offset + 1] == 0x73) {
+        if (data != null && length - offset > 1 && data[offset + 1] == 0x73) {
             return 10;
         }
         return -1;
