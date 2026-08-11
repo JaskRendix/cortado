@@ -18,7 +18,9 @@
 
 package com.fluendo.jst;
 
-public class Format {
+public final class Format {
+
+  // Format types
   public static final int UNKNOWN = 0;
   public static final int DEFAULT = 1;
   public static final int BYTES = 2;
@@ -26,6 +28,12 @@ public class Format {
   public static final int BUFFERS = 4;
   public static final int PERCENT = 5;
 
-  public static final long PERCENT_MAX = 1000000;
-  public static final long PERCENT_SCALE = 10000;
+  // Percent scaling constants
+  public static final long PERCENT_MAX = 1_000_000L;
+  public static final long PERCENT_SCALE = 10_000L;
+
+  // Prevent instantiation of utility/constant classes
+  private Format() {
+    throw new UnsupportedOperationException("Utility class cannot be instantiated");
+  }
 }
