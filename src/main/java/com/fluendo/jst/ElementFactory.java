@@ -18,13 +18,12 @@
 package com.fluendo.jst;
 
 import com.fluendo.utils.Debug;
-import java.util.Enumeration;
-import java.util.Vector;
-
+import java.util.ArrayList;
+import java.util.List;
 
 public class ElementFactory {
 
-    private static String[] components = {
+    private static final String[] components = {
         "com.fluendo.plugin.HTTPSrc",
         "com.fluendo.plugin.VideoSink",
         "com.fluendo.plugin.AudioSinkJ2",
@@ -39,7 +38,7 @@ public class ElementFactory {
         "com.fluendo.plugin.KateDec",
         "com.fluendo.plugin.KateOverlay"
     };
-    private static Vector elements = new Vector();
+    private static final List<Element> elements = new ArrayList<>();
 
     static {
         loadElements();
@@ -47,20 +46,16 @@ public class ElementFactory {
 
     public static void loadElements() {
         try {
-
-            for (int i = 0; i < components.length; ++i) {
-                String str = components[i];
+            for (String str : components) {
                 try {
-                    Class cl = Class.forName(str);
+                    Class<?> cl = Class.forName(str);
                     Debug.log(Debug.INFO, "registered plugin: " + str);
                     Element pl = (Element) cl.getDeclaredConstructor().newInstance();
-                    elements.addElement(pl);
+                    elements.add(pl);
                 } catch (Throwable t) {
                     Debug.log(Debug.INFO, "Failed to register plugin: " + str);
                 }
             }
-
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -68,8 +63,7 @@ public class ElementFactory {
 
     private static final Element dup(Element element, String name) {
         Element result = null;
-
-        Class cl = element.getClass();
+        Class<?> cl = element.getClass();
         try {
             result = (Element) cl.getDeclaredConstructor().newInstance();
             if (result != null && name != null) {
@@ -86,9 +80,7 @@ public class ElementFactory {
         int best = -1;
         Element result = null;
 
-        for (Enumeration e = elements.elements(); e.hasMoreElements();) {
-            Element element = (Element) e.nextElement();
-
+        for (Element element : elements) {
             int rank = element.typeFind(data, offset, length);
             if (rank > best) {
                 best = rank;
@@ -123,9 +115,7 @@ public class ElementFactory {
     public static final Element makeByMime(String mime, String name) {
         Element result = null;
 
-        for (Enumeration e = elements.elements(); e.hasMoreElements();) {
-            Element element = (Element) e.nextElement();
-
+        for (Element element : elements) {
             if (mime.equals(element.getMime())) {
                 result = dup(element, name);
                 break;
@@ -137,9 +127,7 @@ public class ElementFactory {
     public static final Element makeByName(String name, String elemName) {
         Element result = null;
 
-        for (Enumeration e = elements.elements(); e.hasMoreElements();) {
-            Element element = (Element) e.nextElement();
-
+        for (Element element : elements) {
             if (name.equals(element.getFactoryName())) {
                 result = dup(element, elemName);
                 break;
