@@ -20,7 +20,7 @@ package com.fluendo.jst;
 
 public class Query {
 
-  /* types */
+  // Query types
   public static final int POSITION = 1;
   public static final int DURATION = 2;
   public static final int LATENCY = 3;
@@ -31,16 +31,16 @@ public class Query {
   public static final int CONVERT = 8;
   public static final int FORMATS = 9;
 
-  private int type;
+  private final int type;
   private int format;
   private long value;
 
   private Query(int type) {
-    value = -1;
     this.type = type;
+    this.value = -1;
   }
 
-  public int getType () {
+  public int getType() {
     return type;
   }
 
@@ -49,13 +49,16 @@ public class Query {
     q.format = format;
     return q;
   }
+
   public void setPosition(int format, long position) {
     this.format = format;
     this.value = position;
   }
+
   public int parsePositionFormat() {
     return format;
   }
+
   public long parsePositionValue() {
     return value;
   }
@@ -65,13 +68,16 @@ public class Query {
     q.format = format;
     return q;
   }
+
   public void setDuration(int format, long position) {
     this.format = format;
     this.value = position;
   }
+
   public int parseDurationFormat() {
     return format;
   }
+
   public long parseDurationValue() {
     return value;
   }
