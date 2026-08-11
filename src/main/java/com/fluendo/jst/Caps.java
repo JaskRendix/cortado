@@ -18,78 +18,88 @@
 
 package com.fluendo.jst;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
-public class Caps
-{
-  protected String mime;
-  protected Hashtable fields = new Hashtable();
+public class Caps {
+    protected String mime;
+    protected final Map<String, java.lang.Object> fields = new HashMap<>();
 
-  public synchronized String getMime () {
-    return mime;
-  }
-  public synchronized void setMime (String newMime) {
-    mime = newMime;
-  }
-
-  public Caps(String mime) {
-    super();
-    int sep1, sep2, sep3;
-    int len;
-    
-    len = mime.length();
-    sep1 = 0;
-    sep2 = mime.indexOf (';');
-    if (sep2 == -1)
-      sep2 = len;
-
-    this.mime = mime.substring(0, sep2);
-    while (sep2 < len) {
-      sep1 = sep2+1;
-      sep2 = mime.indexOf ('=', sep1);
-      sep3 = mime.indexOf (';', sep2);
-      if (sep3 == -1)
-        sep3 = len;
-      setField (mime.substring(sep1, sep2), mime.substring(sep2+1, sep3));
-      sep2 = sep3;
+    public synchronized String getMime() {
+        return mime;
     }
-  }
 
-  public String toString () {
-    StringBuffer buf = new StringBuffer();
-
-    buf.append("Caps: ");
-    buf.append(mime);
-    buf.append("\n");
-    for (Enumeration e = fields.keys(); e.hasMoreElements();) {
-      String key = (String) e.nextElement();
-      buf.append(" \"").append(key).append("\": \"").append(fields.get(key)).append("\"\n");
+    public synchronized void setMime(String newMime) {
+        mime = newMime;
     }
-    return buf.toString();
-  }
 
-  public void setField (String key, java.lang.Object value) {
-    fields.put (key, value);
-  }
-  public void setFieldInt (String key, int value) {
-    fields.put (key, Integer.valueOf (value));
-  }
-  public java.lang.Object getField (String key) {
-    return fields.get (key);
-  }
-  public int getFieldInt (String key, int def) {
-    Integer i;
-    i = (Integer) fields.get(key);
-    if (i == null)
-      return def;
+    public Caps(String mime) {
+        super();
+        int sep1, sep2, sep3;
+        int len;
 
-    return i.intValue();
-  }
-  public String getFieldString (String key, String def) {
-    String s = (String) fields.get(key);
-    if (s == null)
-      return def;
+        len = mime.length();
+        sep1 = 0;
+        sep2 = mime.indexOf(';');
+        if (sep2 == -1)
+            sep2 = len;
 
-    return s;
-  }
+        this.mime = mime.substring(0, sep2).trim();
+        while (sep2 < len) {
+            sep1 = sep2 + 1;
+            sep2 = mime.indexOf('=', sep1);
+            if (sep2 == -1)
+                break;
+            sep3 = mime.indexOf(';', sep2);
+            if (sep3 == -1)
+                sep3 = len;
+            setField(mime.substring(sep1, sep2).trim(), mime.substring(sep2 + 1, sep3).trim());
+            sep2 = sep3;
+        }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder buf = new StringBuilder();
+
+        buf.append("Caps: ").append(mime).append("\n");
+        for (Map.Entry<String, java.lang.Object> entry : fields.entrySet()) {
+            buf.append(" \"").append(entry.getKey()).append("\": \"").append(entry.getValue()).append("\"\n");
+        }
+        return buf.toString();
+    }
+
+    public synchronized void setField(String key, java.lang.Object value) {
+        fields.put(key, value);
+    }
+
+    public synchronized void setFieldInt(String key, int value) {
+        fields.put(key, Integer.valueOf(value));
+    }
+
+    public synchronized java.lang.Object getField(String key) {
+        return fields.get(key);
+    }
+
+    public synchronized int getFieldInt(String key, int def) {
+        java.lang.Object obj = fields.get(key);
+        if (obj instanceof Integer integer) {
+            return integer.intValue();
+        } else if (obj instanceof String str) {
+            try {
+                return Integer.parseInt(str);
+            } catch (NumberFormatException e) {
+                return def;
+            }
+        }
+        return def;
+    }
+
+    public synchronized String getFieldString(String key, String def) {
+        java.lang.Object obj = fields.get(key);
+        if (obj != null) {
+            return obj.toString();
+        }
+        return def;
+    }
 }
