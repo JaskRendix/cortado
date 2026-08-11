@@ -5,6 +5,9 @@ import org.junit.jupiter.api.*;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 public class PipelineTestSuite {
@@ -198,7 +201,7 @@ public class PipelineTestSuite {
         doNothing().when(p).setState(Element.PAUSE);
         doNothing().when(p).setState(Element.PLAY);
         Event ev = mock(Event.class);
-        when(ev.getType()).thenReturn(Event.SEEK);
+        when(ev.getType()).thenReturn(Event.Type.SEEK);
         when(s.sendEvent(ev)).thenReturn(true);
         assertTrue(p.sendEvent(ev));
         verify(p).setState(Element.PAUSE);

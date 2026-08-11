@@ -141,7 +141,7 @@ public abstract class Sink extends Element {
       doEvent(event);
 
       switch (event.getType()) {
-        case Event.FLUSH_START:
+        case FLUSH_START:
           synchronized (sink) {
             sink.flushing = true;
             if (clockID != null) {
@@ -159,13 +159,13 @@ public abstract class Sink extends Element {
             lostState();
           }
           break;
-        case Event.FLUSH_STOP:
+        case FLUSH_STOP:
           synchronized (sink) {
             sink.flushing = false;
             pauseTime = 0;
           }
           break;
-        case Event.NEWSEGMENT:
+        case NEWSEGMENT:
           int segFmt = event.parseNewsegmentFormat();
           if (segFmt == Format.TIME) {
             segStart = event.parseNewsegmentStart();
@@ -174,7 +174,7 @@ public abstract class Sink extends Element {
             lastTime = segPosition;
           }
           break;
-        case Event.EOS:
+        case EOS:
           synchronized (prerollLock) {
             isEOS = true;
             Debug.log(Debug.INFO, this + " got EOS");

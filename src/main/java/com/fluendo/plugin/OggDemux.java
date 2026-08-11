@@ -417,23 +417,23 @@ public class OggDemux extends Element {
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
             switch (event.getType()) {
-                case Event.FLUSH_START:
+                case FLUSH_START:
                     if (chain != null)
                         chain.forwardEvent(event);
                     synchronized (streamLock) {
                         Debug.log(Debug.DEBUG, this + " synced");
                     }
                     break;
-                case Event.FLUSH_STOP:
+                case FLUSH_STOP:
                     oy.reset();
                     if (chain != null) {
                         chain.resetStreams();
                         chain.forwardEvent(event);
                     }
                     break;
-                case Event.NEWSEGMENT:
+                case NEWSEGMENT:
                     break;
-                case Event.EOS:
+                case EOS:
                     Debug.log(Debug.INFO, "ogg: got EOS");
                     if (chain != null)
                         chain.forwardEvent(event);

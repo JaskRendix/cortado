@@ -124,15 +124,15 @@ public class MultipartDemux extends Element {
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
             switch (event.getType()) {
-            case Event.FLUSH_START:
+            case FLUSH_START:
                 forwardEvent(event);
                 synchronized (streamLock) {
                     Debug.log(Debug.INFO, "synced " + this);
                 }
                 break;
-            case Event.NEWSEGMENT:
-            case Event.FLUSH_STOP:
-            case Event.EOS:
+            case NEWSEGMENT:
+            case FLUSH_STOP:
+            case EOS:
                 synchronized (streamLock) {
                     forwardEvent(event);
                 }

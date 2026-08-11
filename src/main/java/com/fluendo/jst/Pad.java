@@ -169,11 +169,11 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
     boolean result;
 
     switch (event.getType()) {
-      case Event.FLUSH_START:
-      case Event.FLUSH_STOP:
-      case Event.EOS:
-      case Event.SEEK:
-      case Event.NEWSEGMENT:
+      case FLUSH_START:
+      case FLUSH_STOP:
+      case EOS:
+      case SEEK:
+      case NEWSEGMENT:
       default:
         result = false;
         break;
@@ -187,23 +187,23 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
     Debug.debug(this + " got event " + event);
 
     switch (event.getType()) {
-      case Event.FLUSH_START:
+      case FLUSH_START:
         setFlushing(true);
         result = eventFunc(event);
         break;
-      case Event.FLUSH_STOP:
+      case FLUSH_STOP:
         synchronized (streamLock) {
           setFlushing(false);
           result = eventFunc(event);
         }
         break;
-      case Event.NEWSEGMENT:
-      case Event.EOS:
+      case NEWSEGMENT:
+      case EOS:
         synchronized (streamLock) {
           result = eventFunc(event);
         }
         break;
-      case Event.SEEK:
+      case SEEK:
         result = eventFunc(event);
         break;
       default:

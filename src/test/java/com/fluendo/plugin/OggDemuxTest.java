@@ -135,7 +135,7 @@ public class OggDemuxTest {
         assertNotNull(sinkPad);
 
         Event mockEvent = mock(Event.class);
-        when(mockEvent.getType()).thenReturn(Event.FLUSH_START);
+        when(mockEvent.getType()).thenReturn(Event.Type.FLUSH_START);
 
         // Verify pushing custom or mocked events handles gracefully without errors
         assertDoesNotThrow(() -> sinkPad.pushEvent(mockEvent), "Pushing events should execute cleanly");

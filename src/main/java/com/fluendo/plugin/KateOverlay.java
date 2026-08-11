@@ -247,9 +247,9 @@ public class KateOverlay extends Overlay {
         protected boolean eventFunc(com.fluendo.jst.Event event) {
             /* don't propagate, the video sink is the master */
             switch (event.getType()) {
-                case com.fluendo.jst.Event.FLUSH_START:
-                case com.fluendo.jst.Event.FLUSH_STOP:
-                case com.fluendo.jst.Event.NEWSEGMENT:
+                case FLUSH_START:
+                case FLUSH_STOP:
+                case NEWSEGMENT:
                     onFlush();
                     break;
                 default:

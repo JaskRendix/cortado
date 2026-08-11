@@ -97,7 +97,7 @@ public class HTTPSrc extends Element {
             boolean res;
 
             switch (event.getType()) {
-                case Event.SEEK:
+                case SEEK:
                     res = doSeek(event);
                     break;
                 default:

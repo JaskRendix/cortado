@@ -622,7 +622,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler
     public boolean sendEvent(Event event)
     {
         switch (event.getType()) {
-            case Event.SEEK:
+            case SEEK:
                 return doSeek (event);
             default:
                 return doSendEvent (event);

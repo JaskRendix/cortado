@@ -148,7 +148,7 @@ public class Queue extends Element {
                 Event event = (Event) obj;
                 pushEvent(event);
                 res = OK;
-                if (event.getType() == Event.EOS) {
+                if (event.getType() == Event.Type.EOS) {
                     postMessage(Message.newStreamStatus(this, false, OK, "flow stopped, EOS"));
                     pauseTask();
                 }
@@ -234,11 +234,11 @@ public class Queue extends Element {
     private final Pad sinkpad = new Pad(Pad.SINK, "sink") {
         @Override
         protected boolean eventFunc(Event event) {
-            int type = event.getType();
+            Event.Type type = event.getType();
             boolean doQueue = true;
 
             switch (type) {
-                case Event.FLUSH_START:
+                case FLUSH_START:
                     srcpad.pushEvent(event);
                     synchronized (queue) {
                         srcResult = WRONG_STATE;
@@ -251,7 +251,7 @@ public class Queue extends Element {
                     srcpad.pauseTask();
                     doQueue = false;
                     break;
-                case Event.FLUSH_STOP:
+                case FLUSH_STOP:
                     srcpad.pushEvent(event);
                     isEOS = false;
                     synchronized (queue) {
@@ -267,7 +267,7 @@ public class Queue extends Element {
                     srcpad.startTask("cortado-Queue-Stream-" + Debug.genId());
                     doQueue = false;
                     break;
-                case Event.EOS:
+                case EOS:
                     isEOS = true;
                     Debug.log(Debug.INFO, "got EOS: " + this);
                     if (isBuffer) {
@@ -277,7 +277,7 @@ public class Queue extends Element {
                         }
                     }
                     break;
-                case Event.NEWSEGMENT:
+                case NEWSEGMENT:
                 default:
                     break;
             }

@@ -427,16 +427,22 @@ public abstract class AudioSink extends Sink implements ClockProvider {
     @Override
     protected boolean doEvent(Event event) {
         switch (event.getType()) {
-            case Event.FLUSH_START:
+            case FLUSH_START:
                 ringBuffer.setFlushing(true);
                 break;
-            case Event.FLUSH_STOP:
+
+            case FLUSH_STOP:
                 ringBuffer.setFlushing(false);
                 break;
-            case Event.NEWSEGMENT:
+
+            case NEWSEGMENT:
                 break;
-            case Event.EOS:
+
+            case EOS:
                 drain();
+                break;
+
+            case SEEK:
                 break;
         }
         return true;
