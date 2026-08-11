@@ -3,82 +3,101 @@ package com.fluendo.codecs;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.awt.Component;
-import java.awt.MediaTracker;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class SmokeCodecTest {
 
     private SmokeCodec codec;
-    private MockComponent mockComponent;
-    private MediaTracker mockTracker;
 
     @BeforeEach
     void setUp() {
-        mockComponent = new MockComponent();
-        mockTracker = new MockMediaTracker(mockComponent);
-        codec = new SmokeCodec(mockComponent, mockTracker);
+        codec = new SmokeCodec();
     }
 
     @Test
     void testParseHeaderNullOrTooShort() {
-        assertEquals(-1, codec.parseHeader(null, 0, 10));
-        assertEquals(-1, codec.parseHeader(new byte[5], 0, 5));
+        assertNull(codec.parseHeader(null, 0, 10));
+        assertNull(codec.parseHeader(new byte[5], 0, 5));
     }
 
     @Test
     void testParseHeaderValidValues() {
-        // Construct a mock header matching OFFS_PICT (18 bytes) minimum size
         byte[] headerData = new byte[20];
-        
+
         // Type = 1
         headerData[0] = 0x01;
-        
+
         // Width = 320 (0x0140) at index 1, 2
         headerData[1] = 0x01;
         headerData[2] = 0x40;
-        
+
         // Height = 240 (0x00F0) at index 3, 4
         headerData[3] = 0x00;
         headerData[4] = (byte) 0xF0;
 
-        int result = codec.parseHeader(headerData, 0, headerData.length);
-        
-        assertEquals(0, result);
-        assertEquals(1, codec.type);
-        assertEquals(320, codec.width);
-        assertEquals(240, codec.height);
+        var header = codec.parseHeader(headerData, 0, headerData.length);
+
+        assertNotNull(header);
+        assertEquals(1, header.type());
+        assertEquals(320, header.width());
+        assertEquals(240, header.height());
     }
 
     @Test
     void testDecodeWithoutReferenceAndNotKeyframe() {
-        // Flags do not have KEYFRAME set (flags = 0)
         byte[] data = new byte[20];
-        data[13] = 0x00; // flags
+        data[13] = 0x00; // flags (not a keyframe)
 
-        // reference is null, and keyframe is false -> should return null immediately
         assertNull(codec.decode(data, 0, data.length));
     }
 
-    // --- Lightweight Test Doubles for AWT Headless Environment ---
-    
-    private static class MockComponent extends Component {
-        // Prevents headless exceptions during tests by overriding basic factory calls
-    }
-
-    private static class MockMediaTracker extends MediaTracker {
-        public MockMediaTracker(Component comp) {
-            super(comp);
+    @Test
+    void testDecodeValidKeyframe() throws IOException {
+        // Create a tiny valid JPEG image byte array to embed as payload
+        byte[] jpegBytes;
+        try (var baos = new ByteArrayOutputStream()) {
+            BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB);
+            ImageIO.write(img, "jpg", baos);
+            jpegBytes = baos.toByteArray();
         }
 
-        @Override
-        public void addImage(java.awt.Image image, int id) {}
+        // Header size is 18 bytes (OFFS_PICT).
+        // blocks = 0, so imgoff = 18. Total size = 18 + jpegBytes.length
+        byte[] packet = new byte[18 + jpegBytes.length];
 
-        @Override
-        public void waitForID(int id) {}
+        // Set KEYFRAME flag (bit 0 -> value 1) at index 13
+        packet[13] = (byte) SmokeCodec.KEYFRAME;
 
-        @Override
-        public void removeImage(java.awt.Image image, int id) {}
+        // Set width = 16 (0x0010) at index 1
+        packet[1] = 0x00;
+        packet[2] = 0x10;
+        // Set height = 16 (0x0010) at index 3
+        packet[3] = 0x00;
+        packet[4] = 0x10;
+
+        // Copy JPEG bytes into payload starting at index 18
+        System.arraycopy(jpegBytes, 0, packet, 18, jpegBytes.length);
+
+        BufferedImage resultImage = codec.decode(packet, 0, packet.length);
+
+        assertNotNull(resultImage, "Keyframe decode should successfully return an image");
+        assertEquals(16, resultImage.getWidth());
+        assertEquals(16, resultImage.getHeight());
+        assertTrue(codec.getHeader().isKeyframe());
+    }
+
+    @Test
+    void testDecodeTruncatedPayload() {
+        byte[] packet = new byte[18]; // Header only, no image payload data
+        packet[13] = (byte) SmokeCodec.KEYFRAME;
+
+        // Should return null because length - imgoff results in negative / missing
+        // payload
+        assertNull(codec.decode(packet, 0, packet.length));
     }
 }
