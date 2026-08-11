@@ -18,65 +18,65 @@
 
 package com.fluendo.jst;
 
-import com.fluendo.utils.*;
+import com.fluendo.utils.Debug;
 
 public class SystemClock extends Clock {
-  protected long getInternalTime()
-  {
-    return System.currentTimeMillis() * Clock.MSECOND;	  
-  }
-  protected WaitStatus waitFunc(ClockID id)
-  {
-    WaitStatus res = new WaitStatus();
+    @Override
+    protected long getInternalTime() {
+        return System.currentTimeMillis() * Clock.MSECOND;
+    }
 
-    long real = getInternalTime();
-    long entryt = id.time;
-    long now = adjust (real);
+    @Override
+    protected WaitStatus waitFunc(ClockID id) {
+        WaitStatus res = new WaitStatus();
 
-    res.jitter = now - entryt;
+        long real = getInternalTime();
+        long entryt = id.time;
+        long now = adjust(real);
 
-    if (res.jitter < 0) {
-      Debug.log(Debug.DEBUG, "Waiting from "+now+" until "+entryt+" ("+(-res.jitter)+"us)");
-      long millis;
-      int nanos;
+        res = new WaitStatus(res.status(), now - entryt);
 
-      millis = -res.jitter / Clock.MSECOND;
-      nanos = (int) ((-res.jitter % Clock.MSECOND) * Clock.MSECOND);
+        if (res.jitter() < 0) {
+            Debug.log(Debug.DEBUG, "Waiting from " + now + " until " + entryt + " (" + (-res.jitter()) + "us)");
+            long millis;
+            int nanos;
 
-      synchronized (this) {
-        if (id.status == WaitStatus.UNSCHEDULED) {
-	  res.status = WaitStatus.UNSCHEDULED;
-	  return res;
-	}
+            millis = -res.jitter() / Clock.MSECOND;
+            nanos = (int) ((-res.jitter() % Clock.MSECOND) * Clock.MSECOND);
 
-        id.status = WaitStatus.OK;
-        try {
-          wait (millis, nanos);
+            synchronized (this) {
+                if (id.status == WaitStatus.UNSCHEDULED) {
+                    return res.withStatus(WaitStatus.UNSCHEDULED);
+                }
+
+                id.status = WaitStatus.OK;
+                try {
+                    wait(millis, nanos);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            res = res.withStatus(id.status);
+        } else if (res.jitter() == 0) {
+            res = res.withStatus(WaitStatus.OK);
+        } else {
+            Debug.log(Debug.DEBUG, "Wait for timestamp " + now + " is late by " + res.jitter() + "us");
+            res = res.withStatus(WaitStatus.LATE);
         }
-        catch (InterruptedException e) {}
-      }
-      res.status = id.status;
-    }
-    else if (res.jitter == 0) {
-      res.status = WaitStatus.OK;
-    }
-    else {
-      Debug.log(Debug.DEBUG, "Wait for timestamp " + now + " is late by " + res.jitter + "us");
-      res.status = WaitStatus.LATE;
+
+        return res;
     }
 
-    return res;
-  }
-  protected WaitStatus waitAsyncFunc(ClockID id)
-  {
-    return WaitStatus.newOK();
-  }
-  protected void unscheduleFunc(ClockID id)
-  {
-    synchronized (this) {
-      id.status = WaitStatus.UNSCHEDULED;
-      notifyAll();
+    @Override
+    protected WaitStatus waitAsyncFunc(ClockID id) {
+        return WaitStatus.newOK();
     }
-  }
+
+    @Override
+    protected void unscheduleFunc(ClockID id) {
+        synchronized (this) {
+            id.status = WaitStatus.UNSCHEDULED;
+            notifyAll();
+        }
+    }
 }
-
