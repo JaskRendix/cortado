@@ -9,13 +9,19 @@ import static org.mockito.Mockito.*;
 
 public class PipelineTestSuite {
 
-    private Element mockElem() {
+    private Element elem() {
         Element e = mock(Element.class);
         when(e.enumPads()).thenReturn(Collections.emptyEnumeration());
         return e;
     }
 
-    private Pad mockPad(Element parent, int direction, Pad peer) {
+    private Element sink() {
+        Element e = elem();
+        when(e.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(true);
+        return e;
+    }
+
+    private Pad pad(Element parent, int direction, Pad peer) {
         Pad p = mock(Pad.class);
         p.direction = direction;
         p.parent = parent;
@@ -23,7 +29,7 @@ public class PipelineTestSuite {
         return p;
     }
 
-    private int enumSize(Enumeration<?> e) {
+    private int size(Enumeration<?> e) {
         int n = 0;
         while (e.hasMoreElements()) {
             e.nextElement();
@@ -33,251 +39,228 @@ public class PipelineTestSuite {
     }
 
     @Test
-    void constructor_initializesBusAndThreads() {
-        Pipeline p = new Pipeline("test");
+    void constructor_initializes() {
+        Pipeline p = new Pipeline("x");
         assertNotNull(p.internalBus);
         assertNotNull(p.bus);
         assertNotNull(p.enumElements());
     }
 
     @Test
-    void addElement_setsBusAndBaseTime() {
+    void add_setsBusAndBaseTime() {
         Pipeline p = new Pipeline();
-        Element elem = mockElem();
-
-        assertTrue(p.add(elem));
-        verify(elem).setBus(p.internalBus);
-        assertEquals(1, enumSize(p.enumElements()));
+        Element e = elem();
+        assertTrue(p.add(e));
+        verify(e).setBus(p.internalBus);
+        assertEquals(1, size(p.enumElements()));
     }
 
     @Test
-    void addClockProvider_updatesDefaultClock() {
+    void add_clockProviderUpdatesClock() {
         Pipeline p = new Pipeline();
         ClockProvider cp = mock(ClockProvider.class);
-        Clock clock = mock(Clock.class);
-
-        when(cp.provideClock()).thenReturn(clock);
-
+        Clock c = mock(Clock.class);
+        when(cp.provideClock()).thenReturn(c);
         assertTrue(p.add((Element) cp));
-        assertEquals(clock, p.defClock);
+        assertEquals(c, p.defClock);
     }
 
     @Test
-    void removeElement_resetsClockProvider() {
+    void remove_resetsClockProvider() {
         Pipeline p = new Pipeline();
         ClockProvider cp = mock(ClockProvider.class);
-        Clock clock = mock(Clock.class);
-
-        when(cp.provideClock()).thenReturn(clock);
-
+        Clock c = mock(Clock.class);
+        when(cp.provideClock()).thenReturn(c);
         p.add((Element) cp);
         assertTrue(p.remove((Element) cp));
-
         assertNull(p.clockProvider);
-        assertNotEquals(clock, p.defClock);
+        assertNotEquals(c, p.defClock);
     }
 
     @Test
-    void sortedEnumerator_ordersSinksFirst() {
+    void sorted_sinksFirst() {
         Pipeline p = new Pipeline();
-
-        Element sink = mockElem();
-        when(sink.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(true);
-
-        Element normal = mockElem();
-        when(normal.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(false);
-
-        p.add(sink);
-        p.add(normal);
-
-        Enumeration<Element> sorted = p.enumSorted();
-        assertTrue(sorted.hasMoreElements());
-        assertEquals(sink, sorted.nextElement());
+        Element s = sink();
+        Element n = elem();
+        p.add(s);
+        p.add(n);
+        Enumeration<Element> e = p.enumSorted();
+        assertEquals(s, e.nextElement());
     }
 
     @Test
-    void sortedEnumerator_detectsLoop() {
+    void sorted_handlesLoop() {
         Pipeline p = new Pipeline();
-
-        Element a = mockElem();
-        Element b = mockElem();
-
+        Element a = elem();
+        Element b = elem();
         when(a.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(false);
         when(b.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(false);
-
-        Pad padA = mockPad(a, Pad.SINK, null);
-        Pad padB = mockPad(b, Pad.SINK, null);
-
-        when(a.enumPads()).thenReturn(Collections.enumeration(List.of(padA)));
-        when(b.enumPads()).thenReturn(Collections.enumeration(List.of(padB)));
-
+        Pad pa = pad(a, Pad.SINK, null);
+        Pad pb = pad(b, Pad.SINK, null);
+        when(a.enumPads()).thenReturn(Collections.enumeration(List.of(pa)));
+        when(b.enumPads()).thenReturn(Collections.enumeration(List.of(pb)));
         p.add(a);
         p.add(b);
-
-        Enumeration<Element> sorted = p.enumSorted();
-        assertTrue(sorted.hasMoreElements());
+        Enumeration<Element> e = p.enumSorted();
+        assertTrue(e.hasMoreElements());
     }
 
     @Test
-    void sinkEnumerator_findsOnlySinks() {
+    void sinks_onlySinkElements() {
         Pipeline p = new Pipeline();
-
-        Element sink = mockElem();
-        when(sink.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(true);
-
-        Element normal = mockElem();
-        when(normal.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(false);
-
-        p.add(sink);
-        p.add(normal);
-
-        Enumeration<Element> sinks = p.enumSinks();
-        assertTrue(sinks.hasMoreElements());
-        assertEquals(sink, sinks.nextElement());
-        assertFalse(sinks.hasMoreElements());
+        Element s = sink();
+        Element n = elem();
+        p.add(s);
+        p.add(n);
+        Enumeration<Element> e = p.enumSinks();
+        assertEquals(s, e.nextElement());
+        assertFalse(e.hasMoreElements());
     }
 
     @Test
-    void eosIsDetectedWhenAllSinksPostEOS() {
+    void eos_detectedOnlyWhenAllSinksPosted() {
         Pipeline p = new Pipeline();
-
-        Element sink1 = mockElem();
-        Element sink2 = mockElem();
-
-        when(sink1.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(true);
-        when(sink2.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(true);
-
-        p.add(sink1);
-        p.add(sink2);
-
-        Message eos1 = Message.newEOS(sink1);
-        Message eos2 = Message.newEOS(sink2);
-
-        p.handleSyncMessage(eos1);
+        Element s1 = sink();
+        Element s2 = sink();
+        p.add(s1);
+        p.add(s2);
+        Message m1 = Message.newEOS(s1);
+        Message m2 = Message.newEOS(s2);
+        p.handleSyncMessage(m1);
         assertFalse(p.isEOS());
-
-        p.handleSyncMessage(eos2);
+        p.handleSyncMessage(m2);
         assertTrue(p.isEOS());
     }
 
     @Test
     void replaceMessage_replacesByTypeAndSource() {
         Pipeline p = new Pipeline();
-
-        Element sink = mockElem();
-        when(sink.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(true);
-        p.add(sink);
-
-        Message m1 = Message.newEOS(sink);
-        Message m2 = Message.newEOS(sink);
-
+        Element s = sink();
+        p.add(s);
+        Message m1 = Message.newEOS(s);
+        Message m2 = Message.newEOS(s);
         p.handleSyncMessage(m1);
         p.handleSyncMessage(m2);
-
         assertTrue(p.isEOS());
     }
 
     @Test
-    void stopPause_clearsMessagesAndResetsStreamTime() {
+    void stopPause_resetsStreamTime() {
         Pipeline p = new Pipeline();
-        Element elem = mockElem();
-        p.add(elem);
-
-        when(elem.setState(Element.PAUSE)).thenReturn(Element.SUCCESS);
-
+        Element e = elem();
+        p.add(e);
+        when(e.setState(Element.PAUSE)).thenReturn(Element.SUCCESS);
         p.setState(Element.PAUSE);
-
         assertEquals(0, p.streamTime);
     }
 
     @Test
-    void pausePlay_setsBaseTimeCorrectly() {
+    void pausePlay_setsBaseTime() {
         Pipeline p = new Pipeline();
-        Clock clock = mock(Clock.class);
-
-        when(clock.getTime()).thenReturn(1000L);
-        p.useClock(clock);
-
-        Element elem = mockElem();
-        p.add(elem);
-
-        when(elem.setState(Element.PLAY)).thenReturn(Element.SUCCESS);
-
+        Clock c = mock(Clock.class);
+        when(c.getTime()).thenReturn(1000L);
+        p.useClock(c);
+        Element e = elem();
+        p.add(e);
+        when(e.setState(Element.PLAY)).thenReturn(Element.SUCCESS);
         p.setState(Element.PLAY);
-
         assertEquals(1000L - p.streamTime, p.baseTime);
     }
 
     @Test
-    void asyncChildStateCausesLostState() {
+    void asyncChildState_triggersLostState() {
         Pipeline p = spy(new Pipeline());
-        Element elem = mockElem();
-        p.add(elem);
-
-        when(elem.setState(anyInt())).thenReturn(Element.ASYNC);
-
+        Element e = elem();
+        p.add(e);
+        when(e.setState(anyInt())).thenReturn(Element.ASYNC);
         doNothing().when(p).lostState();
-
         p.setState(Element.PLAY);
-
         verify(p).lostState();
     }
 
     @Test
     void sendEvent_dispatchesToAllSinks() {
         Pipeline p = new Pipeline();
-
-        Element sink = mockElem();
-        when(sink.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(true);
-        p.add(sink);
-
+        Element s = sink();
+        p.add(s);
         Event ev = mock(Event.class);
-        when(sink.sendEvent(ev)).thenReturn(true);
-
+        when(s.sendEvent(ev)).thenReturn(true);
         assertTrue(p.sendEvent(ev));
-        verify(sink).sendEvent(ev);
+        verify(s).sendEvent(ev);
     }
 
     @Test
-    void seekEvent_pausesThenRestoresState() {
+    void seekEvent_pausesThenRestores() {
         Pipeline p = spy(new Pipeline());
-        Element sink = mockElem();
-        when(sink.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(true);
-
-        p.add(sink);
-
+        Element s = sink();
+        p.add(s);
         doReturn(Element.PLAY).when(p).getState(any(), any(), anyLong());
         doNothing().when(p).setState(Element.PAUSE);
         doNothing().when(p).setState(Element.PLAY);
-
-        Event seek = mock(Event.class);
-        when(seek.getType()).thenReturn(Event.SEEK);
-        when(sink.sendEvent(seek)).thenReturn(true);
-
-        assertTrue(p.sendEvent(seek));
+        Event ev = mock(Event.class);
+        when(ev.getType()).thenReturn(Event.SEEK);
+        when(s.sendEvent(ev)).thenReturn(true);
+        assertTrue(p.sendEvent(ev));
         verify(p).setState(Element.PAUSE);
         verify(p).setState(Element.PLAY);
     }
 
     @Test
-    void queryStopsAtFirstTrueSink() {
+    void query_stopsAtFirstTrue() {
         Pipeline p = new Pipeline();
-
-        Element sink1 = mockElem();
-        Element sink2 = mockElem();
-
-        when(sink1.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(true);
-        when(sink2.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(true);
-
+        Element s1 = sink();
+        Element s2 = sink();
         Query q = mock(Query.class);
-
-        when(sink1.query(q)).thenReturn(false);
-        when(sink2.query(q)).thenReturn(true);
-
-        p.add(sink1);
-        p.add(sink2);
-
+        when(s1.query(q)).thenReturn(false);
+        when(s2.query(q)).thenReturn(true);
+        p.add(s1);
+        p.add(s2);
         assertTrue(p.query(q));
-        verify(sink2).query(q);
+        verify(s2).query(q);
+    }
+
+    @Test
+    void sorted_multipleLevels() {
+        Pipeline p = new Pipeline();
+        Element s = sink();
+        Element a = elem();
+        Element b = elem();
+        Pad pa = pad(a, Pad.SINK, null);
+        Pad pb = pad(b, Pad.SINK, null);
+        when(a.enumPads()).thenReturn(Collections.enumeration(List.of(pa)));
+        when(b.enumPads()).thenReturn(Collections.enumeration(List.of(pb)));
+        p.add(s);
+        p.add(a);
+        p.add(b);
+        Enumeration<Element> e = p.enumSorted();
+        assertEquals(s, e.nextElement());
+        assertTrue(e.hasMoreElements());
+    }
+
+    @Test
+    void eventFailure_propagatesFalse() {
+        Pipeline p = new Pipeline();
+        Element s = sink();
+        p.add(s);
+        Event ev = mock(Event.class);
+        when(s.sendEvent(ev)).thenReturn(false);
+        assertFalse(p.sendEvent(ev));
+    }
+
+    @Test
+    void query_noSinksReturnsTrue() {
+        Pipeline p = new Pipeline();
+        Query q = mock(Query.class);
+        assertTrue(p.query(q));
+    }
+
+    @Test
+    void removeElement_triggersStateDirtyViaPublicAPI() {
+        Pipeline p = spy(new Pipeline());
+        Element e = elem();
+        p.add(e);
+        doNothing().when(p).scheduleReCalcState();
+        p.remove(e);
+        verify(p).scheduleReCalcState();
     }
 }
