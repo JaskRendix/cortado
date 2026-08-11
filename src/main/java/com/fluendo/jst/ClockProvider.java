@@ -18,7 +18,7 @@
 
 package com.fluendo.jst;
 
+@FunctionalInterface
 public interface ClockProvider {
-  public Clock provideClock();
+  Clock provideClock();
 }
-
