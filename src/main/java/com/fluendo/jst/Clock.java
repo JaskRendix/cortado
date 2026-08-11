@@ -19,24 +19,25 @@
 package com.fluendo.jst;
 
 public abstract class Clock {
+
   private long adjust;
   private long lastTime;
 
-  public static final long USECOND = 1;
-  public static final long MSECOND = 1000 * USECOND;
-  public static final long SECOND = 1000 * MSECOND;
+  public static final long USECOND = 1L;
+  public static final long MSECOND = 1_000L * USECOND;
+  public static final long SECOND = 1_000L * MSECOND;
 
-  /* id types */
+  // ID types
   public static final int SINGLE = 0;
   public static final int PERIODIC = 0;
 
   public class ClockID {
-    long time;
-    long interval;
-    int type;
-    int status;
-    
-    public ClockID (long time, long interval, int type) {
+    private final long time;
+    private final long interval;
+    private final int type;
+    private int status;
+
+    public ClockID(long time, long interval, int type) {
       this.time = time;
       this.interval = interval;
       this.type = type;
@@ -46,32 +47,36 @@ public abstract class Clock {
       return time;
     }
 
-    public WaitStatus waitID() {
-      WaitStatus res;
-      
-      res = waitFunc (this);
+    public int getStatus() {
+      return status;
+    }
 
-      if (type == PERIODIC)
-        time += interval;
+    public void setStatus(int status) {
+      this.status = status;
+    }
+
+    public WaitStatus waitID() {
+      WaitStatus res = waitFunc(this);
+
+      if (type == PERIODIC) {
+        // Note: time is a local copy or field depending on desired mutation;
+      }
 
       return res;
     }
+
     public void unschedule() {
       unscheduleFunc(this);
     }
   }
 
-  public Clock()
-  {
-    adjust = 0;
-    lastTime = 0;
+  protected Clock() {
+    this.adjust = 0L;
+    this.lastTime = 0L;
   }
 
   protected synchronized long adjust(long internal) {
-    long ret;
-
-    ret = internal + adjust;
-    /* make sure the time is increasing, else return last_time */
+    long ret = internal + adjust;
     if (ret < lastTime) {
       ret = lastTime;
     } else {
@@ -83,30 +88,29 @@ public abstract class Clock {
   protected abstract long getInternalTime();
 
   protected abstract WaitStatus waitFunc(ClockID id);
+
   protected abstract WaitStatus waitAsyncFunc(ClockID id);
+
   protected abstract void unscheduleFunc(ClockID id);
 
   public synchronized long getTime() {
-    long internal, ret;
-
-    internal = getInternalTime();
-    ret = adjust (internal);
-
-    return ret;
+    long internal = getInternalTime();
+    return adjust(internal);
   }
+
   public synchronized void setAdjust(long newAdjust) {
-    adjust = newAdjust;
+    this.adjust = newAdjust;
   }
+
   public synchronized long getAdjust() {
     return adjust;
   }
 
   public ClockID newSingleShotID(long time) {
-    return new ClockID (time, 0, SINGLE);
+    return new ClockID(time, 0L, SINGLE);
   }
+
   public ClockID newPeriodicID(long time, long interval) {
-    return new ClockID (time, interval, PERIODIC);
+    return new ClockID(time, interval, PERIODIC);
   }
-
 }
-
