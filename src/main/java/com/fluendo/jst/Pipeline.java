@@ -23,619 +23,622 @@ import com.fluendo.utils.*;
 
 public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler
 {
-  protected Vector elements = new Vector();
+    protected final List<Element> elements = new ArrayList<>();
 
-  protected Clock defClock;
-  protected Clock fixedClock = null;
-  protected Element clockProvider;
-  protected Vector messages = new Vector();
+    protected Clock defClock;
+    protected Clock fixedClock = null;
+    protected Element clockProvider;
+    protected final List<Message> messages = new ArrayList<>();
 
-  protected Bus internalBus;
-  private BusThread busThread;
+    protected Bus internalBus;
+    private BusThread busThread;
 
-  private StateThread stateThread;
-  private boolean stateDirty = false;
-  private boolean polling = false;
+    private StateThread stateThread;
+    private boolean stateDirty = false;
+    private boolean polling = false;
 
-  protected long streamTime;
+    protected long streamTime;
 
-  private class BusThread extends Thread
-  {
-    private Bus bus;
-    private boolean stopping;
-
-    public BusThread (Bus bus)
+    private class BusThread extends Thread
     {
-      super("cortado-BusThread-"+Debug.genId());
-      this.bus = bus;
-      stopping = false;
-    }
-    public void run() {
-      while (!stopping) {
-        bus.waitAndDispatch ();
-      }
-    }
-    public void shutDown() {
-      stopping = true;
-      bus.setFlushing(true);
-    }
-  }
+        private final Bus bus;
+        private boolean stopping;
 
-  private class StateThread extends Thread
-  {
-    private boolean stopping;
-    private boolean stateDirty;
-
-    public StateThread ()
-    {
-      super("cortado-StateThread-"+Debug.genId());
-      stopping = false;
-      stateDirty = false;
-    }
-    public void run() {
-      while (!stopping) {
-        synchronized (this) {
-          while (!stateDirty && !stopping) {
-      try {
-          wait();
-      } catch (InterruptedException e) {}
-    }
-          stateDirty = false;
+        public BusThread (Bus bus)
+        {
+            super("cortado-BusThread-"+Debug.genId());
+            this.bus = bus;
+            stopping = false;
         }
-  if (!stopping) {
-          synchronized (stateLock) {
-            reCalcState(false);
-          }
-  }
-      }
-    }
-    public synchronized void stateDirty() {
-      stateDirty = true;
-      notifyAll ();
-    }
-    public synchronized void shutDown() {
-      stopping = true;
-      notifyAll ();
-    }
-  }
-
-  public Pipeline() {
-    this (null);
-  }
-
-  public String getFactoryName () {
-    return "pipeline";
-  }
-
-  public Pipeline(String name) {
-    super (name);
-
-    defClock = new SystemClock(); 
-    clockProvider = null;
-
-    internalBus = new Bus();
-    internalBus.setSyncHandler (this);
-    bus = new Bus();
-    busThread = new BusThread(bus);
-    busThread.start();
-    stateThread = new StateThread();
-    stateThread.start();
-  }
-
-  public synchronized void shutDown() {
-    if (stateThread != null) {
-      stateThread.shutDown();
-      stateThread = null;
-    }
-    if (busThread != null) {
-      busThread.shutDown();
-      busThread = null;
-    }
-  }
-
-  public void useClock(Clock clock) {
-    fixedClock = clock;
-  }
-
-  public boolean add(Element elem) {
-    if (elem == null)
-      return false;
-
-    if (elem instanceof ClockProvider) {
-      defClock = ((ClockProvider)elem).provideClock();
-      clockProvider = elem;
+        public void run() {
+            while (!stopping) {
+                bus.waitAndDispatch ();
+            }
+        }
+        public void shutDown() {
+            stopping = true;
+            bus.setFlushing(true);
+        }
     }
 
-    elements.addElement (elem);
-    elem.baseTime = baseTime;
-    elem.setBus (internalBus);
-    return true;
-  }
-  public boolean remove(Element elem) {
-    boolean res;
+    private class StateThread extends Thread
+    {
+        private boolean stopping;
+        private boolean stateDirty;
 
-    if (elem == null)
-      return false;
+        public StateThread ()
+        {
+            super("cortado-StateThread-"+Debug.genId());
+            stopping = false;
+            stateDirty = false;
+        }
+        public void run() {
+            while (!stopping) {
+                synchronized (this) {
+                    while (!stateDirty && !stopping) {
+                        try {
+                            wait();
+                        } catch (InterruptedException e) {}
+                    }
+                    stateDirty = false;
+                }
+                if (!stopping) {
+                    synchronized (stateLock) {
+                        reCalcState(false);
+                    }
+                }
+            }
+        }
+        public synchronized void stateDirty() {
+            stateDirty = true;
+            notifyAll ();
+        }
+        public synchronized void shutDown() {
+            stopping = true;
+            notifyAll ();
+        }
+    }
 
-    if ((res = elements.removeElement (elem))) {
-      if (elem == clockProvider) {
+    public Pipeline() {
+        this (null);
+    }
+
+    public String getFactoryName () {
+        return "pipeline";
+    }
+
+    public Pipeline(String name) {
+        super (name);
+
         defClock = new SystemClock(); 
         clockProvider = null;
-      }
-      elem.setBus (null);
-      elem.setClock (null);
-      synchronized (this) {
-        stateDirty = true;
-      }
+
+        internalBus = new Bus();
+        internalBus.setSyncHandler (this);
+        bus = new Bus();
+        busThread = new BusThread(bus);
+        busThread.start();
+        stateThread = new StateThread();
+        stateThread.start();
     }
-    return res;
-  }
 
-  public Enumeration enumElements()
-  {
-    return elements.elements();
-  }
+    public synchronized void shutDown() {
+        if (stateThread != null) {
+            stateThread.shutDown();
+            stateThread = null;
+        }
+        if (busThread != null) {
+            busThread.shutDown();
+            busThread = null;
+        }
+    }
 
-  private class SortedEnumerator implements Enumeration
-  {
-    private Vector queue;
-    private Hashtable hash;
-    private java.lang.Object next;
-    private int mode;
+    public void useClock(Clock clock) {
+        fixedClock = clock;
+    }
 
-    private void addToQueue (Element elem)
+    public synchronized boolean add(Element elem) {
+        if (elem == null)
+            return false;
+
+        if (elem instanceof ClockProvider) {
+            defClock = ((ClockProvider)elem).provideClock();
+            clockProvider = elem;
+        }
+
+        elements.add (elem);
+        elem.baseTime = baseTime;
+        elem.setBus (internalBus);
+        return true;
+    }
+    public synchronized boolean remove(Element elem) {
+        boolean res;
+
+        if (elem == null)
+            return false;
+
+        if ((res = elements.remove (elem))) {
+            if (elem == clockProvider) {
+                defClock = new SystemClock(); 
+                clockProvider = null;
+            }
+            elem.setBus (null);
+            elem.setClock (null);
+            synchronized (this) {
+                stateDirty = true;
+            }
+        }
+        return res;
+    }
+
+    public synchronized Enumeration<Element> enumElements()
     {
-      queue.addElement (elem);
-      hash.put (elem, Integer.valueOf(-1));
+        return Collections.enumeration(new ArrayList<>(elements));
     }
 
-    private void updateDegree (Element elem)
+    private class SortedEnumerator implements Enumeration<Element>
     {
-      for (Enumeration p = elem.enumPads(); p.hasMoreElements();) {
-        Pad pad = (Pad) p.nextElement();
+        private final List<Element> queue;
+        private final Map<Element, Integer> hash;
+        private Element next;
+        private int mode;
 
-  if (pad.direction == Pad.SINK) {
-    Pad peer;
-    Element peerParent;
-    int oldDeg, newDeg;
+        private void addToQueue (Element elem)
+        {
+            queue.add (elem);
+            hash.put (elem, Integer.valueOf(-1));
+        }
 
-    peer = pad.peer;
-    if (peer == null)
-      continue;
+        private void updateDegree (Element elem)
+        {
+            for (Enumeration<Pad> p = elem.enumPads(); p.hasMoreElements();) {
+                Pad pad = p.nextElement();
 
-    peerParent = (Element) peer.parent;
-    if (peerParent == null)
-      continue;
+                if (pad.direction == Pad.SINK) {
+                    Pad peer;
+                    Element peerParent;
+                    int oldDeg, newDeg;
 
-    oldDeg = ((Integer)hash.get (peerParent)).intValue();
-    newDeg = oldDeg + mode;
+                    peer = pad.peer;
+                    if (peer == null)
+                        continue;
 
-    if (newDeg == 0) {
-      addToQueue (peerParent);
+                    peerParent = (Element) peer.parent;
+                    if (peerParent == null)
+                        continue;
+
+                    Integer degVal = hash.get(peerParent);
+                    if (degVal == null)
+                        continue;
+                    oldDeg = degVal;
+                    newDeg = oldDeg + mode;
+
+                    if (newDeg == 0) {
+                        addToQueue (peerParent);
+                    }
+                    else {
+                        hash.put (peerParent, Integer.valueOf (newDeg));
+                    }
+                }
+            }
+        }
+
+        public SortedEnumerator() {
+            queue = new ArrayList<>();
+            hash = new HashMap<>();
+
+            /* reset all degrees, add sinks to queue */
+            for (Enumeration<Element> e = enumElements(); e.hasMoreElements();) {
+                Element elem = e.nextElement();
+
+                if (elem.isFlagSet (Element.FLAG_IS_SINK)) {
+                    addToQueue (elem);
+                }
+                else {
+                    hash.put (elem, Integer.valueOf(0));
+                }
+            }
+            mode = 1;
+            /* update all degrees */
+            for (Enumeration<Element> e = enumElements(); e.hasMoreElements();) {
+                updateDegree (e.nextElement());
+            }
+            mode = -1;
+            queueNextElement();
+        }
+        private void queueNextElement () 
+        {
+            if (queue.isEmpty()) {
+                int bestDeg = Integer.MAX_VALUE;
+                Element bestElem = null;
+
+                for (Enumeration<Element> e = enumElements(); e.hasMoreElements();) {
+                    Element elem = e.nextElement();
+                    int deg;
+
+                    Integer degVal = hash.get (elem);
+                    if (degVal == null)
+                        continue;
+                    deg = degVal;
+                    if (deg < 0)
+                        continue;
+
+                    if (bestElem == null || bestDeg > deg) {
+                        bestElem = elem;
+                        bestDeg = deg;
+                    }
+                }
+                if (bestElem != null) {
+                    if (bestDeg != 0) {
+                        System.out.println (this+" loop detected in pipeline!!");
+                    }
+                    next = bestElem;
+                    hash.put (next, Integer.valueOf(-1));
+                }
+                else {
+                    next = null;
+                }
+            }
+            else {
+                next = queue.remove (0);
+            }
+            if (next != null)
+                updateDegree (next);
+        }
+
+        public boolean hasMoreElements()
+        {
+            return next != null;
+        }
+        public Element nextElement() throws NoSuchElementException
+        {
+            Element result = next;
+
+            if (result == null)
+                throw new NoSuchElementException();
+            
+            queueNextElement ();
+
+            return result;
+        }
     }
-    else {
-      hash.put (peerParent, Integer.valueOf (newDeg));
-    }
-  }
-      }
-    }
 
-    public SortedEnumerator() {
-      queue = new Vector();
-      hash = new Hashtable();
-
-      /* reset all degrees, add sinks to queue */
-      for (Enumeration e = enumElements(); e.hasMoreElements();) {
-        Element elem = (Element) e.nextElement();
-
-        if (elem.isFlagSet (Element.FLAG_IS_SINK)) {
-    addToQueue (elem);
-  }
-  else {
-    hash.put (elem, Integer.valueOf(0));
-  }
-      }
-      mode = 1;
-      /* update all degrees */
-      for (Enumeration e = enumElements(); e.hasMoreElements();) {
-        updateDegree ((Element) e.nextElement());
-      }
-      mode = -1;
-      queueNextElement();
-    }
-    private void queueNextElement () 
+    public Enumeration<Element> enumSorted()
     {
-      
-      if (queue.isEmpty()) {
-        int bestDeg = Integer.MAX_VALUE;
-  Element bestElem = null;
-
-        for (Enumeration e = enumElements(); e.hasMoreElements();) {
-          Element elem = (Element) e.nextElement();
-    int deg;
-
-    deg = ((Integer)hash.get (elem)).intValue();
-    if (deg < 0)
-      continue;
-
-    if (bestElem == null || bestDeg > deg) {
-      bestElem = elem;
-      bestDeg = deg;
+        return new SortedEnumerator();
     }
-  }
-  if (bestElem != null) {
-    if (bestDeg != 0) {
-      System.out.println (this+" loop detected in pipeline!!");
-    }
-    next = bestElem;
-    hash.put (next, Integer.valueOf(-1));
-  }
-  else {
-    next = null;
-  }
-      }
-      else {
-        next = queue.elementAt (0);
-        queue.removeElementAt (0);
-      }
-      if (next != null)
-        updateDegree ((Element) next);
-    }
-
-    public boolean hasMoreElements()
+    
+    private class SinkEnumerator implements Enumeration<Element>
     {
-      return next != null;
+        private final Enumeration<Element> e;
+        private Element next;
+
+        public SinkEnumerator() {
+            e = enumElements();
+            queueNextElement();
+        }
+        private void queueNextElement()
+        {
+            next = null;
+            while (e.hasMoreElements()) {
+                Element elem = e.nextElement();
+
+                if (elem.isFlagSet (Element.FLAG_IS_SINK)) {
+                    next = elem;
+                    break;
+                }
+            }
+        }
+
+        public boolean hasMoreElements() 
+        {
+            return next != null;
+        }
+        public Element nextElement() throws NoSuchElementException
+        {
+            Element result = next;
+
+            if (result == null)
+                throw new NoSuchElementException();
+            
+            queueNextElement ();
+
+            return result;
+        }
     }
-    public java.lang.Object nextElement() throws NoSuchElementException
+
+    public Enumeration<Element> enumSinks()
     {
-      java.lang.Object result = next;
-
-      if (result == null)
-        throw new NoSuchElementException();
-      
-      queueNextElement ();
-
-      return result;
+        return new SinkEnumerator();
     }
-  }
 
-  public Enumeration enumSorted()
-  {
-    return new SortedEnumerator();
-  }
-  
-  private class SinkEnumerator implements Enumeration
-  {
-    private Enumeration e;
-    private java.lang.Object next;
-
-    public SinkEnumerator() {
-      e = enumElements();
-      queueNextElement();
-    }
-    private void queueNextElement()
+    private synchronized void replaceMessage (Message message, int type)
     {
-      next = null;
-      while (e.hasMoreElements()) {
-        Element elem = (Element) e.nextElement();
+        int len = messages.size();
+        Message msg;
+        com.fluendo.jst.Object src = message.getSrc();
 
-        if (elem.isFlagSet (Element.FLAG_IS_SINK)) {
-          next = elem;
-    break;
-  }
-      }
+        for (int i=0; i<len; i++) {
+            msg = messages.get(i);
+
+            if (msg.getType() == type && msg.getSrc() == src) {
+                messages.set(i, message);
+                return;
+            }
+        }
+        messages.add(message);
     }
 
-    public boolean hasMoreElements() 
+    private synchronized boolean findMessage (com.fluendo.jst.Object obj, int type)
     {
-      return next != null;
+        int len = messages.size();
+        Message msg;
+
+        for (int i=0; i<len; i++) {
+            msg = messages.get(i);
+
+            if (msg.getType() == type && msg.getSrc() == obj)
+                return true;
+        }
+        return false;
     }
-    public java.lang.Object nextElement() throws NoSuchElementException
+
+    protected boolean isEOS ()
     {
-      java.lang.Object result = next;
+        com.fluendo.jst.Object obj;
 
-      if (result == null)
-        throw new NoSuchElementException();
-      
-      queueNextElement ();
+        for (Enumeration<Element> e = enumSinks(); e.hasMoreElements();) {
+            obj = e.nextElement();
 
-      return result;
+            if (!findMessage (obj, Message.EOS))
+                return false;
+        }
+        return true;
     }
-  }
 
-  public Enumeration enumSinks()
-  {
-    return new SinkEnumerator();
-  }
+    public int handleSyncMessage (Message message) 
+    {
+        switch (message.getType()) {
+            case Message.EOS:
+            {
+                boolean isEOS;
 
-  private void replaceMessage (Message message, int type)
-  {
-    int len = messages.size();
-    Message msg;
-    com.fluendo.jst.Object src = message.getSrc();
-
-    for (int i=0; i<len; i++) {
-      msg = (Message) messages.elementAt(i);
-
-      if (msg.getType() == type && msg.getSrc() == src) {
-  messages.setElementAt(message, i);
-  return;
-      }
+                synchronized (this) {
+                    Debug.log(Debug.INFO, this+" got EOS from sink: "+message.getSrc());
+                    replaceMessage (message, Message.EOS);
+                    isEOS = isEOS();
+                }
+                if (isEOS) {
+                    Debug.log(Debug.INFO, "all sinks posted EOS "+this);
+                    postMessage (Message.newEOS (this));
+                }
+                break;
+            }
+            case Message.STATE_DIRTY:
+                scheduleReCalcState ();
+                break;
+            default:
+                /* post to app */
+                postMessage (message);
+                break;
+        }
+        return BusSyncHandler.DROP;
     }
-    messages.addElement(message);
-  }
 
-  private boolean findMessage (com.fluendo.jst.Object obj, int type)
-  {
-    int len = messages.size();
-    Message msg;
-
-    for (int i=0; i<len; i++) {
-      msg = (Message) messages.elementAt(i);
-
-      if (msg.getType() == type && msg.getSrc() == obj)
-  return true;
+    public int getState(int[] resState, int[] resPending, long timeout) {
+        reCalcState (false);
+        return super.getState (resState, resPending, timeout);
     }
-    return false;
-  }
 
-  protected boolean isEOS ()
-  {
-    com.fluendo.jst.Object obj;
-
-    for (Enumeration e = enumSinks(); e.hasMoreElements();) {
-      obj = (com.fluendo.jst.Object) e.nextElement();
-
-      if (!findMessage (obj, Message.EOS))
-  return false;
+    protected void scheduleReCalcState() {
+        synchronized (this) {
+            stateDirty = true;
+            stateThread.stateDirty();
+        }
     }
-    return true;
-  }
 
-  public int handleSyncMessage (Message message) 
-  {
-    switch (message.getType()) {
-      case Message.EOS:
-      {
-  boolean isEOS;
+    private void reCalcState(boolean force) 
+    {
+        boolean haveAsync, haveNoPreroll;
+        int res = SUCCESS;
 
-  synchronized (this) {
-        Debug.log(Debug.INFO, this+" got EOS from sink: "+message.getSrc());
-        replaceMessage (message, Message.EOS);
-    isEOS = isEOS();
-  }
-  if (isEOS) {
-        Debug.log(Debug.INFO, "all sinks posted EOS "+this);
-        postMessage (Message.newEOS (this));
-  }
-        break;
-      }
-      case Message.STATE_DIRTY:
-  scheduleReCalcState ();
-        break;
-      default:
-        /* post to app */
-        postMessage (message);
-        break;
-    }
-    return BusSyncHandler.DROP;
-  }
+        Debug.debug("Pipeline.reCalcState");
 
-  public int getState(int[] resState, int[] resPending, long timeout) {
-    reCalcState (false);
-    return super.getState (resState, resPending, timeout);
-  }
+        synchronized (this) {
+            if (force)
+                stateDirty = true;
+            
+            if (!stateDirty)
+                return;
 
-  protected void scheduleReCalcState() {
-    synchronized (this) {
-      stateDirty = true;
-      stateThread.stateDirty();
-    }
-  }
-
-  private void reCalcState(boolean force) 
-  {
-    boolean haveAsync, haveNoPreroll;
-    int res = SUCCESS;
-
-    Debug.debug("Pipeline.reCalcState");
-
-    synchronized (this) {
-      if (force)
-        stateDirty = true;
-      
-      if (!stateDirty)
-        return;
-
-      if (polling)
-        return;
+            if (polling)
+                return;
  
-      polling = true;
-      stateDirty = false;
-      haveAsync = false;
-      haveNoPreroll = false;
-    }
-    for (Enumeration e = elements.elements(); e.hasMoreElements();) {
-      Element elem = (Element) e.nextElement();
+            polling = true;
+            stateDirty = false;
+            haveAsync = false;
+            haveNoPreroll = false;
+        }
+        for (Enumeration<Element> e = enumElements(); e.hasMoreElements();) {
+            Element elem = e.nextElement();
 
-      res = elem.getState(null, null, 1);
-      switch (res) {
-        case ASYNC:
-    haveAsync = true;
-        break;
-        case NO_PREROLL:
-    haveNoPreroll = true;
-        break;
-      }
-      if (res == FAILURE)
-        break;
-    }
+            res = elem.getState(null, null, 1);
+            switch (res) {
+                case ASYNC:
+                    haveAsync = true;
+                    break;
+                case NO_PREROLL:
+                    haveNoPreroll = true;
+                    break;
+            }
+            if (res == FAILURE)
+                break;
+        }
 
-    if (res != FAILURE) {
-      if (haveNoPreroll)
-        res = NO_PREROLL;
-      if (haveAsync)
-        res = ASYNC;
-    }
+        if (res != FAILURE) {
+            if (haveNoPreroll)
+                res = NO_PREROLL;
+            if (haveAsync)
+                res = ASYNC;
+        }
 
-    synchronized (this) {
-      polling = false;
-    }
+        synchronized (this) {
+            polling = false;
+        }
 
-    switch (res) {
-      case SUCCESS:
-      case NO_PREROLL:
-        res = continueState(res);
-        break;
-      case ASYNC:
-  lostState();
-        break;
-      case FAILURE:
-        abortState();
-        break;
-      default:
-        break;
-    }
-    return;
-  }
-
-  protected int doChildStateChange(int transition)
-  {
-    int next;
-    int result;
-    boolean haveAsync, haveNoPreroll;
-
-    next = getTransitionNext (transition);
-
-    haveAsync = false;
-    haveNoPreroll = false;
-
-    for (Enumeration e = enumSorted(); e.hasMoreElements();) {
-      Element elem = (Element) e.nextElement();
-
-      elem.setBus (internalBus);
-      elem.setClock (defClock);
-      elem.baseTime = baseTime;
-
-      Debug.log(Debug.DEBUG, this+" setting state " + getStateName(next) + " on "+elem);
-      result = elem.setState (next);
-      Debug.log(Debug.DEBUG, this+" "+elem+" changed state, result = " + getStateReturnName(result));
-
-      switch (result) {
-        case ASYNC:
-          haveAsync = true;
-    break;
-  case NO_PREROLL:
-          haveNoPreroll = true;
-    break;
-  case FAILURE:
-          return result;
-      }
+        switch (res) {
+            case SUCCESS:
+            case NO_PREROLL:
+                res = continueState(res);
+                break;
+            case ASYNC:
+                lostState();
+                break;
+            case FAILURE:
+                abortState();
+                break;
+            default:
+                break;
+        }
     }
 
-    result = super.changeState(transition);
-    if (result == FAILURE)
-      return result;
+    protected int doChildStateChange(int transition)
+    {
+        int next;
+        int result;
+        boolean haveAsync, haveNoPreroll;
 
-    if (haveNoPreroll)
-      result = NO_PREROLL;
-    else if (haveAsync)
-      result = ASYNC;
+        next = getTransitionNext (transition);
 
-    return result;
-  }
+        haveAsync = false;
+        haveNoPreroll = false;
 
-  protected int changeState(int transition)
-  {
-    int result;
+        for (Enumeration<Element> e = enumSorted(); e.hasMoreElements();) {
+            Element elem = e.nextElement();
 
-    switch (transition) {
-      case STOP_PAUSE:
-  messages.setSize(0);
-        break;
-      case PAUSE_PLAY:
-        long now = defClock.getTime();
-        baseTime = now - streamTime;
-        break;
-      default:
-        break;
+            elem.setBus (internalBus);
+            elem.setClock (defClock);
+            elem.baseTime = baseTime;
+
+            Debug.log(Debug.DEBUG, this+" setting state " + getStateName(next) + " on "+elem);
+            result = elem.setState (next);
+            Debug.log(Debug.DEBUG, this+" "+elem+" changed state, result = " + getStateReturnName(result));
+
+            switch (result) {
+                case ASYNC:
+                    haveAsync = true;
+                    break;
+                case NO_PREROLL:
+                    haveNoPreroll = true;
+                    break;
+                case FAILURE:
+                    return result;
+            }
+        }
+
+        result = super.changeState(transition);
+        if (result == FAILURE)
+            return result;
+
+        if (haveNoPreroll)
+            result = NO_PREROLL;
+        else if (haveAsync)
+            result = ASYNC;
+
+        return result;
     }
 
-    result = doChildStateChange(transition);
+    protected synchronized int changeState(int transition)
+    {
+        int result;
 
-    switch (transition) {
-      case STOP_PAUSE:
-        streamTime = 0;
-  break;
-      case PLAY_PAUSE:
-        long now = defClock.getTime();
-        streamTime = now - baseTime;
-  messages.setSize(0);
-        break;
-      case PAUSE_STOP:
-  messages.setSize(0);
-        break;
-      default:
-        break;
+        switch (transition) {
+            case STOP_PAUSE:
+                messages.clear();
+                break;
+            case PAUSE_PLAY:
+                long now = defClock.getTime();
+                baseTime = now - streamTime;
+                break;
+            default:
+                break;
+        }
+
+        result = doChildStateChange(transition);
+
+        switch (transition) {
+            case STOP_PAUSE:
+                streamTime = 0;
+                break;
+            case PLAY_PAUSE:
+                long now = defClock.getTime();
+                streamTime = now - baseTime;
+                messages.clear();
+                break;
+            case PAUSE_STOP:
+                messages.clear();
+                break;
+            default:
+                break;
+        }
+
+        return result;
     }
 
-    return result;
-  }
+    protected boolean doSendEvent(Event event)
+    {
+        boolean res = true;
 
-  protected boolean doSendEvent(Event event)
-  {
-    boolean res = true;
+        for (Enumeration<Element> e = enumSinks(); e.hasMoreElements();) {
+            Element elem = e.nextElement();
 
-    for (Enumeration e = enumSinks(); e.hasMoreElements();) {
-      Element elem = (Element) e.nextElement();
-
-      res &= elem.sendEvent (event);
+            res &= elem.sendEvent (event);
+        }
+        return res;
     }
-    return res;
-  }
 
-  private boolean doSeek(Event event)
-  {
-    boolean ret;
-    int[] state = new int[1];
-    boolean wasPlaying;
+    private boolean doSeek(Event event)
+    {
+        boolean ret;
+        int[] state = new int[1];
+        boolean wasPlaying;
 
-    getState(state, null, 0);
-    wasPlaying = (state[0] == Element.PLAY);
+        getState(state, null, 0);
+        wasPlaying = (state[0] == Element.PLAY);
 
-    if (wasPlaying)
-      setState (Element.PAUSE);
+        if (wasPlaying)
+            setState (Element.PAUSE);
 
-    ret = doSendEvent (event);
-    if (ret)
-      streamTime = 0;
+        ret = doSendEvent (event);
+        if (ret)
+            streamTime = 0;
 
-    if (wasPlaying)
-      setState (Element.PLAY);
+        if (wasPlaying)
+            setState (Element.PLAY);
 
-    return ret;
-  }
-
-  public boolean sendEvent(Event event)
-  {
-    switch (event.getType()) {
-      case Event.SEEK:
-        return doSeek (event);
-      default:
-        return doSendEvent (event);
+        return ret;
     }
-  }
 
-  public boolean query(Query query)
-  {
-    boolean res = true;
-
-    for (Enumeration e = enumSinks(); e.hasMoreElements();) {
-      Element elem = (Element) e.nextElement();
-
-      if ((res = elem.query (query)))
-        break;
+    public boolean sendEvent(Event event)
+    {
+        switch (event.getType()) {
+            case Event.SEEK:
+                return doSeek (event);
+            default:
+                return doSendEvent (event);
+        }
     }
-    return res;
-  }
+
+    public boolean query(Query query)
+    {
+        boolean res = true;
+
+        for (Enumeration<Element> e = enumSinks(); e.hasMoreElements();) {
+            Element elem = e.nextElement();
+
+            if ((res = elem.query (query)))
+                break;
+        }
+        return res;
+    }
 }
