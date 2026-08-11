@@ -19,154 +19,167 @@
 
 package com.fluendo.codecs;
 
-import java.awt.*;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.imageio.ImageIO;
 
 public class SmokeCodec {
-  private static final int IDX_TYPE       = 0;
-  private static final int IDX_WIDTH      = 1;
-  private static final int IDX_HEIGHT     = 3;
-  private static final int IDX_FPS_NUM    = 5;
-  private static final int IDX_FPS_DENOM  = 9;
-  private static final int IDX_FLAGS      = 13;
+  private static final Logger LOGGER = Logger.getLogger(SmokeCodec.class.getName());
+
+  private static final int IDX_TYPE = 0;
+  private static final int IDX_WIDTH = 1;
+  private static final int IDX_HEIGHT = 3;
+  private static final int IDX_FPS_NUM = 5;
+  private static final int IDX_FPS_DENOM = 9;
+  private static final int IDX_FLAGS = 13;
   private static final int IDX_NUM_BLOCKS = 14;
-  private static final int IDX_SIZE       = 16;
-  private static final int IDX_BLOCKS     = 18;
-  private static final int OFFS_PICT      = 18;
+  private static final int IDX_SIZE = 16;
+  private static final int IDX_BLOCKS = 18;
+  private static final int OFFS_PICT = 18;
 
-  private Image reference;
-  private final MediaTracker mt;
-  private final Component component;
-  private final Toolkit toolkit;
+  public static final int KEYFRAME = (1);
 
-  public static final int KEYFRAME = (1 << 0);
+  private BufferedImage reference;
+  private CodecHeader header;
 
-  public int type;
-  public int width, height;
-  public int fps_num, fps_denom;
-  public int flags;
-  public int size;
-  public int blocks;
-
-  public SmokeCodec(Component comp, MediaTracker tracker) {
-    this.component = comp;
-    this.toolkit = comp.getToolkit();
-    this.mt = tracker;
+  /**
+   * Immutable record representing the header metadata (Java 14+).
+   */
+  public record CodecHeader(
+      int type,
+      int width,
+      int height,
+      int fpsNum,
+      int fpsDenom,
+      int flags,
+      int size,
+      int blocks) {
+    public boolean isKeyframe() {
+      return (flags & KEYFRAME) != 0;
+    }
   }
 
-  public int parseHeader(byte[] in, int offset, int length) {
+  public SmokeCodec() {
+    // Decoupled from AWT Component and MediaTracker
+  }
+
+  /**
+   * Parses the header using java.nio.ByteBuffer.
+   */
+  public CodecHeader parseHeader(byte[] in, int offset, int length) {
     if (in == null || length - offset < OFFS_PICT) {
-      return -1;
+      return null;
     }
 
-    type = in[IDX_TYPE + offset] & 0xFF;
+    var buffer = ByteBuffer.wrap(in, offset, length).order(ByteOrder.BIG_ENDIAN);
 
-    width = ((in[IDX_WIDTH + offset] & 0xFF) << 8) | 
-            (in[IDX_WIDTH + 1 + offset] & 0xFF);
-            
-    height = ((in[IDX_HEIGHT + offset] & 0xFF) << 8) | 
-             (in[IDX_HEIGHT + 1 + offset] & 0xFF);
+    int type = buffer.get(IDX_TYPE) & 0xFF;
+    int width = buffer.getShort(IDX_WIDTH) & 0xFFFF;
+    int height = buffer.getShort(IDX_HEIGHT) & 0xFFFF;
+    int fpsNum = buffer.getInt(IDX_FPS_NUM);
+    int fpsDenom = buffer.getInt(IDX_FPS_DENOM);
+    int flags = buffer.get(IDX_FLAGS) & 0xFF;
+    int size = buffer.getShort(IDX_SIZE) & 0xFFFF;
+    int blocks = buffer.getShort(IDX_NUM_BLOCKS) & 0xFFFF;
 
-    fps_num = ((in[IDX_FPS_NUM + offset] & 0xFF) << 24) | 
-              ((in[IDX_FPS_NUM + 1 + offset] & 0xFF) << 16) | 
-              ((in[IDX_FPS_NUM + 2 + offset] & 0xFF) << 8) | 
-              (in[IDX_FPS_NUM + 3 + offset] & 0xFF);
-
-    fps_denom = ((in[IDX_FPS_DENOM + offset] & 0xFF) << 24) | 
-                ((in[IDX_FPS_DENOM + 1 + offset] & 0xFF) << 16) | 
-                ((in[IDX_FPS_DENOM + 2 + offset] & 0xFF) << 8) | 
-                (in[IDX_FPS_DENOM + 3 + offset] & 0xFF);
-
-    flags = in[IDX_FLAGS + offset] & 0xFF;
-    
-    // Note: original code checked IDX_SIZE twice for b2; fixing to IDX_SIZE + 1
-    size = ((in[IDX_SIZE + offset] & 0xFF) << 8) | 
-           (in[IDX_SIZE + 1 + offset] & 0xFF);
-
-    blocks = ((in[IDX_NUM_BLOCKS + offset] & 0xFF) << 8) | 
-             (in[IDX_NUM_BLOCKS + 1 + offset] & 0xFF);
-
-    return 0;
+    this.header = new CodecHeader(type, width, height, fpsNum, fpsDenom, flags, size, blocks);
+    return this.header;
   }
-  
-  public Image decode(byte[] in, int offset, int length) {
-    if (parseHeader(in, offset, length) < 0) {
+
+  /**
+   * Helper method to directly get flags matching the modern header structure.
+   */
+  public int getFlags() {
+    return this.header != null ? this.header.flags() : 0;
+  }
+
+  /**
+   * Returns the current active header.
+   */
+  public CodecHeader getHeader() {
+    return this.header;
+  }
+
+  /**
+   * Decodes the frame into a BufferedImage using modern Java I/O.
+   */
+  public BufferedImage decode(byte[] in, int offset, int length) {
+    var currentHeader = parseHeader(in, offset, length);
+    if (currentHeader == null) {
       return null;
     }
 
-    boolean keyframe = ((flags & KEYFRAME) != 0);
-
-    if (reference == null && !keyframe) {
+    if (reference == null && !currentHeader.isKeyframe()) {
       return null;
     }
 
-    int imgoff = blocks * 2 + OFFS_PICT;
+    int imgoff = currentHeader.blocks() * 2 + OFFS_PICT;
     if (length - imgoff < 0) {
       return null;
     }
-    
-    Image src = null;
-    try {
-      src = toolkit.createImage(in, imgoff + offset, length - imgoff);
-    } catch (Exception e) {
-      e.printStackTrace();
+
+    BufferedImage src = null;
+    try (var bis = new ByteArrayInputStream(in, imgoff + offset, length - imgoff)) {
+      src = ImageIO.read(bis);
+    } catch (IOException e) {
+      LOGGER.log(Level.SEVERE, "Failed to decode frame image", e);
     }
 
     if (src == null) {
       return null;
     }
-      
-    try {
-      mt.addImage(src, 0);
-      mt.waitForID(0);
-      mt.removeImage(src, 0);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
 
-    if (reference == null || keyframe) {
+    if (reference == null || currentHeader.isKeyframe()) {
       reference = src;
     } else {
-      if (blocks > 0) {
-        int src_w = src.getWidth(null);
-        int src_h = src.getHeight(null);
-        int blockptr = 0;
-        int pos, i, j, x, y;
-
+      if (currentHeader.blocks() > 0) {
+        int srcW = src.getWidth();
+        int srcH = src.getHeight();
+        int blockPtr = 0;
         int blockOffset = offset + IDX_BLOCKS;
 
-        Image newref = component.createImage(width, height);
-        Graphics refgfx = newref.getGraphics();
-        refgfx.drawImage(reference, 0, 0, null);
-        reference = newref;
+        var newRef = new BufferedImage(currentHeader.width(), currentHeader.height(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D refGfx = newRef.createGraphics();
+        refGfx.drawImage(reference, 0, 0, null);
 
-        for (i = 0; i < src_h; i += 16) {
-          for (j = 0; j < src_w; j += 16) {
-            pos = blockptr * 2 + blockOffset;
+        for (int i = 0; i < srcH; i += 16) {
+          for (int j = 0; j < srcW; j += 16) {
+            int pos = blockPtr * 2 + blockOffset;
             if (pos + 1 >= offset + length) {
               break;
             }
+
             int b1 = in[pos] & 0xFF;
             int b2 = in[pos + 1] & 0xFF;
-            pos = (b1 << 8) | b2;
+            int blockPos = (b1 << 8) | b2;
 
-            int div = width / 16;
-            if (div == 0) div = 1; // Prevent division by zero safeguard
+            int div = currentHeader.width() / 16;
+            if (div == 0) {
+              div = 1;
+            }
 
-            x = (pos % div) * 16;
-            y = (pos / div) * 16;
+            int x = (blockPos % div) * 16;
+            int y = (blockPos / div) * 16;
 
-            refgfx.drawImage(src, 
-               x, y, x + 16, y + 16, 
-               j, i, j + 16, i + 16, 
-               null);
+            refGfx.drawImage(src,
+                x, y, x + 16, y + 16,
+                j, i, j + 16, i + 16,
+                null);
 
-            blockptr++;
-            if (blockptr >= blocks) {
+            blockPtr++;
+            if (blockPtr >= currentHeader.blocks()) {
               break;
             }
           }
         }
-        refgfx.dispose();
+        refGfx.dispose();
+        reference = newRef;
       }
     }
     return reference;
