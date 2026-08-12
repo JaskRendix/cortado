@@ -41,7 +41,7 @@ public final class iDCT {
 
     private void dequantSlow(short[] dequantCoeffs, short[] quantizedList, int[] dctBlock) {
         for (int i = 0; i < 64; i++) {
-            dctBlock[Constants.dequant_index[i]] = quantizedList[i] * dequantCoeffs[i];
+            dctBlock[Constants.DEQUANT_INDEX[i]] = quantizedList[i] * dequantCoeffs[i];
         }
     }
 
@@ -209,7 +209,7 @@ public final class iDCT {
         Arrays.fill(dctBlock, 0, 32, 0);
 
         for (int i = 0; i < 10; i++) {
-            dctBlock[Constants.dequant_index[i]] = quantizedList[i] * dequantCoeffs[i];
+            dctBlock[Constants.DEQUANT_INDEX[i]] = quantizedList[i] * dequantCoeffs[i];
         }
     }
 
