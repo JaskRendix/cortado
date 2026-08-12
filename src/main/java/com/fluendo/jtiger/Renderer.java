@@ -20,92 +20,104 @@
 
 package com.fluendo.jtiger;
 
-import java.awt.*;
+import com.fluendo.jkate.Event;
+
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Image;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Renderer {
+public final class Renderer {
+
     private final List<Item> items = new ArrayList<>();
     private boolean dirty = true;
 
     /**
-     * Add a new event to the renderer.
+     * Adds a new event to the renderer.
      */
-    public synchronized void add(com.fluendo.jkate.Event ev) {
-        if (ev != null) {
-            items.add(new Item(ev));
+    public synchronized void add(Event event) {
+        if (event != null) {
+            items.add(new Item(event));
             dirty = true;
         }
     }
 
     /**
-     * Update the renderer, and all the events it tracks.
-     * Returns 1 if there is nothing to draw, as an optimization.
+     * Updates the renderer and all the events it tracks.
+     * 
+     * @return 1 if there is nothing active/to draw (as an optimization), 0 otherwise.
      */
-    public synchronized int update(Component c, Dimension d, double t) {
-        int nactive = 0;
-        for (int n = 0; n < items.size(); ++n) {
-            Item item = items.get(n);
-            boolean ret = item.update(c, d, t);
-            if (!ret) {
-                items.remove(n);
+    public synchronized int update(Component component, Dimension dimension, double time) {
+        int activeCount = 0;
+        
+        // Using an explicit iterator removal loop or safely iterating backwards/removing
+        // to handle collection mutation cleanly in modern Java.
+        var iterator = items.listIterator();
+        while (iterator.hasNext()) {
+            Item item = iterator.next();
+            boolean isStillValid = item.update(component, dimension, time);
+            
+            if (!isStillValid) {
+                iterator.remove();
                 dirty = true;
-                --n;
             } else {
                 if (item.isDirty()) {
                     dirty = true;
                 }
                 if (item.isActive()) {
-                    ++nactive;
+                    activeCount++;
                 }
             }
         }
-        if (nactive == 0) {
-            return 1;
-        }
-        return 0;
+
+        return activeCount == 0 ? 1 : 0;
     }
 
     /**
-     * Renders onto the given image.
+     * Renders all active items onto the given image.
      */
-    public synchronized Image render(Component c, Image img) {
-        if (c == null || img == null) {
-            return img;
+    public synchronized Image render(Component component, Image image) {
+        if (component == null || image == null) {
+            return image;
         }
 
-        int width = img.getWidth(null);
-        int height = img.getHeight(null);
+        int width = image.getWidth(null);
+        int height = image.getHeight(null);
         if (width <= 0 || height <= 0) {
-            return img;
+            return image;
         }
 
-        Image copy = c.createImage(width, height);
+        Image copy = component.createImage(width, height);
         if (copy != null) {
-            Graphics g = copy.getGraphics();
-            if (g != null) {
-                g.drawImage(img, 0, 0, null);
-                g.dispose();
+            Graphics graphics = copy.getGraphics();
+            if (graphics != null) {
+                graphics.drawImage(image, 0, 0, null);
+                graphics.dispose();
             }
-            img = copy;
+            image = copy;
         }
 
-        for (int n = 0; n < items.size(); ++n) {
-            items.get(n).render(c, img);
+        for (Item item : items) {
+            item.render(component, image);
         }
 
         dirty = false;
-        return img;
+        return image;
     }
 
     /**
-     * Flushes all events.
+     * Flushes and clears all tracked items.
      */
     public synchronized void flush() {
         items.clear();
         dirty = true;
     }
 
+    /**
+     * Checks if the renderer state is dirty and requires a redraw.
+     */
     public synchronized boolean isDirty() {
         return dirty;
     }
