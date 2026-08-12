@@ -20,113 +20,131 @@
 
 package com.fluendo.jtiger;
 
-import java.awt.*;
-import java.nio.charset.StandardCharsets;
+import com.fluendo.jkate.Event;
 import com.fluendo.jkate.Tracker;
-import com.fluendo.utils.*;
+import com.fluendo.utils.Debug;
 
-public class Item {
-    private Tracker kin = null;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.Rectangle;
+import java.nio.charset.StandardCharsets;
+
+public final class Item {
+
+    private Tracker tracker = null;
     private boolean active = false;
     private Font font = null;
-    private int font_size = 0;
+    private int fontSize = 0;
     private String text = null;
-    private TigerBitmap background_image = null;
+    private TigerBitmap backgroundImage = null;
 
     private int width = -1;
     private int height = -1;
 
     private final Rectangle region = new Rectangle();
-
     private boolean dirty = true;
 
-    private static final TextRenderer textRenderer = detectTextRenderer();
+    private static final TextRenderer TEXT_RENDERER = detectTextRenderer();
 
     private static TextRenderer detectTextRenderer() {
-        TextRenderer tr = null;
+        TextRenderer renderer = null;
         try {
-            Class<?> c = Class.forName("com.fluendo.jtiger.BasicTextRenderer");
-            tr = (TextRenderer) c.getDeclaredConstructor().newInstance();
+            Class<?> basicClass = Class.forName("com.fluendo.jtiger.BasicTextRenderer");
+            renderer = (TextRenderer) basicClass.getDeclaredConstructor().newInstance();
             Debug.info("jtiger.Item: detecting Graphics2D");
+            
             Class.forName("java.awt.Graphics2D");
             Debug.info("jtiger.Item: detecting TextLayout");
+            
             Class.forName("java.awt.font.TextLayout");
             Debug.info("jtiger.Item: detecting AttributedString");
+            
             Class.forName("java.text.AttributedString");
-            c = Class.forName("com.fluendo.jtiger.FancyTextRenderer");
-            tr = (TextRenderer) c.getDeclaredConstructor().newInstance();
+            Class<?> fancyClass = Class.forName("com.fluendo.jtiger.FancyTextRenderer");
+            renderer = (TextRenderer) fancyClass.getDeclaredConstructor().newInstance();
             Debug.info("jtiger.Item: We can use the fancy text renderer");
         } catch (Throwable e) {
-            if (tr == null) {
+            if (renderer == null) {
                 Debug.info("jtiger.Item: We cannot use any text renderer: " + e);
             } else {
                 Debug.info("jtiger.Item: We have to use the basic text renderer: " + e);
             }
         }
-        return tr;
+        return renderer;
     }
 
     /**
-     * Create a new item from a Kate event.
+     * Creates a new item from a Kate event.
      */
-    public Item(com.fluendo.jkate.Event ev) {
-        if (ev != null) {
-            this.kin = new Tracker(ev);
-            if (ev.text != null && ev.text.length > 0) {
-                text = new String(ev.text, StandardCharsets.UTF_8);
+    public Item(Event event) {
+        if (event != null) {
+            this.tracker = new Tracker(event);
+            if (event.text != null && event.text.length > 0) {
+                this.text = new String(event.text, StandardCharsets.UTF_8);
             }
         }
-        dirty = false; /* not dirty yet, inactive */
+        this.dirty = false; // not dirty yet, inactive
     }
 
     /**
-     * Create a font suitable for displaying on the given component
+     * Creates a font suitable for displaying on the given component/image.
      */
-    protected void createFont(Component c, Image img) {
-        if (img != null) {
-            font_size = img.getWidth(null) / 32;
+    protected void createFont(Component component, Image image) {
+        if (image != null) {
+            fontSize = image.getWidth(null) / 32;
         }
-        if (font_size < 12) {
-            font_size = 12;
+        if (fontSize < 12) {
+            fontSize = 12;
         }
-        font = new Font("sansserif", Font.BOLD, font_size);
+        font = new Font(Font.SANS_SERIF, Font.BOLD, fontSize);
     }
 
     /**
-     * Regenerate any cached data to match any relevant changes in the
-     * given component
+     * Regenerates any cached data to match any relevant changes in the given image.
      */
-    protected void updateCachedData(Component c, Image img) {
-        if (img == null) return;
-        int img_width = img.getWidth(null);
-        int img_height = img.getHeight(null);
-
-        if (img_width == width && img_height == height)
+    protected void updateCachedData(Component component, Image image) {
+        if (image == null) {
             return;
+        }
+        int imageWidth = image.getWidth(null);
+        int imageHeight = image.getHeight(null);
 
-        createFont(c, img);
+        if (imageWidth == width && imageHeight == height) {
+            return;
+        }
 
-        width = img_width;
-        height = img_height;
+        createFont(component, image);
 
+        width = imageWidth;
+        height = imageHeight;
         dirty = true;
     }
 
     /**
      * Updates the item at the given time.
-     * returns false if the item should be destroyed, true otherwise.
+     * 
+     * @return false if the item should be destroyed, true otherwise.
      */
-    public boolean update(Component c, Dimension d, double t) {
-        if (kin == null) return false;
-        com.fluendo.jkate.Event ev = kin.ev;
-        if (ev == null) return false;
+    public boolean update(Component component, Dimension dimension, double time) {
+        if (tracker == null) {
+            return false;
+        }
+        Event event = tracker.ev;
+        if (event == null) {
+            return false;
+        }
 
-        /* early out if we're not within the lifetime of the event */
-        if (t < ev.start_time) return true;
-        if (t >= ev.end_time) {
+        // Early out if we're not within the lifetime of the event
+        if (time < event.start_time) {
+            return true;
+        }
+        if (time >= event.end_time) {
             active = false;
             dirty = true;
-            return false; /* we're done, and will get destroyed */
+            return false; // we're done, and will get destroyed
         }
 
         if (!active) {
@@ -134,78 +152,85 @@ public class Item {
             dirty = true;
         }
 
-        return kin.update(t - ev.start_time, d, d);
+        return tracker.update(time - event.start_time, dimension, dimension);
     }
 
     /**
-     * Set up the region.
+     * Sets up the rendering region.
      */
-    public void setupRegion(Component c, Image img) {
-        if (kin != null && kin.has[Tracker.has_region]) {
-            region.x = (int) (kin.region_x + 0.5f);
-            region.y = (int) (kin.region_y + 0.5f);
-            region.width = (int) (kin.region_w + 0.5f);
-            region.height = (int) (kin.region_h + 0.5f);
-        } else if (img != null) {
-            int w = img.getWidth(null);
-            int h = img.getHeight(null);
-            region.x = (int) (w * 0.1f + 0.5f);
-            region.y = (int) (h * 0.8f + 0.5f);
-            region.width = (int) (w * 0.8f + 0.5f);
-            region.height = (int) (h * 0.1f + 0.5f);
+    public void setupRegion(Component component, Image image) {
+        if (tracker != null && tracker.has[Tracker.has_region]) {
+            region.x = (int) (tracker.region_x + 0.5f);
+            region.y = (int) (tracker.region_y + 0.5f);
+            region.width = (int) (tracker.region_w + 0.5f);
+            region.height = (int) (tracker.region_h + 0.5f);
+        } else if (image != null) {
+            int imgWidth = image.getWidth(null);
+            int imgHeight = image.getHeight(null);
+            region.x = (int) (imgWidth * 0.1f + 0.5f);
+            region.y = (int) (imgHeight * 0.8f + 0.5f);
+            region.width = (int) (imgWidth * 0.8f + 0.5f);
+            region.height = (int) (imgHeight * 0.1f + 0.5f);
         }
     }
 
     /**
      * Renders the item on the given image.
      */
-    public void render(Component c, Image img) {
-        if (!active || img == null)
+    public void render(Component component, Image image) {
+        if (!active || image == null) {
             return;
+        }
 
-        updateCachedData(c, img);
-        setupRegion(c, img);
-        renderBackground(c, img);
-        renderText(img);
+        updateCachedData(component, image);
+        setupRegion(component, image);
+        renderBackground(component, image);
+        renderText(image);
 
         dirty = false;
     }
 
     /**
-     * Render a background for the item, if appropriate.
-     * The background may be a color, or an image.
+     * Renders a background for the item, if appropriate.
      */
-    public void renderBackground(Component c, Image img) {
-        if (kin != null && kin.ev != null && kin.ev.bitmap != null && img != null) {
-            if (background_image == null) {
-                background_image = new TigerBitmap(c, kin.ev.bitmap, kin.ev.palette);
+    public void renderBackground(Component component, Image image) {
+        if (tracker != null && tracker.ev != null && tracker.ev.bitmap != null && image != null) {
+            if (backgroundImage == null) {
+                backgroundImage = new TigerBitmap(component, tracker.ev.bitmap, tracker.ev.palette);
             }
-            
-            Graphics g = img.getGraphics();
-            if (g != null) {
-                g.drawImage(background_image.getScaled(region.width, region.height), region.x, region.y, null);
-                g.dispose();
+
+            Graphics graphics = image.getGraphics();
+            if (graphics != null) {
+                graphics.drawImage(
+                    backgroundImage.getScaled(region.width, region.height), 
+                    region.x, 
+                    region.y, 
+                    null
+                );
+                graphics.dispose();
             }
         }
     }
 
     /**
-     * Render text for the item, if appropriate.
+     * Renders text for the item, if appropriate.
      */
-    public void renderText(Image img) {
-        if (text == null || img == null || textRenderer == null)
+    public void renderText(Image image) {
+        if (text == null || image == null || TEXT_RENDERER == null) {
             return;
+        }
 
-        Graphics g = img.getGraphics();
-        if (g != null) {
-            textRenderer.renderText(g, region, font, text);
-            g.dispose();
+        Graphics graphics = image.getGraphics();
+        if (graphics != null) {
+            TEXT_RENDERER.renderText(graphics, region, font, text);
+            graphics.dispose();
         }
     }
 
     public boolean isDirty() {
         return dirty;
     }
+
     public boolean isActive() {
         return active;
     }
