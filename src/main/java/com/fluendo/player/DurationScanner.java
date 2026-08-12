@@ -26,6 +26,7 @@ import com.jcraft.jogg.StreamState;
 import com.jcraft.jogg.SyncState;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +36,6 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- *
  * @author maik
  */
 public class DurationScanner {
@@ -51,11 +51,10 @@ public class DurationScanner {
     private final Page og = new Page();
     private final Packet op = new Packet();
 
-    public static class TimingInfo {
-        public float startTime = -1;
-        public float duration = -1;
-        public TimingInfo(float st, float d) { startTime = st; duration = d; }
-        public TimingInfo() { startTime = -1; duration = -1; }
+    public record TimingInfo(float startTime, float duration) {
+        public TimingInfo() {
+            this(-1, -1);
+        }
     }
 
     public DurationScanner() {
@@ -63,11 +62,9 @@ public class DurationScanner {
     }
 
     private InputStream openWithConnection(URL url, String userId, String password, long offset) throws IOException {
-        InputStream dis;
         String userAgent = "Cortado";
 
         URLConnection uc = url.openConnection();
-
         uc.setRequestProperty("Connection", "Keep-Alive");
 
         String range;
@@ -92,7 +89,7 @@ public class DurationScanner {
         uc.setRequestProperty("Content-Type", "application/octet-stream");
 
         /* This will send the request. */
-        dis = uc.getInputStream();
+        InputStream dis = uc.getInputStream();
 
         String responseRange = uc.getHeaderField("Content-Range");
         if (responseRange == null) {
@@ -196,15 +193,14 @@ public class DurationScanner {
 
                 if (info.ready) {
                     switch (type) {
-                        case VORBIS:
-                        case THEORA: {
+                        case VORBIS, THEORA -> {
                             com.fluendo.plugin.OggPayload pl = info.decoder;
                             long t = pl.granuleToTime(og.granulepos()) - pl.granuleToTime(info.startgranule);
                             if (t > time) {
                                 time = t;
                             }
-                            break;
                         }
+                        default -> {}
                     }
                 }
             }
@@ -224,19 +220,19 @@ public class DurationScanner {
             long totalbytes = 0;
 
             byte[] buffer = new byte[1024];
-            
+
             try (InputStream is = openWithConnection(url, user, password, 0)) {
                 int read = is.read(buffer);
                 // read beginning of the stream
                 while (totalbytes < headbytes && read > 0) {
                     totalbytes += read;
                     TimingInfo tinfo = scanBuffer(buffer, read);
-                    if (tinfo.duration >= 0) {
-                        float t = tinfo.duration;
-                        time = t > time ? t : time;
+                    if (tinfo.duration() >= 0) {
+                        float t = tinfo.duration();
+                        time = Math.max(t, time);
                     }
-                    if (tinfo.startTime >= 0 && start < 0) {
-                        start = tinfo.startTime;
+                    if (tinfo.startTime() >= 0 && start < 0) {
+                        start = tinfo.startTime();
                     }
                     read = is.read(buffer);
                 }
@@ -253,8 +249,8 @@ public class DurationScanner {
                 while (read > 0 && totalbytes < (headbytes + tailbytes) * 2) {
                     totalbytes += read;
                     TimingInfo tinfo = scanBuffer(buffer, read);
-                    if (tinfo.duration >= 0) {
-                        time = tinfo.duration > time ? tinfo.duration : time;
+                    if (tinfo.duration() >= 0) {
+                        time = Math.max(tinfo.duration(), time);
                     }
                     read = is.read(buffer);
                 }
@@ -276,10 +272,10 @@ public class DurationScanner {
     }
 
     public static void main(String[] args) throws IOException {
-        URL url = new URL(args[0]);
+        URL url = URI.create(args[0]).toURL();
 
         DurationScanner ds = new DurationScanner();
         TimingInfo tinfo = ds.scanURL(url, null, null);
-        System.out.println(tinfo.duration);
+        System.out.println(tinfo.duration());
     }
 }
