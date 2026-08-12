@@ -715,7 +715,7 @@ public final class Decode {
        bitstream */
     /* until it hits a leaf at which point we have decoded a token */
     while (CurrentRoot.value < 0 ){
-      CurrentRoot = CurrentRoot.Child[(int)opb.readB(1)];
+      CurrentRoot = CurrentRoot.child[(int)opb.readB(1)];
     }
     return CurrentRoot.value;
   }
