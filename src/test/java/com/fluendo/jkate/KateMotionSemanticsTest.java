@@ -10,22 +10,20 @@ class KateMotionSemanticsTest {
     @Test
     @DisplayName("Factory: Valid indices return correct motion semantics instances")
     void testCreateMotionSemanticsValid() throws KateException {
-        KateMotionSemantics timeSemantics = KateMotionSemantics.CreateMotionSemantics(0);
+        KateMotionSemantics timeSemantics = KateMotionSemantics.createMotionSemantics(0);
         assertNotNull(timeSemantics);
         assertEquals(KateMotionSemantics.KMS_TIME, timeSemantics);
-        assertEquals(KateMotionSemantics.kms_time, timeSemantics);
 
-        KateMotionSemantics drawWidthSemantics = KateMotionSemantics.CreateMotionSemantics(39);
+        KateMotionSemantics drawWidthSemantics = KateMotionSemantics.createMotionSemantics(39);
         assertNotNull(drawWidthSemantics);
         assertEquals(KateMotionSemantics.KMS_DRAW_WIDTH, drawWidthSemantics);
-        assertEquals(KateMotionSemantics.kms_draw_width, drawWidthSemantics);
     }
 
     @Test
     @DisplayName("Factory: Out of bounds negative index throws KateException")
     void testCreateMotionSemanticsNegativeIndex() {
         assertThrows(KateException.class, () -> {
-            KateMotionSemantics.CreateMotionSemantics(-1);
+            KateMotionSemantics.createMotionSemantics(-1);
         });
     }
 
@@ -33,7 +31,7 @@ class KateMotionSemanticsTest {
     @DisplayName("Factory: Out of bounds positive index throws KateException")
     void testCreateMotionSemanticsOutOfBoundsIndex() {
         assertThrows(KateException.class, () -> {
-            KateMotionSemantics.CreateMotionSemantics(40);
+            KateMotionSemantics.createMotionSemantics(40);
         });
     }
 }
