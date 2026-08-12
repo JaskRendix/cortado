@@ -35,7 +35,7 @@ public class Queue extends Element {
     private static final int DEFAULT_HIGH_PERCENT = 70;
     private static final int DEFAULT_LEAKY = NO_LEAK;
 
-    private final Vector<java.lang.Object> queue = new Vector<>();
+    private final List<java.lang.Object> queue = new ArrayList<>();
     private int srcResult = Pad.WRONG_STATE;
     private int size;
     private boolean isBuffering;
@@ -68,7 +68,7 @@ public class Queue extends Element {
                 ((Buffer) obj).free();
             }
         }
-        queue.setSize(0);
+        queue.clear();
         size = 0;
         isBuffering = true;
     }
@@ -106,11 +106,11 @@ public class Queue extends Element {
         java.lang.Object leak;
         while (isFilled()) {
             synchronized (queue) {
-                leak = queue.lastElement();
+                leak = queue.get(queue.size() - 1);
                 if (leak == null) {
                     Debug.error("There is nothing to dequeue and the queue is still filled. This should not happen.");
                 }
-                queue.removeElementAt(queue.size() - 1);
+                queue.remove(queue.size() - 1);
                 if (leak instanceof Buffer) {
                     ((Buffer) leak).free();
                 }
@@ -139,8 +139,7 @@ public class Queue extends Element {
                         Thread.currentThread().interrupt();
                     }
                 }
-                obj = queue.lastElement();
-                queue.removeElement(obj);
+                obj = queue.remove(queue.size() - 1);
                 queue.notifyAll();
             }
 
@@ -188,7 +187,7 @@ public class Queue extends Element {
             boolean res = true;
 
             switch (mode) {
-                case MODE_NONE:
+                case MODE_NONE -> {
                     synchronized (queue) {
                         clearQueue();
                         srcResult = WRONG_STATE;
@@ -201,8 +200,8 @@ public class Queue extends Element {
                     }
                     postMessage(Message.newStreamStatus(this, false, Pad.WRONG_STATE, "stopping"));
                     res = stopTask();
-                    break;
-                case MODE_PUSH:
+                }
+                case MODE_PUSH -> {
                     isEOS = false;
                     synchronized (queue) {
                         srcResult = OK;
@@ -219,13 +218,13 @@ public class Queue extends Element {
                         postMessage(Message.newStreamStatus(this, true, Pad.OK, "activating"));
                         res = startTask("cortado-Queue-Stream-" + Debug.genId());
                     }
-                    break;
-                default:
+                }
+                default -> {
                     synchronized (queue) {
                         srcResult = WRONG_STATE;
                     }
                     res = false;
-                    break;
+                }
             }
             return res;
         }
@@ -238,7 +237,7 @@ public class Queue extends Element {
             boolean doQueue = true;
 
             switch (type) {
-                case FLUSH_START:
+                case FLUSH_START -> {
                     srcpad.pushEvent(event);
                     synchronized (queue) {
                         srcResult = WRONG_STATE;
@@ -250,8 +249,8 @@ public class Queue extends Element {
                     postMessage(Message.newStreamStatus(srcpad, false, Pad.WRONG_STATE, "flush start"));
                     srcpad.pauseTask();
                     doQueue = false;
-                    break;
-                case FLUSH_STOP:
+                }
+                case FLUSH_STOP -> {
                     srcpad.pushEvent(event);
                     isEOS = false;
                     synchronized (queue) {
@@ -266,8 +265,8 @@ public class Queue extends Element {
                     postMessage(Message.newStreamStatus(srcpad, true, Pad.OK, "restart after flush"));
                     srcpad.startTask("cortado-Queue-Stream-" + Debug.genId());
                     doQueue = false;
-                    break;
-                case EOS:
+                }
+                case EOS -> {
                     isEOS = true;
                     Debug.log(Debug.INFO, "got EOS: " + this);
                     if (isBuffer) {
@@ -276,14 +275,12 @@ public class Queue extends Element {
                             postMessage(Message.newBuffering(this, isBuffering, 100));
                         }
                     }
-                    break;
-                case NEWSEGMENT:
-                default:
-                    break;
+                }
+                default -> {}
             }
             if (doQueue) {
                 synchronized (queue) {
-                    queue.insertElementAt(event, 0);
+                    queue.add(0, event);
                     queue.notifyAll();
                 }
             }
@@ -300,19 +297,17 @@ public class Queue extends Element {
 
                 while (isFilled()) {
                     switch (leaky) {
-                        case LEAK_UPSTREAM:
+                        case LEAK_UPSTREAM -> {
                             tailNeedsDiscont = true;
                             Debug.debug(parent.getName() + " is full, leaking buffer on upstream end");
                             buf.free();
                             queue.notifyAll();
                             return OK;
-                        case LEAK_DOWNSTREAM:
+                        }
+                        case LEAK_DOWNSTREAM -> {
                             leakDownstream();
-                            break;
-                        default:
-                            Debug.warn("Unknown leaky type, using default");
-                            /* fall-through */
-                        case NO_LEAK:
+                        }
+                        case NO_LEAK -> {
                             try {
                                 Debug.debug(parent.getName() + " full, waiting...");
                                 queue.wait();
@@ -325,7 +320,22 @@ public class Queue extends Element {
                                 buf.free();
                                 return WRONG_STATE;
                             }
-                            break;
+                        }
+                        default -> {
+                            Debug.warn("Unknown leaky type, using default");
+                            try {
+                                Debug.debug(parent.getName() + " full, waiting...");
+                                queue.wait();
+                                if (srcResult != OK) {
+                                    buf.free();
+                                    return srcResult;
+                                }
+                            } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                                buf.free();
+                                return WRONG_STATE;
+                            }
+                        }
                     }
                 }
 
@@ -338,7 +348,7 @@ public class Queue extends Element {
                 updateBuffering();
 
                 Debug.log(Debug.DEBUG, parent.getName() + " <<< " + buf);
-                queue.insertElementAt(buf, 0);
+                queue.add(0, buf);
                 if (maxSize == -1) {
                     Debug.log(Debug.DEBUG, parent.getName() + " count = " + queue.size() + "/" + maxBuffers);
                 } else {
@@ -363,39 +373,30 @@ public class Queue extends Element {
 
     @Override
     public boolean setProperty(String name, java.lang.Object value) {
-        if (name.equals("maxBuffers"))
-            maxBuffers = Integer.parseInt(value.toString());
-        else if (name.equals("maxSize"))
-            maxSize = Integer.parseInt(value.toString());
-        else if (name.equals("isBuffer"))
-            isBuffer = Boolean.parseBoolean(value.toString());
-        else if (name.equals("lowPercent"))
-            lowPercent = Integer.parseInt(value.toString());
-        else if (name.equals("highPercent"))
-            highPercent = Integer.parseInt(value.toString());
-        else if (name.equals("leaky"))
-            leaky = Integer.parseInt(value.toString());
-        else
-            return false;
-
+        switch (name) {
+            case "maxBuffers" -> maxBuffers = Integer.parseInt(value.toString());
+            case "maxSize" -> maxSize = Integer.parseInt(value.toString());
+            case "isBuffer" -> isBuffer = Boolean.parseBoolean(value.toString());
+            case "lowPercent" -> lowPercent = Integer.parseInt(value.toString());
+            case "highPercent" -> highPercent = Integer.parseInt(value.toString());
+            case "leaky" -> leaky = Integer.parseInt(value.toString());
+            default -> {
+                return false;
+            }
+        }
         return true;
     }
 
     @Override
     public java.lang.Object getProperty(String name) {
-        if (name.equals("maxBuffers"))
-            return Integer.valueOf(maxBuffers);
-        else if (name.equals("maxSize"))
-            return Integer.valueOf(maxSize);
-        else if (name.equals("isBuffer"))
-            return isBuffer ? "true" : "false";
-        else if (name.equals("lowPercent"))
-            return Integer.valueOf(lowPercent);
-        else if (name.equals("highPercent"))
-            return Integer.valueOf(highPercent);
-        else if (name.equals("leaky"))
-            return Integer.valueOf(leaky);
-
-        return null;
+        return switch (name) {
+            case "maxBuffers" -> Integer.valueOf(maxBuffers);
+            case "maxSize" -> Integer.valueOf(maxSize);
+            case "isBuffer" -> isBuffer ? "true" : "false";
+            case "lowPercent" -> Integer.valueOf(lowPercent);
+            case "highPercent" -> Integer.valueOf(highPercent);
+            case "leaky" -> Integer.valueOf(leaky);
+            default -> null;
+        };
     }
 }
