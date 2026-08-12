@@ -689,7 +689,7 @@ public class DCTDecode
   
     isBaseFrame = pbi.getFrameType() == Constants.BASE_FRAME;
 
-    pbi.filter.SetupLoopFilter(pbi.FrameQIndex);
+    pbi.filter.setupLoopFilter(pbi.FrameQIndex);
   
     /* for y,u,v */
     for ( j = 0; j < 3 ; j++) {
@@ -814,7 +814,7 @@ public class DCTDecode
     }
 
     /* Apply a loop filter to edge pixels of updated blocks */
-    pbi.filter.LoopFilter(pbi);
+    pbi.filter.loopFilter(pbi);
 
     /* We may need to update the UMV border */ 
     UpdateUMVBorder(pbi, pbi.LastFrameRecon);
