@@ -374,9 +374,9 @@ public class Info {
             km.durations[n] = floats[0][n];
         }
 
-        km.x_mapping = KateMotionMapping.CreateMotionMapping(opb.read(8));
-        km.y_mapping = KateMotionMapping.CreateMotionMapping(opb.read(8));
-        km.semantics = KateMotionSemantics.CreateMotionSemantics(opb.read(8));
+        km.x_mapping = KateMotionMapping.createMotionMapping(opb.read(8));
+        km.y_mapping = KateMotionMapping.createMotionMapping(opb.read(8));
+        km.semantics = KateMotionSemantics.createMotionSemantics(opb.read(8));
         km.periodic = (opb.read1() != 0);
 
         Bitwise.skipWarp(opb);
