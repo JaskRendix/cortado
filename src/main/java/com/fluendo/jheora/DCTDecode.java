@@ -153,7 +153,7 @@ public class DCTDecode
     ReconPixelIndex = pbi.recon_pixel_index_table[FragmentNumber];
   
     /* Get the pixel index for the first pixel in the fragment. */
-    Recon.ReconIntra (pbi.ThisFrameRecon, ReconPixelIndex, ReconDataBuffer, ReconPixelsPerLine);
+    Recon.reconIntra (pbi.ThisFrameRecon, ReconPixelIndex, ReconDataBuffer, ReconPixelsPerLine);
   }
   
   private void ExpandBlock ( Playback pbi, int FragmentNumber ){
@@ -268,7 +268,7 @@ public class DCTDecode
       /* Reconstruct the pixel data using the last frame reconstruction
          and change data when the motion vector is (0,0), the recon is
          based on the lastframe without loop filtering---- for testing */
-      Recon.ReconInter(pbi.ThisFrameRecon, ReconPixelIndex,
+      Recon.reconInter(pbi.ThisFrameRecon, ReconPixelIndex,
                 pbi.LastFrameRecon, ReconPixelIndex,
                 ReconDataBuffer, ReconPixelsPerLine );
 
@@ -326,14 +326,14 @@ public class DCTDecode
       if (ReconPtr2Offset == 0 ) {
         /* Reconstruct the pixel dats from the reference frame and change data
            (no half pixel in this case as the two references were the same. */
-        Recon.ReconInter(pbi.ThisFrameRecon, ReconPixelIndex,
+        Recon.reconInter(pbi.ThisFrameRecon, ReconPixelIndex,
                     LastFrameRecPtr, LastFrameRecOffset,
   		  ReconDataBuffer, ReconPixelsPerLine );
       }else{
         /* Fractional pixel reconstruction. */
         /* Note that we only use two pixels per reconstruction even for
            the diagonal. */
-        Recon.ReconInterHalfPixel2(pbi.ThisFrameRecon, ReconPixelIndex,
+        Recon.reconInterHalfPixel2(pbi.ThisFrameRecon, ReconPixelIndex,
                             LastFrameRecPtr, LastFrameRecOffset, 
 			    LastFrameRecPtr, LastFrameRecOffset+ReconPtr2Offset,
                             ReconDataBuffer, ReconPixelsPerLine );
@@ -342,13 +342,13 @@ public class DCTDecode
       /* Golden frame with motion vector */
       /* Reconstruct the pixel data using the golden frame
          reconstruction and change data */
-      Recon.ReconInter(pbi.ThisFrameRecon, ReconPixelIndex,
+      Recon.reconInter(pbi.ThisFrameRecon, ReconPixelIndex,
                   pbi.GoldenFrame, ReconPixelIndex ,
                   ReconDataBuffer, ReconPixelsPerLine );
     } else {
       /* Simple Intra coding */
       /* Get the pixel index for the first pixel in the fragment. */
-      Recon.ReconIntra(pbi.ThisFrameRecon, ReconPixelIndex,
+      Recon.reconIntra(pbi.ThisFrameRecon, ReconPixelIndex,
                   ReconDataBuffer, ReconPixelsPerLine );
     }
   }
@@ -517,7 +517,7 @@ public class DCTDecode
     for ( i = 0; i < pbi.YPlaneFragments; i++ ) {
       if ( pbi.display_fragments[i] != 0) {
         PixelIndex = pbi.recon_pixel_index_table[i];
-        Recon.CopyBlock(SrcReconPtr, DestReconPtr, PixelIndex, PlaneLineStep);
+        Recon.copyBlock(SrcReconPtr, DestReconPtr, PixelIndex, PlaneLineStep);
       }
     }
 
@@ -526,7 +526,7 @@ public class DCTDecode
     for ( i = pbi.YPlaneFragments; i < pbi.UnitFragments; i++ ) {
       if ( pbi.display_fragments[i] != 0) {
         PixelIndex = pbi.recon_pixel_index_table[i];
-        Recon.CopyBlock(SrcReconPtr, DestReconPtr, PixelIndex, PlaneLineStep);
+        Recon.copyBlock(SrcReconPtr, DestReconPtr, PixelIndex, PlaneLineStep);
       }
     }
   }
@@ -544,7 +544,7 @@ public class DCTDecode
     for (i = 0; i < pbi.YPlaneFragments; i++) {
       if (pbi.display_fragments[i] == 0) {
         PixelIndex = pbi.recon_pixel_index_table[i];
-        Recon.CopyBlock(SrcReconPtr, DestReconPtr, PixelIndex, PlaneLineStep);
+        Recon.copyBlock(SrcReconPtr, DestReconPtr, PixelIndex, PlaneLineStep);
       }
     }
 
@@ -553,7 +553,7 @@ public class DCTDecode
     for (i = pbi.YPlaneFragments; i < pbi.UnitFragments; i++) {
       if (pbi.display_fragments[i] == 0) {
         PixelIndex = pbi.recon_pixel_index_table[i];
-        Recon.CopyBlock(SrcReconPtr, DestReconPtr, PixelIndex, PlaneLineStep);
+        Recon.copyBlock(SrcReconPtr, DestReconPtr, PixelIndex, PlaneLineStep);
       }
     }
   }
