@@ -10,8 +10,8 @@
  * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Library General Public License for more details.
  * 
  * You should have received a copy of the GNU Library General Public
  * License along with this program; if not, write to the Free Software
@@ -20,26 +20,18 @@
 
 package com.fluendo.jkate;
 
-public class KateTextEncoding {
-    public static final KateTextEncoding KATE_UTF8 = new KateTextEncoding();
-    
-    // Maintain legacy reference for backward compatibility
-    public static final KateTextEncoding kate_utf8 = KATE_UTF8;
+public enum KateTextEncoding {
+    KATE_UTF8;
 
-    private static final KateTextEncoding[] LIST = {
-        KATE_UTF8,
-    };
-
-    private KateTextEncoding() {
-    }
+    private static final KateTextEncoding[] VALUES = values();
 
     /**
-     * Create a KateTextEncoding object from an integer.
+     * Create a KateTextEncoding object from an integer index.
      */
-    public static KateTextEncoding CreateTextEncoding(int idx) throws KateException {
-        if (idx < 0 || idx >= LIST.length) {
+    public static KateTextEncoding createTextEncoding(int idx) throws KateException {
+        if (idx < 0 || idx >= VALUES.length) {
             throw new KateException("Text encoding " + idx + " out of bounds");
         }
-        return LIST[idx];
+        return VALUES[idx];
     }
 }
