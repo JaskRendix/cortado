@@ -42,13 +42,13 @@ class EventTest {
     @DisplayName("Constructor: Info-based constructor with valid Info parameter maps properties correctly")
     void testInfoConstructorWithValidInfo() throws KateException {
         Info info = new Info();
-        info.text_encoding = KateTextEncoding.CreateTextEncoding(0);
+        info.text_encoding = KateTextEncoding.createTextEncoding(0);
 
         Event event = new Event(info);
 
         assertEquals(info, event.ki);
         assertEquals(-1, event.id);
-        assertEquals(KateTextEncoding.kate_utf8, event.text_encoding);
+        assertEquals(KateTextEncoding.KATE_UTF8, event.text_encoding);
         assertNull(event.language);
         assertNull(event.kr);
         assertNull(event.ks);
