@@ -38,8 +38,8 @@ public final class State
         if (pbi != null) {
             pbi.info.clear();
             pbi.clearHuffmanSet();
-            FrInit.ClearFragmentInfo(pbi);
-            FrInit.ClearFrameInfo(pbi);
+            FrInit.clearFragmentInfo(pbi);
+            FrInit.clearFrameInfo(pbi);
             pbi.clear();
         }
         pbi = null;
