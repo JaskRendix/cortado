@@ -1,12 +1,12 @@
 /* Jheora
  * Copyright (C) 2004 Fluendo S.L.
- *  
+ * 
  * Written by: 2004 Wim Taymans <wim@fluendo.com>
- *   
+ *  
  * Many thanks to 
  *   The Xiph.Org Foundation http://www.xiph.org/
  * Jheora was based on their Theora reference decoder.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -24,56 +24,61 @@
 package com.fluendo.jheora;
 
 import java.awt.image.*;
-//import java.util.Random;
 
-public class YUVBuffer implements ImageProducer {
+public final class YUVBuffer implements ImageProducer {
 
-    public int y_width;
-    public int y_height;
-    public int y_stride;
-    public int uv_width;
-    public int uv_height;
-    public int uv_stride;
+    public int yWidth;
+    public int yHeight;
+    public int yStride;
+    public int uvWidth;
+    public int uvHeight;
+    public int uvStride;
     public short[] data;
-    public int y_offset;
-    public int u_offset;
-    public int v_offset;
+    public int yOffset;
+    public int uOffset;
+    public int vOffset;
+    
     private int[] pixels;
-    private int pix_size;
+    private int pixSize;
     private boolean newPixels = true;
-    private ColorModel colorModel = ColorModel.getRGBdefault();
+    private final ColorModel colorModel = ColorModel.getRGBdefault();
     private ImageProducer filteredThis;
-    private int crop_x;
-    private int crop_y;
-    private int crop_w;
-    private int crop_h;
+    private int cropX;
+    private int cropY;
+    private int cropW;
+    private int cropH;
 
+    @Override
     public void addConsumer(ImageConsumer ic) {
     }
 
+    @Override
     public boolean isConsumer(ImageConsumer ic) {
         return false;
     }
 
+    @Override
     public void removeConsumer(ImageConsumer ic) {
     }
 
+    @Override
     public void requestTopDownLeftRightResend(ImageConsumer ic) {
     }
 
+    @Override
     public void startProduction(ImageConsumer ic) {
         ic.setColorModel(colorModel);
         ic.setHints(ImageConsumer.TOPDOWNLEFTRIGHT |
                 ImageConsumer.COMPLETESCANLINES |
                 ImageConsumer.SINGLEFRAME |
                 ImageConsumer.SINGLEPASS);
-        ic.setDimensions(y_width, y_height);
-        prepareRGBData(0, 0, y_width, y_height);
-        ic.setPixels(0, 0, y_width, y_height, colorModel, pixels, 0, y_width);
+        ic.setDimensions(yWidth, yHeight);
+        prepareRgbData(0, 0, yWidth, yHeight);
+        ic.setPixels(0, 0, yWidth, yHeight, colorModel, pixels, 0, yWidth);
         ic.imageComplete(ImageConsumer.STATICIMAGEDONE);
     }
 
-    private synchronized void prepareRGBData(int x, int y, int width, int height) {
+    private synchronized void prepareRgbData(int x, int y, int width, int height) {
         if (!newPixels) {
             return;
         }
@@ -81,15 +86,19 @@ public class YUVBuffer implements ImageProducer {
         int size = width * height;
 
         try {
-            if (size != pix_size) {
+            if (size != pixSize) {
                 pixels = new int[size];
-                pix_size = size;
+                pixSize = size;
             }
             /* rely on the buffer size being set correctly, and the only allowed
              video formats being Theora's video formats */
-            if (uv_height < y_height) YUV420toRGB(x, y, width, height);
-            else if (uv_width == y_width) YUV444toRGB(x, y, width, height);
-            else YUV422toRGB(x, y, width, height);
+            if (uvHeight < yHeight) {
+                yuv420ToRgb(x, y, width, height);
+            } else if (uvWidth == yWidth) {
+                yuv444ToRgb(x, y, width, height);
+            } else {
+                yuv422ToRgb(x, y, width, height);
+            }
         } catch (Throwable t) {
             /* ignore */
         }
@@ -102,24 +111,22 @@ public class YUVBuffer implements ImageProducer {
 
     // cropping code provided by Benjamin Schwartz
     public Object getObject(int x, int y, int width, int height) {
-        if (x == 0 && y == 0 && width == y_width && height == y_height) {
+        if (x == 0 && y == 0 && width == yWidth && height == yHeight) {
             return this;
         } else {
-            if (x != crop_x || y != crop_y || width != crop_w || height != crop_h) {
-                crop_x = x;
-                crop_y = y;
-                crop_w = width;
-                crop_h = height;
-                CropImageFilter cropFilter = new CropImageFilter(crop_x, crop_y, crop_w, crop_h);
+            if (x != cropX || y != cropY || width != cropW || height != cropH) {
+                cropX = x;
+                cropY = y;
+                cropW = width;
+                cropH = height;
+                CropImageFilter cropFilter = new CropImageFilter(cropX, cropY, cropW, cropH);
                 filteredThis = new FilteredImageSource(this, cropFilter);
             }
             return filteredThis;
         }
     }
 
-   
-    private void YUV420toRGB(int x, int y, int width, int height) {
-
+    private void yuv420ToRgb(int x, int y, int width, int height) {
         /*
          * this modified version of the original YUVtoRGB was
          * provided by Ilan and Yaniv Ben Hagai.
@@ -129,146 +136,140 @@ public class YUVBuffer implements ImageProducer {
          */
 
         // Set up starting values for YUV pointers
-        int YPtr = y_offset + x + y * (y_stride);
-        int YPtr2 = YPtr + y_stride;
-        int UPtr = u_offset + x / 2 + (y / 2) * (uv_stride);
-        int VPtr = v_offset + x / 2 + (y / 2) * (uv_stride);
-        int RGBPtr = 0;
-        int RGBPtr2 = width;
+        int yPtr = yOffset + x + y * yStride;
+        int yPtr2 = yPtr + yStride;
+        int uPtr = uOffset + x / 2 + (y / 2) * uvStride;
+        int vPtr = vOffset + x / 2 + (y / 2) * uvStride;
+        int rgbPtr = 0;
+        int rgbPtr2 = width;
         int width2 = width / 2;
         int height2 = height / 2;
 
         // Set the line step for the Y and UV planes and YPtr2
-        int YStep = y_stride * 2 - (width2) * 2;
-        int UVStep = uv_stride - (width2);
-        int RGBStep = width;
+        int yStep = yStride * 2 - width2 * 2;
+        int uvStep = uvStride - width2;
+        int rgbStep = width;
 
         for (int i = 0; i < height2; i++) {
             for (int j = 0; j < width2; j++) {
-                int D, E, r, g, b, t1, t2, t3, t4;
+                int d, e, r, g, b, t1, t2, t3, t4;
 
-                D = data[UPtr++];
-                E = data[VPtr++];
+                d = data[uPtr++];
+                e = data[vPtr++];
 
-                t1 = 298 * (data[YPtr] - 16);
-                t2 = 409 * E - 409*128 + 128;
-                t3 = (100 * D) + (208 * E) - 100*128 - 208*128 - 128;
-                t4 = 516 * D - 516*128 + 128;
-
-                r = (t1 + t2);
-                g = (t1 - t3);
-                b = (t1 + t4);
-
-                // retrieve data for next pixel now, hide latency?
-                t1 = 298 * (data[YPtr + 1] - 16);
-
-                // pack pixel
-                pixels[RGBPtr] =
-                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b)>>8) | 0xff000000;
+                t1 = 298 * (data[yPtr] - 16);
+                t2 = 409 * e - 409 * 128 + 128;
+                t3 = (100 * d) + (208 * e) - 100 * 128 - 208 * 128 - 128;
+                t4 = 516 * d - 516 * 128 + 128;
 
                 r = (t1 + t2);
                 g = (t1 - t3);
                 b = (t1 + t4);
 
                 // retrieve data for next pixel now, hide latency?
-                t1 = 298 * (data[YPtr2] - 16);
+                t1 = 298 * (data[yPtr + 1] - 16);
 
                 // pack pixel
-                pixels[RGBPtr + 1] =
-                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b)>>8) | 0xff000000;
-
+                pixels[rgbPtr] =
+                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b) >> 8) | 0xff000000;
 
                 r = (t1 + t2);
                 g = (t1 - t3);
                 b = (t1 + t4);
 
                 // retrieve data for next pixel now, hide latency?
-                t1 = 298 * (data[YPtr2 + 1] - 16);
+                t1 = 298 * (data[yPtr2] - 16);
 
                 // pack pixel
-                pixels[RGBPtr2] =
-                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b)>>8) | 0xff000000;
+                pixels[rgbPtr + 1] =
+                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b) >> 8) | 0xff000000;
 
+                r = (t1 + t2);
+                g = (t1 - t3);
+                b = (t1 + t4);
+
+                // retrieve data for next pixel now, hide latency?
+                t1 = 298 * (data[yPtr2 + 1] - 16);
+
+                // pack pixel
+                pixels[rgbPtr2] =
+                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b) >> 8) | 0xff000000;
 
                 r = (t1 + t2);
                 g = (t1 - t3);
                 b = (t1 + t4);
 
                 // pack pixel
-                pixels[RGBPtr2 + 1] =
-                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b)>>8) | 0xff000000;
-                YPtr += 2;
-                YPtr2 += 2;
-                RGBPtr += 2;
-                RGBPtr2 += 2;
+                pixels[rgbPtr2 + 1] =
+                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b) >> 8) | 0xff000000;
+                
+                yPtr += 2;
+                yPtr2 += 2;
+                rgbPtr += 2;
+                rgbPtr2 += 2;
             }
 
             // Increment the various pointers
-            YPtr += YStep;
-            YPtr2 += YStep;
-            UPtr += UVStep;
-            VPtr += UVStep;
-            RGBPtr += RGBStep;
-            RGBPtr2 += RGBStep;
+            yPtr += yStep;
+            yPtr2 += yStep;
+            uPtr += uvStep;
+            vPtr += uvStep;
+            rgbPtr += rgbStep;
+            rgbPtr2 += rgbStep;
         }
     }
 
-    // kept for reference
-    /*private static final int clamp255(int val) {
-        return ((~(val>>31)) & 255 & (val | ((255-val)>>31)));
-    }*/
-    
-    private static final int clamp65280(int val) {
+    private static int clamp65280(int val) {
         /* 65280 == 255 << 8 == 0x0000FF00 */
         /* This function is just like clamp255, but only acting on the top
-        24 bits (bottom 8 are zero'd).  This allows val, initially scaled
-        to 65536, to be clamped without shifting, thereby saving one shift.
-        (RGB packing must be aware that the info is in the second-lowest
-        byte.) */
-        return ((~(val>>31)) & 65280 & (val | ((65280-val)>>31)));
+         24 bits (bottom 8 are zero'd).  This allows val, initially scaled
+         to 65536, to be clamped without shifting, thereby saving one shift.
+         (RGB packing must be aware that the info is in the second-lowest
+         byte.) */
+        return (~(val >> 31)) & 65280 & (val | ((65280 - val) >> 31));
     }
-    
-    private void YUV444toRGB(int x, int y, int width, int height) {
+
+    private void yuv444ToRgb(int x, int y, int width, int height) {
         for (int j = 0; j < height; j++) {
             for (int i = 0; i < width; i++) {
-                int D, E, r, g, b, t1, t2, t3, t4, p;
-                p = x + i + (j + y)*y_stride;
+                int d, e, r, g, b, t1, t2, t3, t4, p;
+                p = x + i + (j + y) * yStride;
 
-                D = data[u_offset + p];
-                E = data[v_offset + p];
+                d = data[uOffset + p];
+                e = data[vOffset + p];
 
-                t1 = 298 * (data[y_offset + p] - 16);
-                t2 = 409 * E - 409*128 + 128;
-                t3 = (100 * D) + (208 * E) - 100*128 - 208*128 - 128;
-                t4 = 516 * D - 516*128 + 128;
+                t1 = 298 * (data[yOffset + p] - 16);
+                t2 = 409 * e - 409 * 128 + 128;
+                t3 = (100 * d) + (208 * e) - 100 * 128 - 208 * 128 - 128;
+                t4 = 516 * d - 516 * 128 + 128;
 
                 r = (t1 + t2);
                 g = (t1 - t3);
                 b = (t1 + t4);
 
                 // pack pixel
-                pixels[i + j*width] =
-                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b)>>8) | 0xff000000;
+                pixels[i + j * width] =
+                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b) >> 8) | 0xff000000;
             }
         }
     }
-    
-    private void YUV422toRGB(int x, int y, int width, int height) {
-        int x2 = x/2;
-        int width2 = width/2;
+
+    private void yuv422ToRgb(int x, int y, int width, int height) {
+        int x2 = x / 2;
+        int width2 = width / 2;
         for (int j = 0; j < height; j++) {
             for (int i = 0; i < width2; i++) {
-                int D, E, r, g, b, t1, t2, t3, t4, p;
-                p = x2 + i + (y + j)*uv_stride;
+                int d, e, r, g, b, t1, t2, t3, t4, p;
+                p = x2 + i + (y + j) * uvStride;
 
-                D = data[u_offset + p];
-                E = data[v_offset + p];
+                d = data[uOffset + p];
+                e = data[vOffset + p];
 
-                p = y_offset + 2*(x2 + i) + (y + j)*y_stride;
+                p = yOffset + 2 * (x2 + i) + (y + j) * yStride;
                 t1 = 298 * (data[p] - 16);
-                t2 = 409 * E - 409*128 + 128;
-                t3 = (100 * D) + (208 * E) - 100*128 - 208*128 - 128;
-                t4 = 516 * D - 516*128 + 128;
+                t2 = 409 * e - 409 * 128 + 128;
+                t3 = (100 * d) + (208 * e) - 100 * 128 - 208 * 128 - 128;
+                t4 = 516 * d - 516 * 128 + 128;
 
                 r = (t1 + t2);
                 g = (t1 - t3);
@@ -276,11 +277,11 @@ public class YUVBuffer implements ImageProducer {
                 
                 p++;
                 t1 = 298 * (data[p] - 16);
-                                
+                                        
                 // pack pixel
-                p = 2*i + j*width;
+                p = 2 * i + j * width;
                 pixels[p] =
-                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b)>>8) | 0xff000000;
+                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b) >> 8) | 0xff000000;
                 
                 r = (t1 + t2);
                 g = (t1 - t3);
@@ -289,51 +290,8 @@ public class YUVBuffer implements ImageProducer {
 
                 // pack pixel
                 pixels[p] =
-                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b)>>8) | 0xff000000;
+                        (clamp65280(r) << 8) | clamp65280(g) | (clamp65280(b) >> 8) | 0xff000000;
             }
         }
     }
-
-
-    // some benchmarking stuff, uncomment if you need it
-    /*public static void main(String[] args) {
-        YUVBuffer yuvbuf = new YUVBuffer();
-
-        // let's create a 1280x720 picture with noise
-
-        int x = 1280;
-        int y = 720;
-
-        int size = (x * y) + (x * y) / 2;
-        short[] picdata = new short[size];
-
-        Random r = new Random();
-        for (int i = 0; i < picdata.length; ++i) {
-            picdata[i] = (short) (r.nextInt(255) | 0xFF);
-        }
-
-        System.out.println("bench...");
-
-        yuvbuf.data = picdata;
-        yuvbuf.y_height = y;
-        yuvbuf.y_width = x;
-        yuvbuf.y_stride = x;
-        yuvbuf.uv_height = y / 2;
-        yuvbuf.uv_width = x / 2;
-        yuvbuf.uv_stride = x / 2;
-        yuvbuf.u_offset = x / 2;
-        yuvbuf.v_offset = x + x / 2;
-
-        int times = 5000;
-
-        long start = System.currentTimeMillis();
-        for (int i = 0; i < times; ++i) {
-            yuvbuf.newPixels();
-            yuvbuf.prepareRGBData(0, 0, x, y);
-        }
-        long end = System.currentTimeMillis();
-
-        System.out.println("average conversion time per frame: " + ((double) (end - start)) / (times * 1f) + " ms.");
-
-    }*/
 }
