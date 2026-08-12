@@ -18,13 +18,13 @@
 
 package com.fluendo.plugin;
 
-import java.util.*;
-import com.jcraft.jogg.*;
+import java.util.List;
+import com.jcraft.jogg.Packet;
+import com.fluendo.jst.Buffer;
 
 public interface OggPayload {
     /**
-     * Check if the packet contains the signature
-     * of the payload.
+     * Check if the packet contains the signature of the payload.
      */
     boolean isType(Packet op);
 
@@ -35,38 +35,38 @@ public interface OggPayload {
     int takeHeader(Packet op);
 
     /**
-     * Check if the packet contains a header packet
+     * Check if the packet contains a header packet.
      */
     boolean isHeader(Packet op);
 
     /**
-     * Check if the packet contains a keyframe
+     * Check if the packet contains a keyframe.
      */
     boolean isKeyFrame(Packet op);
 
     /**
-     * Get the first timestamp of the list of packets
+     * Get the first timestamp of the list of buffers.
      */
-    long getFirstTs(Vector<Packet> packets);
+    long getFirstTs(List<Buffer> packets);
 
     /**
-     * Convert the granule pos to a timestamp
+     * Convert the granule pos to a timestamp.
      */
     long granuleToTime(long gp);
 
     /**
-     * Get mime type
+     * Get mime type.
      */
     String getMime();
 
     /**
-     * Get mime type from the given packet
+     * Get mime type from the given packet.
      */
     String getMime(Packet op);
 
     /**
      * Check if the stream is discontinuous (eg, no need to wait
-     * for data on this stream before playing)
+     * for data on this stream before playing).
      */
     boolean isDiscontinuous();
 }
