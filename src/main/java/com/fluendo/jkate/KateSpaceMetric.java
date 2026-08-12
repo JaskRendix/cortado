@@ -10,8 +10,8 @@
  * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Library General Public License for more details.
  * 
  * You should have received a copy of the GNU Library General Public
  * License along with this program; if not, write to the Free Software
@@ -20,32 +20,20 @@
 
 package com.fluendo.jkate;
 
-public class KateSpaceMetric {
-    public static final KateSpaceMetric KATE_METRIC_PIXELS = new KateSpaceMetric();
-    public static final KateSpaceMetric KATE_METRIC_PERCENTAGE = new KateSpaceMetric();
-    public static final KateSpaceMetric KATE_METRIC_MILLIONTHS = new KateSpaceMetric();
+public enum KateSpaceMetric {
+    KATE_METRIC_PIXELS,
+    KATE_METRIC_PERCENTAGE,
+    KATE_METRIC_MILLIONTHS;
 
-    // Legacy references for backward compatibility
-    public static final KateSpaceMetric kate_metric_pixels = KATE_METRIC_PIXELS;
-    public static final KateSpaceMetric kate_metric_percentage = KATE_METRIC_PERCENTAGE;
-    public static final KateSpaceMetric kate_metric_millionths = KATE_METRIC_MILLIONTHS;
-
-    private static final KateSpaceMetric[] LIST = {
-        KATE_METRIC_PIXELS,
-        KATE_METRIC_PERCENTAGE,
-        KATE_METRIC_MILLIONTHS,
-    };
-
-    private KateSpaceMetric() {
-    }
+    private static final KateSpaceMetric[] VALUES = values();
 
     /**
-     * Create a KateSpaceMetric object from an integer.
+     * Create a KateSpaceMetric object from an integer index.
      */
-    public static KateSpaceMetric CreateSpaceMetric(int idx) throws KateException {
-        if (idx < 0 || idx >= LIST.length) {
+    public static KateSpaceMetric createSpaceMetric(int idx) throws KateException {
+        if (idx < 0 || idx >= VALUES.length) {
             throw new KateException("Space metrics " + idx + " out of bounds");
         }
-        return LIST[idx];
+        return VALUES[idx];
     }
 }
