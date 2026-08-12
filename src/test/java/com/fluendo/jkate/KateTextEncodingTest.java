@@ -10,17 +10,16 @@ class KateTextEncodingTest {
     @Test
     @DisplayName("Factory: Valid encoding index returns correct instance")
     void testCreateTextEncodingValid() throws KateException {
-        KateTextEncoding encoding = KateTextEncoding.CreateTextEncoding(0);
+        KateTextEncoding encoding = KateTextEncoding.createTextEncoding(0);
         assertNotNull(encoding);
         assertEquals(KateTextEncoding.KATE_UTF8, encoding);
-        assertEquals(KateTextEncoding.kate_utf8, encoding);
     }
 
     @Test
     @DisplayName("Factory: Out of bounds negative index throws KateException")
     void testCreateTextEncodingNegativeIndex() {
         assertThrows(KateException.class, () -> {
-            KateTextEncoding.CreateTextEncoding(-1);
+            KateTextEncoding.createTextEncoding(-1);
         });
     }
 
@@ -28,7 +27,7 @@ class KateTextEncodingTest {
     @DisplayName("Factory: Out of bounds positive index throws KateException")
     void testCreateTextEncodingOutOfBoundsIndex() {
         assertThrows(KateException.class, () -> {
-            KateTextEncoding.CreateTextEncoding(99);
+            KateTextEncoding.createTextEncoding(99);
         });
     }
 }
