@@ -19,8 +19,9 @@
 package com.fluendo.plugin;
 
 import java.awt.*;
-import java.util.*;
 import java.awt.image.*;
+import java.util.*;
+import java.util.List;
 import com.fluendo.jst.*;
 import com.fluendo.jtiger.Renderer;
 import com.fluendo.utils.*;
@@ -29,22 +30,22 @@ import com.fluendo.utils.*;
 public class KateOverlay extends Overlay {
     private Font font = null;
     private String text = null;
-    private Renderer tr = new Renderer();
+    private final Renderer tr = new Renderer();
     private Dimension image_dimension = null;
 
     /* This class allows lazy rendering, which may not even happen
        if the buffer is late, saving cycles, and ensuring buffers are
        not delayed on their way to the sink */
     private class OverlayProducer implements ImageProducer, ImageConsumer {
-        private Vector<ImageConsumer> consumers;
+        private final List<ImageConsumer> consumers;
 
-        private Component component;
-        private Renderer tr;
-        private Buffer buf;
-        private java.lang.Object object;
+        private final Component component;
+        private final Renderer tr;
+        private final Buffer buf;
+        private final java.lang.Object object;
 
         OverlayProducer(Component c, Renderer tr, Buffer b) {
-            consumers = new Vector<>();
+            consumers = new ArrayList<>();
             component = c;
             this.tr = tr;
             this.buf = b;
@@ -132,10 +133,10 @@ public class KateOverlay extends Overlay {
 
         private Image getImage(java.lang.Object object) {
             Image img;
-            if (object instanceof ImageProducer) {
-                img = component.createImage((ImageProducer) object);
-            } else if (object instanceof Image) {
-                img = (Image) object;
+            if (object instanceof ImageProducer imageProducer) {
+                img = component.createImage(imageProducer);
+            } else if (object instanceof Image image) {
+                img = image;
             } else {
                 System.out.println(this + ": unknown buffer received " + object);
                 img = null;
@@ -146,8 +147,7 @@ public class KateOverlay extends Overlay {
         /* tells the consumers there was an error producing the image */
         private void sendError() {
             Debug.log(Debug.WARNING, "Sending image error notification");
-            for (int n = 0; n < consumers.size(); ++n) {
-                ImageConsumer ic = consumers.elementAt(n);
+            for (ImageConsumer ic : consumers) {
                 ic.imageComplete(ImageConsumer.IMAGEERROR);
             }
         }
@@ -169,8 +169,7 @@ public class KateOverlay extends Overlay {
                         Debug.log(Debug.WARNING, "pixels are null!");
                         sendError();
                     } else {
-                        for (int n = 0; n < consumers.size(); ++n) {
-                            ImageConsumer ic = consumers.elementAt(n);
+                        for (ImageConsumer ic : consumers) {
                             ic.setHints(ImageConsumer.TOPDOWNLEFTRIGHT |
                                     ImageConsumer.COMPLETESCANLINES |
                                     ImageConsumer.SINGLEFRAME |
@@ -185,7 +184,7 @@ public class KateOverlay extends Overlay {
                     sendError();
                 }
             } catch (Exception e) {
-                Debug.log(Debug.WARNING, "Failed to grab pixels: " + e.toString());
+                Debug.log(Debug.WARNING, "Failed to grab pixels: " + e);
                 sendError();
             }
         }
@@ -194,66 +193,61 @@ public class KateOverlay extends Overlay {
 
         @Override
         public void imageComplete(int status) {
-            for (int n = 0; n < consumers.size(); ++n) {
-                consumers.elementAt(n).imageComplete(status);
+            for (ImageConsumer ic : consumers) {
+                ic.imageComplete(status);
             }
         }
 
         @Override
         public void setColorModel(ColorModel cm) {
-            for (int n = 0; n < consumers.size(); ++n) {
-                consumers.elementAt(n).setColorModel(cm);
+            for (ImageConsumer ic : consumers) {
+                ic.setColorModel(cm);
             }
         }
 
         @Override
         public void setDimensions(int w, int h) {
-            for (int n = 0; n < consumers.size(); ++n) {
-                consumers.elementAt(n).setDimensions(w, h);
+            for (ImageConsumer ic : consumers) {
+                ic.setDimensions(w, h);
             }
         }
 
         @Override
         public void setHints(int hints) {
-            for (int n = 0; n < consumers.size(); ++n) {
-                consumers.elementAt(n).setHints(hints);
+            for (ImageConsumer ic : consumers) {
+                ic.setHints(hints);
             }
         }
 
         @Override
         public void setProperties(Hashtable<?, ?> props) {
-            for (int n = 0; n < consumers.size(); ++n) {
-                consumers.elementAt(n).setProperties(props);
+            for (ImageConsumer ic : consumers) {
+                ic.setProperties(props);
             }
         }
 
         @Override
         public void setPixels(int x, int y, int w, int h, ColorModel model, byte[] pixels, int off, int scansize) {
-            for (int n = 0; n < consumers.size(); ++n) {
-                consumers.elementAt(n).setPixels(x, y, w, h, model, pixels, off, scansize);
+            for (ImageConsumer ic : consumers) {
+                ic.setPixels(x, y, w, h, model, pixels, off, scansize);
             }
         }
 
         @Override
         public void setPixels(int x, int y, int w, int h, ColorModel model, int[] pixels, int off, int scansize) {
-            for (int n = 0; n < consumers.size(); ++n) {
-                consumers.elementAt(n).setPixels(x, y, w, h, model, pixels, off, scansize);
+            for (ImageConsumer ic : consumers) {
+                ic.setPixels(x, y, w, h, model, pixels, off, scansize);
             }
         }
     }
 
-    private Pad kateSinkPad = new Pad(Pad.SINK, "katesink") {
+    private final Pad kateSinkPad = new Pad(Pad.SINK, "katesink") {
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
             /* don't propagate, the video sink is the master */
             switch (event.getType()) {
-                case FLUSH_START:
-                case FLUSH_STOP:
-                case NEWSEGMENT:
-                    onFlush();
-                    break;
-                default:
-                    break;
+                case FLUSH_START, FLUSH_STOP, NEWSEGMENT -> onFlush();
+                default -> {}
             }
             return true;
         }
