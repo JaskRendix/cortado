@@ -1,12 +1,12 @@
 /* Jheora
  * Copyright (C) 2004 Fluendo S.L.
- *  
+ * 
  * Written by: 2004 Wim Taymans <wim@fluendo.com>
- *   
+ *  
  * Many thanks to 
  *   The Xiph.Org Foundation http://www.xiph.org/
  * Jheora was based on their Theora reference decoder.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -24,242 +24,229 @@
 
 package com.fluendo.jheora;
 
-import com.jcraft.jogg.*;
+import com.jcraft.jogg.Buffer;
+import com.jcraft.jogg.Packet;
 
-public class Info {
-  public int width;
-  public int height;
-  public int frame_width;
-  public int frame_height;
-  public int offset_x;
-  public int offset_y;
-  public int fps_numerator;
-  public int fps_denominator;
-  public int aspect_numerator;
-  public int aspect_denominator;
-  public Colorspace colorspace;
-  public PixelFormat pixel_fmt;
-  public int  target_bitrate;
-  public int  quality;
-  public int  quick_p;  /* quick encode/decode */
+import java.nio.charset.StandardCharsets;
 
-  /* decode only */
-  public byte version_major;
-  public byte version_minor;
-  public byte version_subminor;
+public final class Info {
 
-  public int   keyframe_granule_shift;
-  public long  keyframe_frequency_force;
+    public int width;
+    public int height;
+    public int frame_width;
+    public int frame_height;
+    public int offset_x;
+    public int offset_y;
+    public int fps_numerator;
+    public int fps_denominator;
+    public int aspect_numerator;
+    public int aspect_denominator;
+    public Colorspace colorspace;
+    public PixelFormat pixel_fmt;
+    public int target_bitrate;
+    public int quality;
+    public int quick_p;  /* quick encode/decode */
 
-  /* codec_setup_info */
-  short[][][][] dequant_tables = new short[2][3][64][64];       
-  int[] AcScaleFactorTable = new int[Constants.Q_TABLE_SIZE];
-  short[] DcScaleFactorTable = new short[Constants.Q_TABLE_SIZE];
-  int MaxQMatrixIndex;
-  short[] qmats;
-  
-  HuffEntry[] HuffRoot = new HuffEntry[Huffman.NUM_HUFF_TABLES];
-  byte[] LoopFilterLimitValues = new byte[Constants.Q_TABLE_SIZE];
+    /* decode only */
+    public byte version_major;
+    public byte version_minor;
+    public byte version_subminor;
 
-  private static void _tp_readbuffer(Buffer opb, byte[] buf, int len)
-  {
-    for (int i=0; i<len; i++) {
-      buf[i] = (byte)opb.readB(8);
-    }
-  }
+    public int keyframe_granule_shift;
+    public long keyframe_frequency_force;
 
-  private static int _tp_readlsbint(Buffer opb)
-  {
-    int value;
-
-    value  = opb.readB(8);
-    value |= opb.readB(8) << 8;
-    value |= opb.readB(8) << 16;
-    value |= opb.readB(8) << 24;
-
-    return value;
-  }
-
-  private int unpackInfo(Buffer opb){
-    version_major = (byte)opb.readB(8);
-    version_minor = (byte)opb.readB(8);
-    version_subminor = (byte)opb.readB(8);
-
-    if (version_major != Version.VERSION_MAJOR) 
-      return Result.VERSION;
-    if (version_minor > Version.VERSION_MINOR) 
-      return Result.VERSION;
-
-    width  = (int)(opb.readB(16)<<4);
-    height = (int)(opb.readB(16)<<4);
-    frame_width = (int)opb.readB(24);
-    frame_height = (int)opb.readB(24);
-    offset_x = (int)opb.readB(8);
-    offset_y = (int)opb.readB(8);
-
-    /* Invert the offset so that it is from the top down */
-    offset_y = height-frame_height-offset_y;
-
-    fps_numerator = opb.readB(32);
-    fps_denominator = opb.readB(32);
-    aspect_numerator = opb.readB(24);
-    aspect_denominator = opb.readB(24);
-
-    colorspace = Colorspace.spaces[opb.readB(8)];
-    target_bitrate = opb.readB(24);
-    quality = opb.readB(6);
-
-    keyframe_granule_shift = opb.readB(5);
-    keyframe_frequency_force = 1<<keyframe_granule_shift;
+    /* codec_setup_info */
+    short[][][][] dequant_tables = new short[2][3][64][64];       
+    int[] AcScaleFactorTable = new int[Constants.Q_TABLE_SIZE];
+    short[] DcScaleFactorTable = new short[Constants.Q_TABLE_SIZE];
+    int MaxQMatrixIndex;
+    short[] qmats;
     
-    pixel_fmt = PixelFormat.formats[opb.readB(2)];
-    if (pixel_fmt==PixelFormat.TH_PF_RSVD)
-      return (Result.BADHEADER);
+    HuffEntry[] HuffRoot = new HuffEntry[Huffman.NUM_HUFF_TABLES];
+    byte[] LoopFilterLimitValues = new byte[Constants.Q_TABLE_SIZE];
 
-    /* spare configuration bits */
-    if (opb.readB(3) == -1)
-      return (Result.BADHEADER);
-
-    return(0);
-  }
-
-  static int unpackComment (Comment tc, Buffer opb)
-  {
-    int i;
-    int len;
-    byte[] tmp;
-    int comments;
-
-    len = _tp_readlsbint(opb);
-    if(len<0)
-      return(Result.BADHEADER);
-
-    tmp=new byte[len];
-    _tp_readbuffer(opb, tmp, len);
-    tc.vendor=new String(tmp);
-
-    comments = _tp_readlsbint(opb);
-    if(comments<0) {
-      tc.clear();
-      return Result.BADHEADER;
+    private static void readBuffer(Buffer opb, byte[] buf, int len) {
+        for (int i = 0; i < len; i++) {
+            buf[i] = (byte) opb.readB(8);
+        }
     }
-    tc.user_comments=new String[comments];
-    for(i=0;i<comments;i++){
-      len = _tp_readlsbint(opb);
-      if(len<0) {
-        tc.clear();
-        return Result.BADHEADER;
-      }
 
-      tmp=new byte[len];
-      _tp_readbuffer(opb,tmp,len);
-      tc.user_comments[i]=new String(tmp);
+    private static int readLsbInt(Buffer opb) {
+        int value = opb.readB(8);
+        value |= opb.readB(8) << 8;
+        value |= opb.readB(8) << 16;
+        value |= opb.readB(8) << 24;
+
+        return value;
     }
-    return 0;
-  }
 
-  /* handle the in-loop filter limit value table */
-  private int readFilterTables(Buffer opb) 
-  {
-    int bits = opb.readB(3);
-    for (int i=0; i<Constants.Q_TABLE_SIZE; i++) {
-      int value = opb.readB(bits);
+    private int unpackInfo(Buffer opb) {
+        version_major = (byte) opb.readB(8);
+        version_minor = (byte) opb.readB(8);
+        version_subminor = (byte) opb.readB(8);
 
-      LoopFilterLimitValues[i] = (byte) value;
+        if (version_major != Version.VERSION_MAJOR) {
+            return Result.VERSION;
+        }
+        if (version_minor > Version.VERSION_MINOR) {
+            return Result.VERSION;
+        }
+
+        width = opb.readB(16) << 4;
+        height = opb.readB(16) << 4;
+        frame_width = opb.readB(24);
+        frame_height = opb.readB(24);
+        offset_x = opb.readB(8);
+        offset_y = opb.readB(8);
+
+        /* Invert the offset so that it is from the top down */
+        offset_y = height - frame_height - offset_y;
+
+        fps_numerator = opb.readB(32);
+        fps_denominator = opb.readB(32);
+        aspect_numerator = opb.readB(24);
+        aspect_denominator = opb.readB(24);
+
+        colorspace = Colorspace.spaces[opb.readB(8)];
+        target_bitrate = opb.readB(24);
+        quality = opb.readB(6);
+
+        keyframe_granule_shift = opb.readB(5);
+        keyframe_frequency_force = 1L << keyframe_granule_shift;
+        
+        pixel_fmt = PixelFormat.formats[opb.readB(2)];
+        if (pixel_fmt == PixelFormat.TH_PF_RSVD) {
+            return Result.BADHEADER;
+        }
+
+        /* spare configuration bits */
+        if (opb.readB(3) == -1) {
+            return Result.BADHEADER;
+        }
+
+        return 0;
     }
-    if (bits<0) 
-      return Result.BADHEADER;
 
-    return 0;
-  }
+    static int unpackComment(Comment tc, Buffer opb) {
+        int len = readLsbInt(opb);
+        if (len < 0) {
+            return Result.BADHEADER;
+        }
 
+        byte[] tmp = new byte[len];
+        readBuffer(opb, tmp, len);
+        tc.vendor = new String(tmp, StandardCharsets.UTF_8);
 
-  private int unpackTables (Buffer opb)
-  {
-    int ret;
+        int comments = readLsbInt(opb);
+        if (comments < 0) {
+            tc.clear();
+            return Result.BADHEADER;
+        }
+        tc.user_comments = new String[comments];
+        for (int i = 0; i < comments; i++) {
+            len = readLsbInt(opb);
+            if (len < 0) {
+                tc.clear();
+                return Result.BADHEADER;
+            }
 
-    ret = readFilterTables(opb);
-    if (ret != 0)
-      return ret;
-    ret = Quant.readQTables(this, opb);
-    if (ret != 0)
-      return ret;
-    ret = Huffman.readHuffmanTrees(HuffRoot, opb);
-    if (ret != 0)
-      return ret;
+            tmp = new byte[len];
+            readBuffer(opb, tmp, len);
+            tc.user_comments[i] = new String(tmp, StandardCharsets.UTF_8);
+        }
+        return 0;
+    }
 
-    return ret;
-  }
+    /* handle the in-loop filter limit value table */
+    private int readFilterTables(Buffer opb) {
+        int bits = opb.readB(3);
+        for (int i = 0; i < Constants.Q_TABLE_SIZE; i++) {
+            int value = opb.readB(bits);
+            LoopFilterLimitValues[i] = (byte) value;
+        }
+        if (bits < 0) {
+            return Result.BADHEADER;
+        }
 
-  public void clear() {
-    qmats = null;
+        return 0;
+    }
+
+    private int unpackTables(Buffer opb) {
+        int ret = readFilterTables(opb);
+        if (ret != 0) {
+            return ret;
+        }
+        ret = Quant.readQTables(this, opb);
+        if (ret != 0) {
+            return ret;
+        }
+        ret = Huffman.readHuffmanTrees(HuffRoot, opb);
+        if (ret != 0) {
+            return ret;
+        }
+
+        return ret;
+    }
+
+    public void clear() {
+        qmats = null;
+        Huffman.clearHuffmanTrees(HuffRoot);
+    }
+
+    public int decodeHeader(Comment cc, Packet op) {
+        long ret;
+        Buffer opb = new Buffer();
+
+        opb.readinit(op.packet_base, op.packet, op.bytes);
     
-    Huffman.clearHuffmanTrees(HuffRoot);
-  }
-
-  public int decodeHeader (Comment cc, Packet op)
-  {
-    long ret;
-    Buffer opb = new Buffer();
-
-    opb.readinit (op.packet_base, op.packet, op.bytes);
-  
-    {
-      byte[] id = new byte[6];
-      int typeflag;
-    
-      typeflag = opb.readB(8);
-      if((typeflag & 0x80) == 0) {
-        return Result.NOTFORMAT;
-      }
-
-      _tp_readbuffer(opb,id,6);
-      if (!"theora".equals(new String(id))) {
-        return Result.NOTFORMAT;
-      }
-
-      switch(typeflag){
-      case 0x80:
-        if(op.b_o_s == 0){
-          /* Not the initial packet */
-          return Result.BADHEADER;
-        }
-        if(version_major!=0){
-          /* previously initialized info header */
-          return Result.BADHEADER;
+        byte[] id = new byte[6];
+        int typeflag = opb.readB(8);
+        if ((typeflag & 0x80) == 0) {
+            return Result.NOTFORMAT;
         }
 
-        ret = unpackInfo(opb);
-        return (int)ret;
-
-      case 0x81:
-        if(version_major==0){
-          /* um... we didn't get the initial header */
-          return Result.BADHEADER;
+        readBuffer(opb, id, 6);
+        if (!"theora".equals(new String(id, StandardCharsets.US_ASCII))) {
+            return Result.NOTFORMAT;
         }
 
-        ret = unpackComment(cc,opb);
-        return (int)ret;
-
-      case 0x82:
-        if(version_major==0 || cc.vendor==null){
-          /* um... we didn't get the initial header or comments yet */
-          return Result.BADHEADER;
-        }
-
-        ret = unpackTables(opb);
-        return (int)ret;
-    
-      default:
-        if(version_major==0 || cc.vendor==null || 
-           HuffRoot[0]==null)
-	{
-          /* we haven't gotten the three required headers */
-          return Result.BADHEADER;
-        }
-        /* ignore any trailing header packets for forward compatibility */
-        return Result.NEWPACKET;
-      }
+        return switch (typeflag) {
+            case 0x80 -> {
+                if (op.b_o_s == 0) {
+                    /* Not the initial packet */
+                    yield Result.BADHEADER;
+                }
+                if (version_major != 0) {
+                    /* previously initialized info header */
+                    yield Result.BADHEADER;
+                }
+                ret = unpackInfo(opb);
+                yield (int) ret;
+            }
+            case 0x81 -> {
+                if (version_major == 0) {
+                    /* um... we didn't get the initial header */
+                    yield Result.BADHEADER;
+                }
+                ret = unpackComment(cc, opb);
+                yield (int) ret;
+            }
+            case 0x82 -> {
+                if (version_major == 0 || cc.vendor == null) {
+                    /* um... we didn't get the initial header or comments yet */
+                    yield Result.BADHEADER;
+                }
+                ret = unpackTables(opb);
+                yield (int) ret;
+            }
+            default -> {
+                if (version_major == 0 || cc.vendor == null || HuffRoot[0] == null) {
+                    /* we haven't gotten the three required headers */
+                    yield Result.BADHEADER;
+                }
+                /* ignore any trailing header packets for forward compatibility */
+                yield Result.NEWPACKET;
+            }
+        };
     }
-  }
 }
