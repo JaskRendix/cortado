@@ -20,48 +20,61 @@
 
 package com.fluendo.jtiger;
 
-import java.awt.*;
-import java.text.*;
-import java.awt.font.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.font.FontRenderContext;
+import java.awt.font.LineBreakMeasurer;
+import java.awt.font.TextLayout;
+import java.text.AttributedCharacterIterator;
+import java.text.AttributedString;
 
-class FancyTextRenderer implements TextRenderer {
+public final class FancyTextRenderer implements TextRenderer {
+
+    private static final int SHADOW_OFFSET = 1;
+
     @Override
     public void renderText(Graphics g, Rectangle region, Font font, String text) {
-        if (g == null || region == null || font == null || text == null || text.isEmpty()) {
+        if (g == null || region == null || font == null || text == null || text.isBlank()) {
             return;
         }
 
-        /* This path uses API calls that were not present in Java 1.1 */
-        Graphics2D g2 = (Graphics2D) g;
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON); 
+        AttributedString attributedText = new AttributedString(text, font.getAttributes());
+        AttributedCharacterIterator characterIterator = attributedText.getIterator();
+        int textEndIndex = characterIterator.getEndIndex();
 
-        AttributedString atext = new AttributedString(text, font.getAttributes());
-        AttributedCharacterIterator text_it = atext.getIterator();
-        int text_end = text_it.getEndIndex();
+        FontRenderContext fontRenderContext = g2d.getFontRenderContext();
+        LineBreakMeasurer lineMeasurer = new LineBreakMeasurer(characterIterator, fontRenderContext);
+        
+        float currentY = 0.0f;
+        float maxLineWidth = Math.max(1.0f, region.width);
 
-        FontRenderContext frc = g2.getFontRenderContext();
-        LineBreakMeasurer lbm = new LineBreakMeasurer(text_it, frc);
-        float dy = 0.0f;
-        int shadow_dx = 1, shadow_dy = 1;
+        while (lineMeasurer.getPosition() < textEndIndex) {
+            TextLayout layout = lineMeasurer.nextLayout(maxLineWidth);
+            currentY += layout.getAscent();
+            
+            float textWidth = layout.getAdvance();
+            float textX = region.x + ((region.width - textWidth) / 2.0f);
+            float renderY = region.y + currentY;
 
-        float maxLineWidth = Math.max(1.0f, (float) region.width);
+            // Draw black outline/shadow
+            g2d.setColor(Color.BLACK);
+            layout.draw(g2d, textX + SHADOW_OFFSET, renderY);
+            layout.draw(g2d, textX - SHADOW_OFFSET, renderY);
+            layout.draw(g2d, textX, renderY - SHADOW_OFFSET);
+            layout.draw(g2d, textX, renderY + SHADOW_OFFSET);
 
-        while (lbm.getPosition() < text_end) {
-            TextLayout layout = lbm.nextLayout(maxLineWidth);
-            dy += layout.getAscent();
-            float tw = layout.getAdvance();
-            float tx = region.x + ((region.width - tw) / 2);
+            // Draw main white text
+            g2d.setColor(Color.WHITE);
+            layout.draw(g2d, textX, renderY);
 
-            g2.setColor(Color.black);
-            layout.draw(g2, tx + shadow_dx, region.y + dy);
-            layout.draw(g2, tx - shadow_dx, region.y + dy);
-            layout.draw(g2, tx, region.y + dy - shadow_dy);
-            layout.draw(g2, tx, region.y + dy + shadow_dy);
-            g2.setColor(Color.white);
-            layout.draw(g2, tx, region.y + dy);
-
-            dy += layout.getDescent() + layout.getLeading();
+            currentY += layout.getDescent() + layout.getLeading();
         }
     }
 }
