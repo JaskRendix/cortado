@@ -71,7 +71,7 @@ public class VorbisDec extends Element implements OggPayload {
     }
 
     @Override
-    public long getFirstTs(Vector packets) {
+    public long getFirstTs(List<com.fluendo.jst.Buffer> packets) {
         int len = packets.size();
         int i;
         long total = 0;
@@ -85,7 +85,7 @@ public class VorbisDec extends Element implements OggPayload {
             boolean ignore;
             long temp;
 
-            buf = (com.fluendo.jst.Buffer) packets.elementAt(i);
+            buf = (com.fluendo.jst.Buffer) packets.get(i);
 
             p.packet_base = buf.data;
             p.packet = buf.offset;
@@ -113,7 +113,7 @@ public class VorbisDec extends Element implements OggPayload {
                 total = buf.time_offset - total;
                 long result = granuleToTime(total);
 
-                buf = (com.fluendo.jst.Buffer) packets.elementAt(0);
+                buf = (com.fluendo.jst.Buffer) packets.get(0);
                 buf.timestamp = result;
                 return result;
             }
