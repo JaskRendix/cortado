@@ -84,8 +84,8 @@ public class Info {
             return Result.KATE_E_BAD_PACKET;
         }
         try {
-            text_encoding = KateTextEncoding.CreateTextEncoding(tmp);
-            text_directionality = KateTextDirectionality.CreateTextDirectionality(opb.read(8));
+            text_encoding = KateTextEncoding.createTextEncoding(tmp);
+            text_directionality = KateTextDirectionality.createTextDirectionality(opb.read(8));
         } catch (KateException e) {
             return Result.KATE_E_BAD_PACKET;
         }
@@ -291,9 +291,9 @@ public class Info {
 
         if (((bitstream_version_major << 8) | bitstream_version_minor) >= 0x0004) {
             Bitwise.read32v(opb);
-            ks.wrap_mode = KateWrapMode.CreateWrapMode(Bitwise.read32v(opb));
+            ks.wrap_mode = KateWrapMode.createWrapMode(Bitwise.read32v(opb));
         } else {
-            ks.wrap_mode = KateWrapMode.kate_wrap_word;
+            ks.wrap_mode = KateWrapMode.KATE_WRAP_WORD;
         }
 
         Bitwise.skipWarp(opb);
