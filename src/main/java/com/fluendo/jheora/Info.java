@@ -114,7 +114,7 @@ public final class Info {
         keyframe_granule_shift = opb.readB(5);
         keyframe_frequency_force = 1L << keyframe_granule_shift;
         
-        pixel_fmt = PixelFormat.formats[opb.readB(2)];
+        pixel_fmt = PixelFormat.FORMATS[opb.readB(2)];
         if (pixel_fmt == PixelFormat.TH_PF_RSVD) {
             return Result.BADHEADER;
         }
