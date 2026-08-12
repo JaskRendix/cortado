@@ -195,7 +195,7 @@ public final class Playback
         KeyFrameType = DCT_KEY_FRAME;
         FramesHaveBeenSkipped = 0;
 
-        FrInit.InitFrameDetails(this);
+        FrInit.initFrameDetails(this);
 
         keyframe_granule_shift = ilog(ci.keyframe_frequency_force-1);
         //LastFrameQualityValue = 0;
