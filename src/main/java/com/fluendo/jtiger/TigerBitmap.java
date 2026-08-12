@@ -20,42 +20,47 @@
 
 package com.fluendo.jtiger;
 
-import java.awt.*;
-import java.awt.image.*;
-import com.fluendo.jkate.*;
-import com.fluendo.utils.*;
+import com.fluendo.jkate.Bitmap;
+import com.fluendo.jkate.Palette;
+import com.fluendo.utils.Debug;
 
-public class TigerBitmap {
+import java.awt.Component;
+import java.awt.Image;
+import java.awt.image.IndexColorModel;
+import java.awt.image.MemoryImageSource;
+import java.util.Objects;
+
+public final class TigerBitmap {
+
     private final Image image;
     private Image scaledImage;
 
     /**
-     * Create a new TigerBitmap from a Kate bitmap and optional palette.
+     * Creates a new TigerBitmap from a Kate bitmap and optional palette.
      */
-    public TigerBitmap(Component c, Bitmap kb, Palette kp) {
-        if (c == null) {
-            throw new IllegalArgumentException("Component cannot be null");
-        }
+    public TigerBitmap(Component component, Bitmap bitmap, Palette palette) {
+        Objects.requireNonNull(component, "Component cannot be null");
 
-        Image img = null;
-        if (kb != null) {
-            if (kb.bpp == 0) {
-                /* PNG */
-                img = createPNGBitmap(c, kb, kp);
-            } else if (kp != null && kp.colors != null) {
-                img = createPalettedBitmap(c, kb, kp);
+        Image loadedImage = null;
+        if (bitmap != null) {
+            if (bitmap.bpp == 0) {
+                loadedImage = createPngBitmap(component, bitmap, palette);
+            } else if (palette != null && palette.colors != null) {
+                loadedImage = createPalettedBitmap(component, bitmap, palette);
             }
         }
 
-        if (img == null) {
+        if (loadedImage == null) {
             // Fallback to a 1x1 transparent image to avoid corner cases
-            img = c.getToolkit().createImage(new MemoryImageSource(1, 1, new int[]{0}, 0, 1));
+            loadedImage = component.getToolkit().createImage(
+                new MemoryImageSource(1, 1, new int[]{0}, 0, 1)
+            );
         }
-        this.image = img;
+        this.image = loadedImage;
     }
 
     /**
-     * Returns a scaled version of the image.
+     * Returns a scaled version of the image, recalculating only when dimensions change.
      */
     public Image getScaled(int width, int height) {
         if (width <= 0 || height <= 0) {
@@ -72,32 +77,34 @@ public class TigerBitmap {
     }
 
     /**
-     * Create an image from bits representing a PNG image.
+     * Creates an image from bytes representing a PNG image.
      */
-    private Image createPNGBitmap(Component c, Bitmap kb, Palette kp) {
+    private Image createPngBitmap(Component component, Bitmap bitmap, Palette palette) {
         Debug.warning("PNG bitmaps not supported yet");
         return null;
     }
 
     /**
-     * Create a paletted image.
+     * Creates a paletted image based on the provided bitmap and color palette.
      */
-    private Image createPalettedBitmap(Component c, Bitmap kb, Palette kp) {
-        if (kp.colors == null || kb.pixels == null) {
+    private Image createPalettedBitmap(Component component, Bitmap bitmap, Palette palette) {
+        if (palette.colors == null || bitmap.pixels == null) {
             return null;
         }
 
-        byte[] cmap = new byte[4 * kp.colors.length];
-        for (int n = 0; n < kp.colors.length; ++n) {
-            if (kp.colors[n] != null) {
-                cmap[n * 4] = kp.colors[n].r;
-                cmap[n * 4 + 1] = kp.colors[n].g;
-                cmap[n * 4 + 2] = kp.colors[n].b;
-                cmap[n * 4 + 3] = kp.colors[n].a;
+        byte[] colorMap = new byte[4 * palette.colors.length];
+        for (int i = 0; i < palette.colors.length; ++i) {
+            if (palette.colors[i] != null) {
+                colorMap[i * 4]     = palette.colors[i].r;
+                colorMap[i * 4 + 1] = palette.colors[i].g;
+                colorMap[i * 4 + 2] = palette.colors[i].b;
+                colorMap[i * 4 + 3] = palette.colors[i].a;
             }
         }
 
-        IndexColorModel icm = new IndexColorModel(kb.bpp, kp.colors.length, cmap, 0, true);
-        return c.createImage(new MemoryImageSource(kb.width, kb.height, icm, kb.pixels, 0, kb.width));
+        IndexColorModel colorModel = new IndexColorModel(bitmap.bpp, palette.colors.length, colorMap, 0, true);
+        return component.createImage(new MemoryImageSource(
+            bitmap.width, bitmap.height, colorModel, bitmap.pixels, 0, bitmap.width
+        ));
     }
 }
