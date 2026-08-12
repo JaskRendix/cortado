@@ -10,7 +10,7 @@ class CurveTest {
     @Test
     @DisplayName("Constructors & Accessors: Default and parameterized constructors work as expected")
     void testConstructorsAndGettersSetters() throws KateException {
-        KateCurveType curveType = KateCurveType.CreateCurveType(2); // Linear
+        KateCurveType curveType = KateCurveType.createCurveType(2); // Linear
         double[][] points = { {0.0, 0.0}, {1.0, 1.0} };
 
         Curve curve1 = new Curve();
@@ -29,8 +29,8 @@ class CurveTest {
     @Test
     @DisplayName("Equals and HashCode: Equal objects match and have same hash")
     void testEqualsAndHashCode() throws KateException {
-        KateCurveType t1 = KateCurveType.CreateCurveType(0);
-        KateCurveType t2 = KateCurveType.CreateCurveType(1);
+        KateCurveType t1 = KateCurveType.createCurveType(0);
+        KateCurveType t2 = KateCurveType.createCurveType(1);
 
         double[][] p1 = { {1.0, 2.0} };
         double[][] p2 = { {3.0, 4.0} };
@@ -52,7 +52,7 @@ class CurveTest {
     @Test
     @DisplayName("ToString: Returns a non-null formatted string")
     void testToString() throws KateException {
-        KateCurveType t = KateCurveType.CreateCurveType(0);
+        KateCurveType t = KateCurveType.createCurveType(0);
         double[][] p = { {0.0, 0.0} };
         Curve curve = new Curve(t, 1, p);
         
