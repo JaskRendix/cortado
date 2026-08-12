@@ -320,7 +320,7 @@ public class Info {
     private Curve unpackCurve(Buffer opb) throws KateException {
         Curve kc = new Curve();
 
-        kc.type = KateCurveType.CreateCurveType(opb.read(8));
+        kc.type = KateCurveType.createCurveType(opb.read(8));
         kc.npts = Bitwise.read32v(opb);
         if (kc.npts < 0)
             throw new KateBadPacketException();
@@ -440,9 +440,9 @@ public class Info {
             throw new KateBadPacketException();
 
         if (kb.bpp == 0) {
-            kb.type = KateBitmapType.CreateBitmapType(opb.read(8));
+            kb.type = KateBitmapType.createBitmapType(opb.read(8));
             kb.palette = -1;
-            if (kb.type == KateBitmapType.kate_bitmap_type_paletted) {
+            if (kb.type == KateBitmapType.KATE_BITMAP_TYPE_PALETTED) {
                 int encoding = opb.read(8);
                 switch (encoding) {
                     case 1: /* RLE */
@@ -454,7 +454,7 @@ public class Info {
                         Debug.warning("Unsupported bitmap type");
                         throw new KateBadPacketException();
                 }
-            } else if (kb.type == KateBitmapType.kate_bitmap_type_png) {
+            } else if (kb.type == KateBitmapType.KATE_BITMAP_TYPE_PNG) {
                 kb.size = Bitwise.read32(opb);
                 if (kb.size < 0) throw new KateBadPacketException();
                 kb.pixels = new byte[kb.size];
@@ -464,7 +464,7 @@ public class Info {
                 throw new KateBadPacketException();
             }
         } else {
-            kb.type = KateBitmapType.kate_bitmap_type_paletted;
+            kb.type = KateBitmapType.KATE_BITMAP_TYPE_PALETTED;
             kb.palette = Bitwise.read32v(opb);
             int npixels = kb.width * kb.height;
             if (npixels < 0) throw new KateBadPacketException();
