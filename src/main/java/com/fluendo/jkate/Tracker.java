@@ -35,34 +35,26 @@ public final class Tracker {
 
     public Event ev;
 
-    public boolean[] has = new boolean[64];
-    public static final int has_region = 0;
-    public static final int has_text_alignment_int = 1;
-    public static final int has_text_alignment_ext = 2;
+    public final boolean[] has = new boolean[64];
+    public static final int HAS_REGION = 0;
+    public static final int HAS_TEXT_ALIGNMENT_INT = 1;
+    public static final int HAS_TEXT_ALIGNMENT_EXT = 2;
 
-    public float region_x;
-    public float region_y;
-    public float region_w;
-    public float region_h;
+    public float regionX;
+    public float regionY;
+    public float regionW;
+    public float regionH;
 
     public Tracker() {
         this.ev = null;
         this.window = null;
         this.frame = null;
-        this.region_x = 0.0f;
-        this.region_y = 0.0f;
-        this.region_w = 0.0f;
-        this.region_h = 0.0f;
     }
 
     public Tracker(Event ev) {
         this.ev = ev;
         this.window = null;
         this.frame = null;
-        this.region_x = 0.0f;
-        this.region_y = 0.0f;
-        this.region_w = 0.0f;
-        this.region_h = 0.0f;
     }
 
     /**
@@ -77,7 +69,7 @@ public final class Tracker {
             return false;
         }
 
-        if (frame == null && (ev.kr != null && ev.kr.metric != KateSpaceMetric.kate_metric_pixels)) {
+        if (frame == null && (ev.kr != null && ev.kr.metric != KateSpaceMetric.KATE_METRIC_PIXELS)) {
             Debug.debug("Tracker update failed: Frame dimension is required for non-pixel metrics");
             return false;
         }
@@ -96,28 +88,33 @@ public final class Tracker {
 
         /* define region */
         if (kr != null) {
-            if (kr.metric == KateSpaceMetric.kate_metric_percentage) {
-                if (frame == null) return false;
-                region_x = kr.x * frame.width / 100.0f;
-                region_y = kr.y * frame.height / 100.0f;
-                region_w = kr.w * frame.width / 100.0f;
-                region_h = kr.h * frame.height / 100.0f;
-            } else if (kr.metric == KateSpaceMetric.kate_metric_millionths) {
-                if (frame == null) return false;
-                region_x = kr.x * frame.width / 1000000.0f;
-                region_y = kr.y * frame.height / 1000000.0f;
-                region_w = kr.w * frame.width / 1000000.0f;
-                region_h = kr.h * frame.height / 1000000.0f;
-            } else if (kr.metric == KateSpaceMetric.kate_metric_pixels) {
-                region_x = kr.x;
-                region_y = kr.y;
-                region_w = kr.w;
-                region_h = kr.h;
-            } else {
+            if (kr.metric == null) {
                 Debug.debug("Invalid metrics");
                 return false;
             }
-            has[has_region] = true;
+            switch (kr.metric) {
+                case KATE_METRIC_PERCENTAGE -> {
+                    if (frame == null) return false;
+                    regionX = kr.x * frame.width / 100.0f;
+                    regionY = kr.y * frame.height / 100.0f;
+                    regionW = kr.w * frame.width / 100.0f;
+                    regionH = kr.h * frame.height / 100.0f;
+                }
+                case KATE_METRIC_MILLIONTHS -> {
+                    if (frame == null) return false;
+                    regionX = kr.x * frame.width / 1000000.0f;
+                    regionY = kr.y * frame.height / 1000000.0f;
+                    regionW = kr.w * frame.width / 1000000.0f;
+                    regionH = kr.h * frame.height / 1000000.0f;
+                }
+                case KATE_METRIC_PIXELS -> {
+                    regionX = kr.x;
+                    regionY = kr.y;
+                    regionW = kr.w;
+                    regionH = kr.h;
+                }
+            }
+            has[HAS_REGION] = true;
         }
 
         return true;
@@ -136,10 +133,10 @@ public final class Tracker {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Tracker tracker = (Tracker) o;
-        return Float.compare(tracker.region_x, region_x) == 0 &&
-                Float.compare(tracker.region_y, region_y) == 0 &&
-                Float.compare(tracker.region_w, region_w) == 0 &&
-                Float.compare(tracker.region_h, region_h) == 0 &&
+        return Float.compare(tracker.regionX, regionX) == 0 &&
+                Float.compare(tracker.regionY, regionY) == 0 &&
+                Float.compare(tracker.regionW, regionW) == 0 &&
+                Float.compare(tracker.regionH, regionH) == 0 &&
                 Objects.equals(window, tracker.window) &&
                 Objects.equals(frame, tracker.frame) &&
                 Objects.equals(ev, tracker.ev) &&
@@ -148,7 +145,7 @@ public final class Tracker {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(window, frame, ev, region_x, region_y, region_w, region_h);
+        int result = Objects.hash(window, frame, ev, regionX, regionY, regionW, regionH);
         result = 31 * result + Arrays.hashCode(has);
         return result;
     }
@@ -156,10 +153,10 @@ public final class Tracker {
     @Override
     public String toString() {
         return "Tracker{" +
-                "region_x=" + region_x +
-                ", region_y=" + region_y +
-                ", region_w=" + region_w +
-                ", region_h=" + region_h +
+                "region_x=" + regionX +
+                ", region_y=" + regionY +
+                ", region_w=" + regionW +
+                ", region_h=" + regionH +
                 '}';
     }
 }
