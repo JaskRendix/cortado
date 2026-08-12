@@ -26,7 +26,6 @@ package com.fluendo.jheora;
 
 import com.jcraft.jogg.Buffer;
 import com.fluendo.utils.MemUtils;
-import java.util.Arrays;
 
 public final class FrArray {
     private int bitPattern;
