@@ -20,17 +20,20 @@
 
 package com.fluendo.jtiger;
 
-import java.awt.*;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Rectangle;
 
 @FunctionalInterface
 public interface TextRenderer {
+
     /**
      * Renders the specified text within the given region using the provided graphics context and font.
      *
-     * @param g      the graphics context
-     * @param region the bounding rectangle for rendering
-     * @param font   the font to use for rendering the text
-     * @param text   the text string to render
+     * @param graphics the graphics context
+     * @param region   the bounding rectangle for rendering
+     * @param font     the font to use for rendering the text
+     * @param text     the text string to render
      */
-    void renderText(Graphics g, Rectangle region, Font font, String text);
+    void renderText(Graphics graphics, Rectangle region, Font font, String text);
 }
