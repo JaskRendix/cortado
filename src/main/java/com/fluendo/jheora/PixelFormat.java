@@ -1,12 +1,12 @@
 /* Jheora
  * Copyright (C) 2004 Fluendo S.L.
- *  
+ * 
  * Written by: 2004 Wim Taymans <wim@fluendo.com>
- *   
+ *  
  * Many thanks to 
  *   The Xiph.Org Foundation http://www.xiph.org/
  * Jheora was based on their Theora reference decoder.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -24,19 +24,19 @@
 
 package com.fluendo.jheora;
 
-public class PixelFormat {
-  public static final PixelFormat TH_PF_420 = new PixelFormat ();
-  public static final PixelFormat TH_PF_RSVD = new PixelFormat();
-  public static final PixelFormat TH_PF_422 = new PixelFormat ();
-  public static final PixelFormat TH_PF_444 = new PixelFormat ();
+public final class PixelFormat {
+    public static final PixelFormat TH_PF_420 = new PixelFormat();
+    public static final PixelFormat TH_PF_RSVD = new PixelFormat();
+    public static final PixelFormat TH_PF_422 = new PixelFormat();
+    public static final PixelFormat TH_PF_444 = new PixelFormat();
 
-  public static final PixelFormat[] formats = {
-    TH_PF_420,
-    TH_PF_RSVD,
-    TH_PF_422,
-    TH_PF_444
-  };
+    public static final PixelFormat[] FORMATS = {
+            TH_PF_420,
+            TH_PF_RSVD,
+            TH_PF_422,
+            TH_PF_444
+    };
 
-  private PixelFormat() {
-  }
+    private PixelFormat() {
+    }
 }
