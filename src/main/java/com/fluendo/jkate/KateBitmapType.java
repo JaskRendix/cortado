@@ -10,8 +10,8 @@
  * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Library General Public License for more details.
  * 
  * You should have received a copy of the GNU Library General Public
  * License along with this program; if not, write to the Free Software
@@ -20,29 +20,19 @@
 
 package com.fluendo.jkate;
 
-public class KateBitmapType {
-    public static final KateBitmapType KATE_BITMAP_TYPE_PALETTED = new KateBitmapType();
-    public static final KateBitmapType KATE_BITMAP_TYPE_PNG = new KateBitmapType();
+public enum KateBitmapType {
+    KATE_BITMAP_TYPE_PALETTED,
+    KATE_BITMAP_TYPE_PNG;
 
-    // Legacy references for backward compatibility
-    public static final KateBitmapType kate_bitmap_type_paletted = KATE_BITMAP_TYPE_PALETTED;
-    public static final KateBitmapType kate_bitmap_type_png = KATE_BITMAP_TYPE_PNG;
-
-    private static final KateBitmapType[] LIST = {
-        KATE_BITMAP_TYPE_PALETTED,
-        KATE_BITMAP_TYPE_PNG,
-    };
-
-    private KateBitmapType() {
-    }
+    private static final KateBitmapType[] VALUES = values();
 
     /**
-     * Create a KateBitmapType object from an integer.
+     * Create a KateBitmapType object from an integer index.
      */
-    public static KateBitmapType CreateBitmapType(int idx) throws KateException {
-        if (idx < 0 || idx >= LIST.length) {
+    public static KateBitmapType createBitmapType(int idx) throws KateException {
+        if (idx < 0 || idx >= VALUES.length) {
             throw new KateException("Bitmap type " + idx + " out of bounds");
         }
-        return LIST[idx];
+        return VALUES[idx];
     }
 }
