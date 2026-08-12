@@ -96,8 +96,8 @@ public final class Huffman {
         huffRoot[hIndex] = new HuffEntry();
         huffRoot[hIndex].previous = null;
         huffRoot[hIndex].next = null;
-        huffRoot[hIndex].Child[0] = null;
-        huffRoot[hIndex].Child[1] = null;
+        huffRoot[hIndex].child[0] = null;
+        huffRoot[hIndex].child[1] = null;
         huffRoot[hIndex].value = 0;
         huffRoot[hIndex].frequency = freqList[0];
 
@@ -110,8 +110,8 @@ public final class Huffman {
             entryPtr = new HuffEntry();
             entryPtr.value = i;
             entryPtr.frequency = freqList[i];
-            entryPtr.Child[0] = null;
-            entryPtr.Child[1] = null;
+            entryPtr.child[0] = null;
+            entryPtr.child[1] = null;
 
             /* Force min value of 1. This prevents the tree getting too deep. */
             if (entryPtr.frequency == 0) {
@@ -149,15 +149,15 @@ public final class Huffman {
                                         int codeValue,
                                         byte codeLength) {
         /* If we are at a leaf then fill in a code array entry. */
-        if ((huffRoot.Child[0] == null) && (huffRoot.Child[1] == null)) {
+        if ((huffRoot.child[0] == null) && (huffRoot.child[1] == null)) {
             huffCodeArray[huffRoot.value] = codeValue;
             huffCodeLengthArray[huffRoot.value] = codeLength;
         } else {
             /* Recursive calls to scan down the tree. */
             codeLength++;
-            createCodeArray(huffRoot.Child[0], huffCodeArray, huffCodeLengthArray,
+            createCodeArray(huffRoot.child[0], huffCodeArray, huffCodeLengthArray,
                     ((codeValue << 1)), codeLength);
-            createCodeArray(huffRoot.Child[1], huffCodeArray, huffCodeLengthArray,
+            createCodeArray(huffRoot.child[1], huffCodeArray, huffCodeLengthArray,
                     ((codeValue << 1) + 1), codeLength);
         }
     }
@@ -181,13 +181,13 @@ public final class Huffman {
             entryPtr = new HuffEntry();
             entryPtr.value = -1;
             entryPtr.frequency = huffRoot[hIndex].frequency + huffRoot[hIndex].next.frequency;
-            entryPtr.Child[0] = huffRoot[hIndex];
-            entryPtr.Child[1] = huffRoot[hIndex].next;
+            entryPtr.child[0] = huffRoot[hIndex];
+            entryPtr.child[1] = huffRoot[hIndex].next;
 
             /* If there are still more items in the list then insert the new node into the list. */
-            if (entryPtr.Child[1].next != null) {
+            if (entryPtr.child[1].next != null) {
                 /* Set up the provisional 'new root' */
-                huffRoot[hIndex] = entryPtr.Child[1].next;
+                huffRoot[hIndex] = entryPtr.child[1].next;
                 huffRoot[hIndex].previous = null;
 
                 /* Now scan through the remaining list to insert the new entry at the appropriate point. */
@@ -221,10 +221,10 @@ public final class Huffman {
             }
 
             /* Delete the next/previous properties of the children. */
-            entryPtr.Child[0].next = null;
-            entryPtr.Child[0].previous = null;
-            entryPtr.Child[1].next = null;
-            entryPtr.Child[1].previous = null;
+            entryPtr.child[0].next = null;
+            entryPtr.child[0].previous = null;
+            entryPtr.child[1].next = null;
+            entryPtr.child[1].previous = null;
         }
 
         /* Now build a code array from the tree. */
