@@ -203,7 +203,7 @@ public class Info {
         Objects.requireNonNull(opb, "Buffer cannot be null");
         Region kr = new Region();
 
-        kr.metric = KateSpaceMetric.CreateSpaceMetric(opb.read(8));
+        kr.metric = KateSpaceMetric.createSpaceMetric(opb.read(8));
         kr.x = Bitwise.read32v(opb);
         kr.y = Bitwise.read32v(opb);
         kr.w = Bitwise.read32v(opb);
@@ -268,8 +268,8 @@ public class Info {
         ks.text_color = unpackColor(opb);
         ks.background_color = unpackColor(opb);
         ks.draw_color = unpackColor(opb);
-        ks.font_metric = KateSpaceMetric.CreateSpaceMetric(opb.read(8));
-        ks.margin_metric = KateSpaceMetric.CreateSpaceMetric(opb.read(8));
+        ks.font_metric = KateSpaceMetric.createSpaceMetric(opb.read(8));
+        ks.margin_metric = KateSpaceMetric.createSpaceMetric(opb.read(8));
         ks.bold = opb.read1() != 0;
         ks.italics = opb.read1() != 0;
         ks.underline = opb.read1() != 0;
