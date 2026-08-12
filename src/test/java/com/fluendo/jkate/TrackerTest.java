@@ -1,3 +1,23 @@
+/* JKate
+ * Copyright (C) 2008 ogg.k.ogg.k <ogg.k.ogg.k@googlemail.com>
+ *
+ * Parts of JKate are based on code by Wim Taymans <wim@fluendo.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Library General Public License
+ * as published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Library General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Library General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 package com.fluendo.jkate;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +60,7 @@ class TrackerTest {
     @DisplayName("Update: Handles pixel metrics correctly without frame")
     void testUpdatePixelMetrics() {
         Region region = new Region();
-        region.metric = KateSpaceMetric.kate_metric_pixels;
+        region.metric = KateSpaceMetric.KATE_METRIC_PIXELS;
         region.x = 10;
         region.y = 20;
         region.w = 100;
@@ -49,18 +69,18 @@ class TrackerTest {
 
         boolean result = tracker.update(0.0, new Dimension(800, 600), null);
         assertTrue(result);
-        assertTrue(tracker.has[Tracker.has_region]);
-        assertEquals(10.0f, tracker.region_x);
-        assertEquals(20.0f, tracker.region_y);
-        assertEquals(100.0f, tracker.region_w);
-        assertEquals(200.0f, tracker.region_h);
+        assertTrue(tracker.has[Tracker.HAS_REGION]);
+        assertEquals(10.0f, tracker.regionX);
+        assertEquals(20.0f, tracker.regionY);
+        assertEquals(100.0f, tracker.regionW);
+        assertEquals(200.0f, tracker.regionH);
     }
 
     @Test
     @DisplayName("Update: Calculates percentage metrics relative to frame")
     void testUpdatePercentageMetrics() {
         Region region = new Region();
-        region.metric = KateSpaceMetric.kate_metric_percentage;
+        region.metric = KateSpaceMetric.KATE_METRIC_PERCENTAGE;
         region.x = 10; // 10%
         region.y = 20; // 20%
         region.w = 50; // 50%
@@ -71,10 +91,10 @@ class TrackerTest {
         boolean result = tracker.update(0.0, new Dimension(1000, 500), frame);
 
         assertTrue(result);
-        assertEquals(100.0f, tracker.region_x); // 10% of 1000
-        assertEquals(100.0f, tracker.region_y); // 20% of 500
-        assertEquals(500.0f, tracker.region_w); // 50% of 1000
-        assertEquals(250.0f, tracker.region_h); // 50% of 500
+        assertEquals(100.0f, tracker.regionX); // 10% of 1000
+        assertEquals(100.0f, tracker.regionY); // 20% of 500
+        assertEquals(500.0f, tracker.regionW); // 50% of 1000
+        assertEquals(250.0f, tracker.regionH); // 50% of 500
     }
 
     @Test
