@@ -10,7 +10,7 @@ class BitmapTest {
     @Test
     @DisplayName("Constructors & Accessors: Values set and retrieved correctly")
     void testConstructorsAndGettersSetters() throws KateException {
-        KateBitmapType bType = KateBitmapType.CreateBitmapType(1);
+        KateBitmapType bType = KateBitmapType.createBitmapType(1);
         byte[] pixelData = {0x01, 0x02, 0x03, 0x04};
 
         Bitmap bitmap = new Bitmap();
@@ -41,8 +41,8 @@ class BitmapTest {
     @Test
     @DisplayName("Equals and HashCode: Compare and hash matching bitmaps properly")
     void testEqualsAndHashCode() throws KateException {
-        KateBitmapType t1 = KateBitmapType.CreateBitmapType(0);
-        KateBitmapType t2 = KateBitmapType.CreateBitmapType(1);
+        KateBitmapType t1 = KateBitmapType.createBitmapType(0);
+        KateBitmapType t2 = KateBitmapType.createBitmapType(1);
         byte[] p1 = {0x00, 0x01};
         byte[] p2 = {0x02, 0x03};
 
@@ -65,7 +65,7 @@ class BitmapTest {
     @Test
     @DisplayName("ToString: Generates descriptive string representation")
     void testToString() throws KateException {
-        KateBitmapType t = KateBitmapType.CreateBitmapType(0);
+        KateBitmapType t = KateBitmapType.createBitmapType(0);
         byte[] pixels = {0x00};
         Bitmap bitmap = new Bitmap(10, 10, 8, t, 0, pixels, 1, 0, 0);
 
