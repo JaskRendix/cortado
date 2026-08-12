@@ -20,29 +20,38 @@
 
 package com.fluendo.jtiger;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Rectangle;
 
-class BasicTextRenderer implements TextRenderer {
+public final class BasicTextRenderer implements TextRenderer {
+
+    private static final int SHADOW_OFFSET = 1;
+
     @Override
     public void renderText(Graphics g, Rectangle region, Font font, String text) {
-        if (g == null || region == null || font == null || text == null || text.isEmpty()) {
+        if (g == null || region == null || font == null || text == null || text.isBlank()) {
             return;
         }
 
         g.setFont(font);
         FontMetrics fm = g.getFontMetrics(font);
-        int tw = fm.stringWidth(text);
-        int shadow_dx = 1, shadow_dy = 1;
-        int tx = region.x + (region.width - tw) / 2;
-        int ty = region.y + fm.getAscent();
+        
+        int textWidth = fm.stringWidth(text);
+        int textX = region.x + (region.width - textWidth) / 2;
+        int textY = region.y + fm.getAscent();
 
-        g.setColor(Color.black);
-        g.drawString(text, tx + shadow_dx, ty);
-        g.drawString(text, tx - shadow_dx, ty);
-        g.drawString(text, tx, ty - shadow_dy);
-        g.drawString(text, tx, ty + shadow_dy);
+        // Draw black outline/shadow
+        g.setColor(Color.BLACK);
+        g.drawString(text, textX + SHADOW_OFFSET, textY);
+        g.drawString(text, textX - SHADOW_OFFSET, textY);
+        g.drawString(text, textX, textY - SHADOW_OFFSET);
+        g.drawString(text, textX, textY + SHADOW_OFFSET);
 
-        g.setColor(Color.white);
-        g.drawString(text, tx, ty);
+        // Draw main white text
+        g.setColor(Color.WHITE);
+        g.drawString(text, textX, textY);
     }
 }
