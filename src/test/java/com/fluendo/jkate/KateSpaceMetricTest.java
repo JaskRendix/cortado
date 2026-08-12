@@ -1,3 +1,23 @@
+/* JKate
+ * Copyright (C) 2008 ogg.k.ogg.k <ogg.k.ogg.k@googlemail.com>
+ *
+ * Parts of JKate are based on code by Wim Taymans <wim@fluendo.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Library General Public License
+ * as published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Library General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Library General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 package com.fluendo.jkate;
 
 import org.junit.jupiter.api.DisplayName;
@@ -10,27 +30,24 @@ class KateSpaceMetricTest {
     @Test
     @DisplayName("Factory: Valid indices return correct space metric instances")
     void testCreateSpaceMetricValid() throws KateException {
-        KateSpaceMetric pixels = KateSpaceMetric.CreateSpaceMetric(0);
+        KateSpaceMetric pixels = KateSpaceMetric.createSpaceMetric(0);
         assertNotNull(pixels);
         assertEquals(KateSpaceMetric.KATE_METRIC_PIXELS, pixels);
-        assertEquals(KateSpaceMetric.kate_metric_pixels, pixels);
 
-        KateSpaceMetric percentage = KateSpaceMetric.CreateSpaceMetric(1);
+        KateSpaceMetric percentage = KateSpaceMetric.createSpaceMetric(1);
         assertNotNull(percentage);
         assertEquals(KateSpaceMetric.KATE_METRIC_PERCENTAGE, percentage);
-        assertEquals(KateSpaceMetric.kate_metric_percentage, percentage);
 
-        KateSpaceMetric millionths = KateSpaceMetric.CreateSpaceMetric(2);
+        KateSpaceMetric millionths = KateSpaceMetric.createSpaceMetric(2);
         assertNotNull(millionths);
         assertEquals(KateSpaceMetric.KATE_METRIC_MILLIONTHS, millionths);
-        assertEquals(KateSpaceMetric.kate_metric_millionths, millionths);
     }
 
     @Test
     @DisplayName("Factory: Out of bounds negative index throws KateException")
     void testCreateSpaceMetricNegativeIndex() {
         assertThrows(KateException.class, () -> {
-            KateSpaceMetric.CreateSpaceMetric(-1);
+            KateSpaceMetric.createSpaceMetric(-1);
         });
     }
 
@@ -38,7 +55,7 @@ class KateSpaceMetricTest {
     @DisplayName("Factory: Out of bounds positive index throws KateException")
     void testCreateSpaceMetricOutOfBoundsIndex() {
         assertThrows(KateException.class, () -> {
-            KateSpaceMetric.CreateSpaceMetric(3);
+            KateSpaceMetric.createSpaceMetric(3);
         });
     }
 }
