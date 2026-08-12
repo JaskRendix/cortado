@@ -213,7 +213,7 @@ public final class Quant
                 for (int quality = 0; quality < 64; ++quality) {
                     short[] scaledmat = compQuantMatrix(ci.AcScaleFactorTable, ci.DcScaleFactorTable, ci.qmats, nqrs, qrsizes, qrbmis, coding, plane, quality);
                     for (int coeff = 0; coeff < 64; ++coeff) {
-                        int j = Constants.dequant_index[coeff];
+                        int j = Constants.DEQUANT_INDEX[coeff];
                         ci.dequant_tables[coding][plane][quality][coeff] = scaledmat[j];
                     }
                 }
