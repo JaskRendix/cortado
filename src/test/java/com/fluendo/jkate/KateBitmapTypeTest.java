@@ -10,22 +10,20 @@ class KateBitmapTypeTest {
     @Test
     @DisplayName("Factory: Valid indices return correct bitmap type instances")
     void testCreateBitmapTypeValid() throws KateException {
-        KateBitmapType palettedType = KateBitmapType.CreateBitmapType(0);
+        KateBitmapType palettedType = KateBitmapType.createBitmapType(0);
         assertNotNull(palettedType);
         assertEquals(KateBitmapType.KATE_BITMAP_TYPE_PALETTED, palettedType);
-        assertEquals(KateBitmapType.kate_bitmap_type_paletted, palettedType);
 
-        KateBitmapType pngType = KateBitmapType.CreateBitmapType(1);
+        KateBitmapType pngType = KateBitmapType.createBitmapType(1);
         assertNotNull(pngType);
         assertEquals(KateBitmapType.KATE_BITMAP_TYPE_PNG, pngType);
-        assertEquals(KateBitmapType.kate_bitmap_type_png, pngType);
     }
 
     @Test
     @DisplayName("Factory: Out of bounds negative index throws KateException")
     void testCreateBitmapTypeNegativeIndex() {
         assertThrows(KateException.class, () -> {
-            KateBitmapType.CreateBitmapType(-1);
+            KateBitmapType.createBitmapType(-1);
         });
     }
 
@@ -33,7 +31,7 @@ class KateBitmapTypeTest {
     @DisplayName("Factory: Out of bounds positive index throws KateException")
     void testCreateBitmapTypeOutOfBoundsIndex() {
         assertThrows(KateException.class, () -> {
-            KateBitmapType.CreateBitmapType(2);
+            KateBitmapType.createBitmapType(2);
         });
     }
 }
