@@ -29,9 +29,9 @@ class TigerBitmapTest {
     class ConstructorTests {
 
         @Test
-        @DisplayName("Null component throws IllegalArgumentException")
+        @DisplayName("Null component throws NullPointerException")
         void nullComponentThrows() {
-            assertThrows(IllegalArgumentException.class,
+            assertThrows(NullPointerException.class,
                     () -> new TigerBitmap(null, new Bitmap(), new Palette()));
         }
 
