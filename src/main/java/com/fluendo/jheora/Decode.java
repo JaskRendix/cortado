@@ -27,915 +27,592 @@
 
 package com.fluendo.jheora;
 
-import com.jcraft.jogg.*;
+import com.jcraft.jogg.Buffer;
 import com.fluendo.utils.*;
 
 interface ExtractMVectorComponent {
-  public int extract(Buffer opb);
+    int extract(Buffer opb);
 }
 
 class ExtractMVectorComponentA implements ExtractMVectorComponent {
-  public int extract (Buffer opb) {
-    /* Get group to which coded component belongs */
-    /*  Now extract the appropriate number of bits to identify the component */
-    switch (opb.readB(3)){
-    case 0:
-      return 0;
-    case 1:
-      return 1;
-    case 2:
-      return -1;
-    case 3:
-      return 2 - (4*opb.readB(1));
-    case 4:
-      return 3 - (6*opb.readB(1));
-    case 5:
-      return (4 + opb.readB(2)) * -((opb.readB(1)<<1)-1);
-    case 6:
-      return (8 + opb.readB(3)) * -((opb.readB(1)<<1)-1);
-    case 7:
-      return (16 + opb.readB(4)) * -((opb.readB(1)<<1)-1);
+    @Override
+    public int extract(Buffer opb) {
+        return switch (opb.readB(3)) {
+            case 0 -> 0;
+            case 1 -> 1;
+            case 2 -> -1;
+            case 3 -> 2 - (4 * opb.readB(1));
+            case 4 -> 3 - (6 * opb.readB(1));
+            case 5 -> (4 + opb.readB(2)) * -((opb.readB(1) << 1) - 1);
+            case 6 -> (8 + opb.readB(3)) * -((opb.readB(1) << 1) - 1);
+            case 7 -> (16 + opb.readB(4)) * -((opb.readB(1) << 1) - 1);
+            default -> 0;
+        };
     }
-    return 0;
-  }
 }
 
 class ExtractMVectorComponentB implements ExtractMVectorComponent {
-  public int extract (Buffer opb) {
-    /* Get group to which coded component belongs */
-    return (opb.readB(5)) * -((opb.readB(1)<<1)-1);
-  }
+    @Override
+    public int extract(Buffer opb) {
+        return (opb.readB(5)) * -((opb.readB(1) << 1) - 1);
+    }
 }
 
 public final class Decode {
-
-  private static final ExtractMVectorComponent MVA = new ExtractMVectorComponentA();
-  private static final ExtractMVectorComponent MVB = new ExtractMVectorComponentB();
-
-  private static final CodingMode[][] modeAlphabet = {
-    /* Last motion vector dominates */
-    {    CodingMode.CODE_INTER_LAST_MV,    CodingMode.CODE_INTER_PRIOR_LAST,
-         CodingMode.CODE_INTER_PLUS_MV,    CodingMode.CODE_INTER_NO_MV,
-         CodingMode.CODE_INTRA,            CodingMode.CODE_USING_GOLDEN,
-         CodingMode.CODE_GOLDEN_MV,        CodingMode.CODE_INTER_FOURMV },
-
-    {    CodingMode.CODE_INTER_LAST_MV,    CodingMode.CODE_INTER_PRIOR_LAST,
-         CodingMode.CODE_INTER_NO_MV,      CodingMode.CODE_INTER_PLUS_MV,
-         CodingMode.CODE_INTRA,            CodingMode.CODE_USING_GOLDEN,
-         CodingMode.CODE_GOLDEN_MV,        CodingMode.CODE_INTER_FOURMV },
-
-    {    CodingMode.CODE_INTER_LAST_MV,    CodingMode.CODE_INTER_PLUS_MV,
-         CodingMode.CODE_INTER_PRIOR_LAST, CodingMode.CODE_INTER_NO_MV,
-         CodingMode.CODE_INTRA,            CodingMode.CODE_USING_GOLDEN,
-         CodingMode.CODE_GOLDEN_MV,        CodingMode.CODE_INTER_FOURMV },
-
-    {    CodingMode.CODE_INTER_LAST_MV,    CodingMode.CODE_INTER_PLUS_MV,
-         CodingMode.CODE_INTER_NO_MV,      CodingMode.CODE_INTER_PRIOR_LAST,
-         CodingMode.CODE_INTRA,            CodingMode.CODE_USING_GOLDEN,
-         CodingMode.CODE_GOLDEN_MV,        CodingMode.CODE_INTER_FOURMV },
-
-    /* No motion vector dominates */
-    {    CodingMode.CODE_INTER_NO_MV,      CodingMode.CODE_INTER_LAST_MV,
-         CodingMode.CODE_INTER_PRIOR_LAST, CodingMode.CODE_INTER_PLUS_MV,
-         CodingMode.CODE_INTRA,            CodingMode.CODE_USING_GOLDEN,
-         CodingMode.CODE_GOLDEN_MV,        CodingMode.CODE_INTER_FOURMV },
-
-    {    CodingMode.CODE_INTER_NO_MV,      CodingMode.CODE_USING_GOLDEN,
-         CodingMode.CODE_INTER_LAST_MV,    CodingMode.CODE_INTER_PRIOR_LAST,
-         CodingMode.CODE_INTER_PLUS_MV,    CodingMode.CODE_INTRA,
-         CodingMode.CODE_GOLDEN_MV,        CodingMode.CODE_INTER_FOURMV },
-
-    /* dummy */
-    {    CodingMode.CODE_INTER_NO_MV,      CodingMode.CODE_USING_GOLDEN,
-         CodingMode.CODE_INTER_LAST_MV,    CodingMode.CODE_INTER_PRIOR_LAST,
-         CodingMode.CODE_INTER_PLUS_MV,    CodingMode.CODE_INTRA,
-         CodingMode.CODE_GOLDEN_MV,        CodingMode.CODE_INTER_FOURMV },
-  };
-
-  private int BlocksToDecode;
-  private int EOB_Run;
-
-  private DCTDecode dctDecode = new DCTDecode();
-
-  private byte[] FragCoeffs;                /* # of coeffs decoded so far for
-                                                 fragment */
-
-  private MotionVector LastInterMV = new MotionVector ();
-  private MotionVector PriorLastInterMV = new MotionVector ();
-  private Playback pbi;
-
-  public Decode (Playback pbi) {
-    FragCoeffs = new byte[pbi.UnitFragments];
-    this.pbi = pbi;
-  }
-  
-  private int longRunBitStringDecode() {
-    /* lifted from new C Theora reference decoder */
-    int bits;
-    int ret;
-    Buffer opb = pbi.opb;
-    /*Coding scheme:
-         Codeword            Run Length
-       0                       1
-       10x                     2-3
-       110x                    4-5
-       1110xx                  6-9
-       11110xxx                10-17
-       111110xxxx              18-33
-       111111xxxxxxxxxxxx      34-4129*/
-
-    bits = opb.readB(1);
-    if(bits==0)return 1;
-    bits = opb.readB(2);
-    if((bits&2)==0)return 2+(int)bits;
-    else if((bits&1)==0){
-      bits = opb.readB(1);
-      return 4+(int)bits;
-    }
-    bits = opb.readB(3);
-    if((bits&4)==0)return 6+(int)bits;
-    else if((bits&2)==0){
-      ret=10+((bits&1)<<2);
-      bits = opb.readB(2);
-      return ret+(int)bits;
-    }
-    else if((bits&1)==0){
-      bits = opb.readB(4);
-      return 18+(int)bits;
-    }
-    bits = opb.readB(12);
-    return 34+(int)bits;
-  }
-
-  private void decodeBlockLevelQi() {
-    /* lifted from new C Theora reference decoder */
-
-    /* pbi.CodedBlockIndex holds the number of coded blocks despite the
-       suboptimal variable name */
-    int ncoded_frags = pbi.CodedBlockIndex;
-
-    if(ncoded_frags <= 0) return;
-    if(pbi.frameNQIS == 1) {
-      /*If this frame has only a single qi value, then just set it in all coded
-         fragments.*/
-      for(int coded_frag = 0; coded_frag < ncoded_frags; ++coded_frag) {
-          pbi.FragQs[pbi.CodedBlockList[coded_frag]] = 0;
-      }
-    } else{
-      Buffer opb = pbi.opb;
-      int val;
-      int  flag;
-      int  nqi0;
-      int  run_count;
-      /*Otherwise, we decode a qi index for each fragment, using two passes of
-        the same binary RLE scheme used for super-block coded bits.
-       The first pass marks each fragment as having a qii of 0 or greater than
-        0, and the second pass (if necessary), distinguishes between a qii of
-        1 and 2.
-       We store the qii of the fragment. */
-      val = opb.readB(1);
-      flag = val;
-      run_count = nqi0 = 0;
-      int coded_frag = 0;
-      while(coded_frag < ncoded_frags){
-        boolean full_run;
-        run_count = longRunBitStringDecode();
-        full_run = (run_count >= 4129);
-        do {
-          pbi.FragQs[pbi.CodedBlockList[coded_frag++]] = (byte)flag;
-          if(flag < 1) ++nqi0;
-        } while(--run_count > 0 && coded_frag < ncoded_frags);
-      
-        if(full_run && coded_frag < ncoded_frags){
-          val = opb.readB(1);
-          flag=(int)val;
-        } else {
-          //flag=!flag;
-          flag = (flag != 0) ? 0 : 1;
+    private static final ExtractMVectorComponent MVA = new ExtractMVectorComponentA();
+    private static final ExtractMVectorComponent MVB = new ExtractMVectorComponentB();
+    
+    private static final CodingMode[][] modeAlphabet = {
+        {
+            CodingMode.CODE_INTER_LAST_MV, CodingMode.CODE_INTER_PRIOR_LAST,
+            CodingMode.CODE_INTER_PLUS_MV, CodingMode.CODE_INTER_NO_MV,
+            CodingMode.CODE_INTRA,         CodingMode.CODE_USING_GOLDEN,
+            CodingMode.CODE_GOLDEN_MV,     CodingMode.CODE_INTER_FOURMV
+        },
+        {
+            CodingMode.CODE_INTER_LAST_MV, CodingMode.CODE_INTER_PRIOR_LAST,
+            CodingMode.CODE_INTER_NO_MV,   CodingMode.CODE_INTER_PLUS_MV,
+            CodingMode.CODE_INTRA,         CodingMode.CODE_USING_GOLDEN,
+            CodingMode.CODE_GOLDEN_MV,     CodingMode.CODE_INTER_FOURMV
+        },
+        {
+            CodingMode.CODE_INTER_LAST_MV, CodingMode.CODE_INTER_PLUS_MV,
+            CodingMode.CODE_INTER_PRIOR_LAST, CodingMode.CODE_INTER_NO_MV,
+            CodingMode.CODE_INTRA,         CodingMode.CODE_USING_GOLDEN,
+            CodingMode.CODE_GOLDEN_MV,     CodingMode.CODE_INTER_FOURMV
+        },
+        {
+            CodingMode.CODE_INTER_LAST_MV, CodingMode.CODE_INTER_PLUS_MV,
+            CodingMode.CODE_INTER_NO_MV,   CodingMode.CODE_INTER_PRIOR_LAST,
+            CodingMode.CODE_INTRA,         CodingMode.CODE_USING_GOLDEN,
+            CodingMode.CODE_GOLDEN_MV,     CodingMode.CODE_INTER_FOURMV
+        },
+        {
+            CodingMode.CODE_INTER_NO_MV,   CodingMode.CODE_INTER_LAST_MV,
+            CodingMode.CODE_INTER_PRIOR_LAST, CodingMode.CODE_INTER_PLUS_MV,
+            CodingMode.CODE_INTRA,         CodingMode.CODE_USING_GOLDEN,
+            CodingMode.CODE_GOLDEN_MV,     CodingMode.CODE_INTER_FOURMV
+        },
+        {
+            CodingMode.CODE_INTER_NO_MV,   CodingMode.CODE_USING_GOLDEN,
+            CodingMode.CODE_INTER_LAST_MV, CodingMode.CODE_INTER_PRIOR_LAST,
+            CodingMode.CODE_INTER_PLUS_MV, CodingMode.CODE_INTRA,
+            CodingMode.CODE_GOLDEN_MV,     CodingMode.CODE_INTER_FOURMV
+        },
+        {
+            CodingMode.CODE_INTER_NO_MV,   CodingMode.CODE_USING_GOLDEN,
+            CodingMode.CODE_INTER_LAST_MV, CodingMode.CODE_INTER_PRIOR_LAST,
+            CodingMode.CODE_INTER_PLUS_MV, CodingMode.CODE_INTRA,
+            CodingMode.CODE_GOLDEN_MV,     CodingMode.CODE_INTER_FOURMV
         }
-      }
-      /*TODO: run_count should be 0 here.
-        If it's not, we should issue a warning of some kind.*/
-      /*If we have 3 different qi's for this frame, and there was at least one
-         fragment with a non-zero qi, make the second pass.*/
-      if(pbi.frameNQIS==3 && nqi0 < ncoded_frags){
-        coded_frag = 0;
-        /*Skip qii==0 fragments.*/
-        for(coded_frag = 0; coded_frag < ncoded_frags && pbi.FragQs[pbi.CodedBlockList[coded_frag]] == 0; ++coded_frag){}
-        val = opb.readB(1);
-        flag = val;
-        while(coded_frag < ncoded_frags){
-          boolean full_run;
-          run_count = longRunBitStringDecode();
-          full_run = run_count >= 4129;
-          for(; coded_frag < ncoded_frags; ++coded_frag){
-            if(pbi.FragQs[pbi.CodedBlockList[coded_frag]] == 0) continue;
-            if(run_count-- <= 0) break;
-            pbi.FragQs[pbi.CodedBlockList[coded_frag]] += flag;
-          }
-          if(full_run && coded_frag < ncoded_frags){
-            val = opb.readB(1);
-            flag = val;
-          } else {
-            //flag=!flag;
-            flag = (flag != 0) ? 0 : 1;
-          }
-        }
-        /*TODO: run_count should be 0 here.
-          If it's not, we should issue a warning of some kind.*/
-      }
+    };
+
+    private int blocksToDecode;
+    private int eobRun;
+    private final DCTDecode dctDecode = new DCTDecode();
+    private final byte[] fragCoeffs;
+    private MotionVector lastInterMV = new MotionVector();
+    private MotionVector priorLastInterMV = new MotionVector();
+    private final Playback pbi;
+
+    public Decode(Playback pbi) {
+        this.fragCoeffs = new byte[pbi.UnitFragments];
+        this.pbi = pbi;
     }
-  }  
-  
-  private int loadFrame()
-  {
-    int  DctQMask;
-    Buffer opb = pbi.opb;
 
-    /* Is the frame and inter frame or a key frame */
-    pbi.FrameType = (byte)opb.readB(1);
-
-    /* Quality (Q) index */
-    DctQMask = (int) opb.readB(6);
-    pbi.frameQIS[0] = DctQMask;
-    pbi.frameNQIS = 1;
-
-    /* look if there are additional frame quality indices */
-    int moreQs = opb.readB(1);
-    if(moreQs > 0) {
-      pbi.frameQIS[1] = (int) opb.readB(6);
-      pbi.frameNQIS = 2;
+    private int longRunBitStringDecode() {
+        Buffer opb = pbi.opb;
+        int bits = opb.readB(1);
+        if (bits == 0) return 1;
         
-      moreQs = opb.readB(1);
-      if(moreQs > 0) {
-        pbi.frameQIS[2] = (int) opb.readB(6);
-        pbi.frameNQIS = 3;
-      }
-    }
-    
-    if ( (pbi.FrameType == Constants.BASE_FRAME) ){
-      /* Read the type / coding method for the key frame. */
-      pbi.KeyFrameType = (byte)opb.readB(1);
-      opb.readB(2);
-    }
-
-    /* Set this frame quality value from Q Index */
-    //pbi.ThisFrameQualityValue = pbi.QThreshTable[pbi.frameQ];
-
-    /* Read in the updated block map */
-    pbi.frArray.quadDecodeDisplayFragments( pbi );
-
-    return 1;
-  }
-
-  private void decodeModes (int SBRows, int SBCols)
-  {
-    int  MB;
-    int  SBcol;
-    int  SBrow;
-    CodingMode[] FragCodingMethod;
-    int  SB=0;
-    long ret;
-    int  FragIndex;
-    CodingMode  CodingMethod;
-
-    int  UVRow;
-    int  UVColumn;
-    int  UVFragOffset;
-    int  MBListIndex = 0;
-    int  i;
-
-    FragCodingMethod = pbi.FragCodingMethod;
-
-    /* If the frame is an intra frame then all blocks have mode intra. */
-    if ( pbi.getFrameType() == Constants.BASE_FRAME ){
-      MemUtils.set(FragCodingMethod, 0, CodingMode.CODE_INTRA, pbi.UnitFragments);
-    }else{
-      /* Clear down the macro block level mode and MV arrays. Default coding mode */
-      MemUtils.set(FragCodingMethod, 0, CodingMode.CODE_INTER_NO_MV, pbi.UnitFragments);
-
-      CodingMode ModeEntry; /* Mode bits read */
-      CodingMode[] ModeList;
-
-      /* Read the coding method */
-      ret = pbi.opb.readB( Constants.MODE_METHOD_BITS);
-      int CodingScheme=(int)ret;
-
-      /* If the coding method is method 0 then we have to read in a
-         custom coding scheme */
-      if ( CodingScheme == 0 ){
-        CodingMode[] CustomModeAlphabet = new CodingMode[Constants.MAX_MODES];
-        /* Read the coding scheme. */
-        for ( i = 0; i < Constants.MAX_MODES; i++ ){
-          ret = pbi.opb.readB( Constants.MODE_BITS);
-          CustomModeAlphabet[(int)ret]= CodingMode.MODES[i];
+        bits = opb.readB(2);
+        if ((bits & 2) == 0) return 2 + bits;
+        if ((bits & 1) == 0) {
+            bits = opb.readB(1);
+            return 4 + bits;
         }
-        ModeList=CustomModeAlphabet;
-      }
-      else{
-        ModeList=modeAlphabet[CodingScheme-1];
-      }
+        
+        bits = opb.readB(3);
+        if ((bits & 4) == 0) return 6 + bits;
+        if ((bits & 2) == 0) {
+            int ret = 10 + ((bits & 1) << 2);
+            bits = opb.readB(2);
+            return ret + bits;
+        }
+        if ((bits & 1) == 0) {
+            bits = opb.readB(4);
+            return 18 + bits;
+        }
+        
+        bits = opb.readB(12);
+        return 34 + bits;
+    }
 
-      /* Unravel the quad-tree */
-      for ( SBrow=0; SBrow<SBRows; SBrow++ ){
-        for ( SBcol=0; SBcol<SBCols; SBcol++ ){
-          for ( MB=0; MB<4; MB++ ){
-            /* There may be MB's lying out of frame which must be
-               ignored. For these MB's top left block will have a negative
-               Fragment Index. */
-            /* Upack the block level modes and motion vectors */
-            FragIndex = pbi.BlockMap.quadMapToMBTopLeft(SB, MB);
-            if (FragIndex >= 0){
-              /* Is the Macro-Block coded: */
-              if ( pbi.MBCodedFlags[MBListIndex++] != 0){
-  
-                /* Unpack the mode. */
-                if ( CodingScheme == (Constants.MODE_METHODS-1) ){
-                  /* This is the fall back coding scheme. */
-                  /* Simply MODE_BITS bits per mode entry. */
-                  ret = pbi.opb.readB( Constants.MODE_BITS);
-                  CodingMethod = CodingMode.MODES[(int)ret];
-                }else{
-                  ModeEntry = pbi.frArray.unpackMode(pbi.opb);
-                  CodingMethod = ModeList[ModeEntry.getValue()];
-                }
-  
-                /* Note the coding mode for each block in macro block. */
-                FragCodingMethod[FragIndex] = CodingMethod;
-                FragCodingMethod[FragIndex + 1] = CodingMethod;
-                FragCodingMethod[FragIndex + pbi.HFragments] = CodingMethod;
-                FragCodingMethod[FragIndex + pbi.HFragments + 1] = CodingMethod;
-  
-                /* Matching fragments in the U and V planes */
-                if (pbi.UVShiftX == 1 && pbi.UVShiftY == 1){ /* TH_PF_420 */
-                  UVRow = (FragIndex / (pbi.HFragments * 2));
-                  UVColumn = (FragIndex % pbi.HFragments) / 2;
-                  UVFragOffset = (UVRow * (pbi.HFragments / 2)) + UVColumn;
-                  FragCodingMethod[pbi.YPlaneFragments + UVFragOffset] = CodingMethod;
-                  FragCodingMethod[pbi.YPlaneFragments + pbi.UVPlaneFragments + UVFragOffset] =
-                    CodingMethod;
-                } else if (pbi.UVShiftX == 0) { /* TH_PF_444 */
-                  FragIndex += pbi.YPlaneFragments;
-                  FragCodingMethod[FragIndex] =
-                  FragCodingMethod[FragIndex + 1] =
-                  FragCodingMethod[FragIndex + pbi.HFragments] =
-                  FragCodingMethod[FragIndex + pbi.HFragments + 1] = CodingMethod;
-                  FragIndex += pbi.UVPlaneFragments;
-                  FragCodingMethod[FragIndex] =
-                  FragCodingMethod[FragIndex + 1] =
-                  FragCodingMethod[FragIndex + pbi.HFragments] =
-                  FragCodingMethod[FragIndex + pbi.HFragments + 1] = CodingMethod;
-                } else { /*TH_PF_422 */
-                  FragIndex = pbi.YPlaneFragments + FragIndex/2;
-                  FragCodingMethod[FragIndex] =
-                  FragCodingMethod[FragIndex + pbi.HFragments/2] = CodingMethod;
-                  FragIndex += pbi.UVPlaneFragments;
-                  FragCodingMethod[FragIndex] =
-                  FragCodingMethod[FragIndex + pbi.HFragments/2] = CodingMethod;
-                }
-  
-              }
+    private void decodeBlockLevelQi() {
+        int nCodedFrags = pbi.CodedBlockIndex;
+        if (nCodedFrags <= 0) return;
+        
+        if (pbi.frameNQIS == 1) {
+            for (int codedFrag = 0; codedFrag < nCodedFrags; ++codedFrag) {
+                pbi.FragQs[pbi.CodedBlockList[codedFrag]] = 0;
             }
-          }
-  
-          /* Next Super-Block */
-          SB++;
-        }
-      }
-    }
-  }
-
-
-  private void decodeMVectors (int SBRows, int SBCols)
-  {
-    int  FragIndex;
-    int  MB;
-    int  SBrow;
-    int  SBcol;
-    int  SB=0;
-    CodingMode  CodingMethod;
-
-    ExtractMVectorComponent MVC;
-  
-    int  UVRow;
-    int  UVColumn;
-    int  UVFragOffset;
-    int  x,y;
-  
-    int  MBListIndex = 0;
-    Buffer opb = pbi.opb;
-
-    /* Should not be decoding motion vectors if in INTRA only mode. */
-    if (pbi.getFrameType() == Constants.BASE_FRAME ){
-      return;
-    }
-    
-    MotionVector dummy = new MotionVector();
-
-    /* set the default motion vector to 0,0 */
-    LastInterMV.x = 0;
-    LastInterMV.y = 0;
-    PriorLastInterMV.x = 0;
-    PriorLastInterMV.y = 0;
-
-    /* Read the entropy method used and set up the appropriate decode option */
-    if (opb.readB(1) == 0 )
-      MVC = MVA;
-    else
-      MVC = MVB;
-
-    /* Unravel the quad-tree */
-    for ( SBrow=0; SBrow<SBRows; SBrow++ ){
-  
-      for ( SBcol=0; SBcol<SBCols; SBcol++ ){
-        for ( MB=0; MB<4; MB++ ){
-          /* There may be MB's lying out of frame which must be
-             ignored. For these MB's the top left block will have a
-             negative Fragment. */
-          FragIndex = pbi.BlockMap.quadMapToMBTopLeft(SB, MB );
-          if (FragIndex  >= 0 ) {
-            /* Is the Macro-Block further coded: */
-            if (pbi.MBCodedFlags[MBListIndex++] != 0){
-              /* Unpack the mode (and motion vectors if necessary). */
-              CodingMethod = pbi.FragCodingMethod[FragIndex];
-
-              /* Note the coding mode and vector for each block in the
-                 current macro block. */
-              MotionVector MVect0 = pbi.FragMVect[FragIndex];
-              MotionVector MVect1 = pbi.FragMVect[FragIndex + 1];
-              MotionVector MVect2 = pbi.FragMVect[FragIndex + pbi.HFragments];
-              MotionVector MVect3 = pbi.FragMVect[FragIndex + pbi.HFragments + 1];
-  
-              /* Matching fragments in the U and V planes */
-              UVRow = (FragIndex / (pbi.HFragments << pbi.UVShiftY));
-              UVColumn = (FragIndex % pbi.HFragments) >> pbi.UVShiftX;
-              UVFragOffset = (UVRow * (pbi.HFragments >> pbi.UVShiftX)) + UVColumn;
-  
-              MotionVector MVectU0 = pbi.FragMVect[pbi.YPlaneFragments + UVFragOffset];
-              MotionVector MVectV0 = pbi.FragMVect[pbi.YPlaneFragments + pbi.UVPlaneFragments + UVFragOffset];
-              MotionVector MVectU1 = dummy;
-              MotionVector MVectV1 = dummy;
-              MotionVector MVectU2 = dummy;
-              MotionVector MVectV2 = dummy;
-              MotionVector MVectU3 = dummy;
-              MotionVector MVectV3 = dummy;
-              if (pbi.UVShiftY == 0) {
-                MVectU2 = pbi.FragMVect[pbi.YPlaneFragments + UVFragOffset + (pbi.HFragments>>pbi.UVShiftX)];
-                MVectV2 = pbi.FragMVect[pbi.YPlaneFragments + pbi.UVPlaneFragments + UVFragOffset + (pbi.HFragments>>pbi.UVShiftX)];
-                if (pbi.UVShiftX == 0){
-                  MVectU1 = pbi.FragMVect[pbi.YPlaneFragments + UVFragOffset + 1];
-                  MVectV1 = pbi.FragMVect[pbi.YPlaneFragments + pbi.UVPlaneFragments + UVFragOffset + 1];                  
-                  MVectU3 = pbi.FragMVect[pbi.YPlaneFragments + UVFragOffset + pbi.HFragments + 1];
-                  MVectV3 = pbi.FragMVect[pbi.YPlaneFragments + pbi.UVPlaneFragments + UVFragOffset + pbi.HFragments + 1];
-                }
-              }
-  
-              /* Read the motion vector or vectors if present. */
-              if (CodingMethod == CodingMode.CODE_INTER_PLUS_MV) {
-                PriorLastInterMV.x = LastInterMV.x;
-                PriorLastInterMV.y = LastInterMV.y;
-                LastInterMV.x = MVect0.x = 
-		                MVect1.x = 
-				MVect2.x = 
-				MVect3.x = 
-				MVectU0.x = 
-				MVectV0.x = 
-				MVectU1.x =
-				MVectV1.x =
-				MVectU2.x =
-				MVectV2.x =
-				MVectU3.x =
-				MVectV3.x = MVC.extract(opb);
-				
-                LastInterMV.y = MVect0.y = 
-		                MVect1.y = 
-				MVect2.y = 
-				MVect3.y = 
-				MVectU0.y = 
-				MVectV0.y = 
-				MVectU1.y =
-				MVectV1.y =
-				MVectU2.y =
-				MVectV2.y =
-				MVectU3.y =
-				MVectV3.y = MVC.extract(opb);
-	      }
-              else if (CodingMethod == CodingMode.CODE_GOLDEN_MV){
-                MVect0.x = MVect1.x = 
-		           MVect2.x = 
-			   MVect3.x = 
-				MVectU0.x = 
-				MVectV0.x = 
-				MVectU1.x =
-				MVectV1.x =
-				MVectU2.x =
-				MVectV2.x =
-				MVectU3.x =
-				MVectV3.x = MVC.extract(opb);
-                MVect0.y = MVect1.y = 
-		           MVect2.y = 
-			   MVect3.y = 
-				MVectU0.y = 
-				MVectV0.y = 
-				MVectU1.y =
-				MVectV1.y =
-				MVectU2.y =
-				MVectV2.y =
-				MVectU3.y =
-				MVectV3.y = MVC.extract(opb);
-              }
-	      else if ( CodingMethod == CodingMode.CODE_INTER_FOURMV ){
-                  
-                /* Update last MV and prior last mv */
-                PriorLastInterMV.x = LastInterMV.x;
-                PriorLastInterMV.y = LastInterMV.y;
+        } else {
+            Buffer opb = pbi.opb;
+            int val = opb.readB(1);
+            int flag = val;
+            int nqi0 = 0;
+            int codedFrag = 0;
+            
+            while (codedFrag < nCodedFrags) {
+                int runCount = longRunBitStringDecode();
+                boolean fullRun = (runCount >= 4129);
+                do {
+                    pbi.FragQs[pbi.CodedBlockList[codedFrag++]] = (byte) flag;
+                    if (flag < 1) ++nqi0;
+                } while (--runCount > 0 && codedFrag < nCodedFrags);
                 
-                /* Extrac the 4 Y MVs */
-                if(pbi.display_fragments[FragIndex] != 0) {
-                  x  = MVect0.x = MVC.extract(opb);
-                  y  = MVect0.y = MVC.extract(opb);
-                  LastInterMV.x = MVect0.x;
-                  LastInterMV.y = MVect0.y;
+                if (fullRun && codedFrag < nCodedFrags) {
+                    val = opb.readB(1);
+                    flag = (int) val;
                 } else {
-                  x = MVect0.x = 0;
-                  y = MVect0.y = 0;
+                    flag = (flag != 0) ? 0 : 1;
                 }
-                
-                if(pbi.display_fragments[FragIndex + 1] != 0) {
-                  x += MVect1.x = MVC.extract(opb);
-                  y += MVect1.y = MVC.extract(opb);
-                  LastInterMV.x = MVect1.x;
-                  LastInterMV.y = MVect1.y;
-                } else {
-                  x += MVect1.x = 0;
-                  y += MVect1.y = 0;
-                }
-                
-                if(pbi.display_fragments[FragIndex + pbi.HFragments] != 0) {
-                  x += MVect2.x = MVC.extract(opb);
-                  y += MVect2.y = MVC.extract(opb);
-                  LastInterMV.x = MVect2.x;
-                  LastInterMV.y = MVect2.y;
-                } else {
-                  x += MVect2.x = 0;
-                  y += MVect2.y = 0;
-                }
-                
-                if(pbi.display_fragments[FragIndex + pbi.HFragments + 1] != 0) {
-                  x += MVect3.x = MVC.extract(opb);
-                  y += MVect3.y = MVC.extract(opb);
-                  LastInterMV.x = MVect3.x;
-                  LastInterMV.y = MVect3.y;
-                } else {
-                  x += MVect3.x = 0;
-                  y += MVect3.y = 0;
-                }
-                
-                if(pbi.UVShiftY == 0) {
-                  if(pbi.UVShiftX == 0) {
-                    MVectU0.x = MVectV0.x = MVect0.x;
-                    MVectU0.y = MVectV0.y = MVect0.y;
-                    MVectU1.x = MVectV1.x = MVect1.x;
-                    MVectU1.y = MVectV1.y = MVect1.y;
-                    MVectU2.x = MVectV2.x = MVect2.x;
-                    MVectU2.y = MVectV2.y = MVect2.y;
-                    MVectU3.x = MVectV3.x = MVect3.x;
-                    MVectU3.y = MVectV3.y = MVect3.y;
-                  } else {
-                    /* 4:2:2, so average components only horizontally */
-                    x = MVect0.x + MVect1.x;
-                    if (x >= 0 ) x = (x+1) / 2;
-                    else         x = (x-1) / 2;
-                    MVectU0.x =
-                    MVectV0.x = x;
-                    y = MVect0.y + MVect1.y;
-                    if (y >= 0 ) y = (y+1) / 2;
-                    else         y = (y-1) / 2;
-                    MVectU0.y =
-                    MVectV0.y = y;
-                    x = MVect2.x + MVect3.x;
-                    if (x >= 0 ) x = (x+1) / 2;
-                    else         x = (x-1) / 2;
-                    MVectU2.x =
-                    MVectV2.x = x;
-                    y = MVect2.y + MVect3.y;
-                    if (y >= 0 ) y = (y+1) / 2;
-                    else         y = (y-1) / 2;
-                    MVectU2.y =
-                    MVectV2.y = y;
-                  }
-                } else {
-                  /* Calculate the U and V plane MVs as the average of the
-                     Y plane MVs. */
-                  /* First .x component */
-                  if (x >= 0 ) x = (x+2) / 4;
-                  else         x = (x-2) / 4;
-                  MVectU0.x = x;
-                  MVectV0.x = x;
-                  /* Then .y component */
-                  if (y >= 0 ) y = (y+2) / 4;
-                  else         y = (y-2) / 4;
-                  MVectU0.y = y;
-                  MVectV0.y = y;
-                }
-
-              }
-	      else if ( CodingMethod == CodingMode.CODE_INTER_LAST_MV ){
-                /* Use the last coded Inter motion vector. */
-                MVect0.x = MVect1.x = 
-		           MVect2.x = 
-			   MVect3.x = 
-				MVectU0.x = 
-				MVectV0.x = 
-				MVectU1.x =
-				MVectV1.x =
-				MVectU2.x =
-				MVectV2.x =
-				MVectU3.x =
-				MVectV3.x = LastInterMV.x;
-                MVect0.y = MVect1.y = 
-		           MVect2.y = 
-			   MVect3.y = 
-				MVectU0.y = 
-				MVectV0.y = 
-				MVectU1.y =
-				MVectV1.y =
-				MVectU2.y =
-				MVectV2.y =
-				MVectU3.y =
-				MVectV3.y = LastInterMV.y;
-              } 
-	      else if ( CodingMethod == CodingMode.CODE_INTER_PRIOR_LAST ){
-                /* Use the next-to-last coded Inter motion vector. */
-                MVect0.x = MVect1.x = 
-		           MVect2.x = 
-			   MVect3.x = 
-			   MVectU0.x = 
-				MVectV0.x = 
-				MVectU1.x =
-				MVectV1.x =
-				MVectU2.x =
-				MVectV2.x =
-				MVectU3.x =
-				MVectV3.x = PriorLastInterMV.x;
-                MVect0.y = MVect1.y = 
-		           MVect2.y = 
-			   MVect3.y = 
-			   MVectU0.y = 
-				MVectV0.y = 
-				MVectU1.y =
-				MVectV1.y =
-				MVectU2.y =
-				MVectV2.y =
-				MVectU3.y =
-				MVectV3.y = PriorLastInterMV.y;
-  
-                /* Swap the prior and last MV cases over */
-                MotionVector TmpMVect = PriorLastInterMV;
-                PriorLastInterMV = LastInterMV;
-                LastInterMV = TmpMVect;
-              }
-	      else {
-                /* Clear the motion vector else */
-                MVect0.x = 0;
-                MVect0.y = 0;
-	      }
             }
-          }
+            
+            if (pbi.frameNQIS == 3 && nqi0 < nCodedFrags) {
+                codedFrag = 0;
+                while (codedFrag < nCodedFrags && pbi.FragQs[pbi.CodedBlockList[codedFrag]] == 0) {
+                    ++codedFrag;
+                }
+                val = opb.readB(1);
+                flag = val;
+                
+                while (codedFrag < nCodedFrags) {
+                    int runCount = longRunBitStringDecode();
+                    boolean fullRun = runCount >= 4129;
+                    for (; codedFrag < nCodedFrags; ++codedFrag) {
+                        if (pbi.FragQs[pbi.CodedBlockList[codedFrag]] == 0) continue;
+                        if (runCount-- <= 0) break;
+                        pbi.FragQs[pbi.CodedBlockList[codedFrag]] += (byte) flag;
+                    }
+                    if (fullRun && codedFrag < nCodedFrags) {
+                        val = opb.readB(1);
+                        flag = val;
+                    } else {
+                        flag = (flag != 0) ? 0 : 1;
+                    }
+                }
+            }
         }
-        /* Next Super-Block */
-        SB++;
-      }
-    }
-  }
-
-  private final int ExtractToken(Buffer opb,
-                        HuffEntry CurrentRoot){
-    /* Loop searches down through tree based upon bits read from the
-       bitstream */
-    /* until it hits a leaf at which point we have decoded a token */
-    while (CurrentRoot.value < 0 ){
-      CurrentRoot = CurrentRoot.child[(int)opb.readB(1)];
-    }
-    return CurrentRoot.value;
-  }
-
-  private void unpackAndExpandToken(short[] ExpandedBlock,
-                                    byte[] CoeffIndex,
-				    int FragIndex,
-				    int HuffChoice){
-    int          ExtraBits = 0;
-
-    int Token = ExtractToken(pbi.opb, pbi.HuffRoot_VP3x[HuffChoice]);
-
-    /* Now.. if we are using the DCT optimised coding system, extract any
-     *  assosciated additional bits token.
-     */
-    if (pbi.ExtraBitLengths_VP3x[Token] > 0){
-      /* Extract the appropriate number of extra bits. */
-      ExtraBits = (int)pbi.opb.readB(pbi.ExtraBitLengths_VP3x[Token]);
     }
 
-    /* Take token dependant action */
-    if ( Token >= Huffman.DCT_SHORT_ZRL_TOKEN ) {
-      /* "Value", "zero run" and "zero run value" tokens */
-      dctDecode.ExpandToken(ExpandedBlock, CoeffIndex, FragIndex, Token, ExtraBits );
-      if ( CoeffIndex[FragIndex] >= Constants.BLOCK_SIZE )
-        BlocksToDecode --;
-    }else{
-      /* Special action and EOB tokens */
-      switch ( Token ){
-      case Huffman.DCT_EOB_PAIR_TOKEN:
-        EOB_Run = 1;
-        break;
-      case Huffman.DCT_EOB_TRIPLE_TOKEN:
-        EOB_Run = 2;
-        break;
-      case Huffman.DCT_REPEAT_RUN_TOKEN:
-        EOB_Run = ExtraBits + 3;
-        break;
-      case Huffman.DCT_REPEAT_RUN2_TOKEN:
-        EOB_Run = ExtraBits + 7;
-        break;
-      case Huffman.DCT_REPEAT_RUN3_TOKEN:
-        EOB_Run = ExtraBits + 15;
-        break;
-      case Huffman.DCT_REPEAT_RUN4_TOKEN:
-        EOB_Run = ExtraBits - 1;
-        break;
-      case Huffman.DCT_EOB_TOKEN:
-        break;
-      default:
-        return;
-      }
-      CoeffIndex[FragIndex] = Constants.BLOCK_SIZE;
-      BlocksToDecode --;
-    }
-  }
-
-  private void unPackVideo ()
-  {
-    int       EncodedCoeffs = 1;
-    int       FragIndex;
-
-    int     AcHuffChoice;
-    int     AcHuffChoice1;
-    int     AcHuffChoice2;
-
-    int     DcHuffChoice;
-
-    /* Bail out immediately if a decode error has already been reported. */
-    if ( pbi.DecoderErrorCode != 0) 
-      return;
-
-    /* Clear down the array that indicates the current coefficient index
-       for each block. */
-    MemUtils.set(FragCoeffs, 0, 0, pbi.UnitFragments);
-    MemUtils.set(pbi.FragCoefEOB, 0, 0, pbi.UnitFragments);
-
-    /* Note the number of blocks to decode */
-    BlocksToDecode = pbi.CodedBlockIndex;
-
-    /* Get the DC huffman table choice for Y and then UV */
-    int DcHuffChoice1 = (int)(pbi.opb.readB(Huffman.DC_HUFF_CHOICE_BITS) + Huffman.DC_HUFF_OFFSET);
-    int DcHuffChoice2 = (int)(pbi.opb.readB(Huffman.DC_HUFF_CHOICE_BITS) + Huffman.DC_HUFF_OFFSET);
-
-    /* UnPack DC coefficients / tokens */
-    int cbl = 0;
-    int cble = pbi.CodedBlockIndex;
-    while (cbl < cble) {
-      /* Get the block data index */
-      FragIndex = pbi.CodedBlockList[cbl];
-      pbi.FragCoefEOB[FragIndex] = FragCoeffs[FragIndex];
-
-      /* Select the appropriate huffman table offset according to
-         whether the token is from a Y or UV block */
-      if (FragIndex < (int)pbi.YPlaneFragments )
-        DcHuffChoice = DcHuffChoice1;
-      else
-        DcHuffChoice = DcHuffChoice2;
-
-      /* If we are in the middle of an EOB run */
-      if ( EOB_Run != 0){
-        /* Mark the current block as fully expanded and decrement
-           EOB_RUN count */
-        FragCoeffs[FragIndex] = Constants.BLOCK_SIZE;
-        EOB_Run --;
-        BlocksToDecode --;
-      }else{
-        /* Else unpack a DC token */
-        unpackAndExpandToken(pbi.QFragData[FragIndex],
-                             FragCoeffs,
-  			     FragIndex,
-		 	     DcHuffChoice);
-      }
-      cbl++;
-    }
-
-    /* Get the AC huffman table choice for Y and then for UV. */
-    int AcHuffIndex1 = (int) (pbi.opb.readB(Huffman.AC_HUFF_CHOICE_BITS) + Huffman.AC_HUFF_OFFSET);
-    int AcHuffIndex2 = (int) (pbi.opb.readB(Huffman.AC_HUFF_CHOICE_BITS) + Huffman.AC_HUFF_OFFSET);
-
-    /* Unpack Lower AC coefficients. */
-    while ( EncodedCoeffs < 64 ) {
-      /* Repeatedly scan through the list of blocks. */
-      cbl = 0;
-      cble = pbi.CodedBlockIndex;
-
-      /* Huffman table selection based upon which AC coefficient we are on */
-      if ( EncodedCoeffs <= Huffman.AC_TABLE_2_THRESH ){
-        AcHuffChoice1 = AcHuffIndex1;
-        AcHuffChoice2 = AcHuffIndex2;
-      }else if ( EncodedCoeffs <= Huffman.AC_TABLE_3_THRESH ){
-        AcHuffChoice1 = (AcHuffIndex1 + Huffman.AC_HUFF_CHOICES);
-        AcHuffChoice2 = (AcHuffIndex2 + Huffman.AC_HUFF_CHOICES);
-      } else if ( EncodedCoeffs <= Huffman.AC_TABLE_4_THRESH ){
-        AcHuffChoice1 = (AcHuffIndex1 + (Huffman.AC_HUFF_CHOICES * 2));
-        AcHuffChoice2 = (AcHuffIndex2 + (Huffman.AC_HUFF_CHOICES * 2));
-      } else {
-        AcHuffChoice1 = (AcHuffIndex1 + (Huffman.AC_HUFF_CHOICES * 3));
-        AcHuffChoice2 = (AcHuffIndex2 + (Huffman.AC_HUFF_CHOICES * 3));
-      }
-
-      while(cbl < cble ) {
-        /* Get the linear index for the current fragment. */
-        FragIndex = pbi.CodedBlockList[cbl];
-
-        /* Should we decode a token for this block on this pass. */
-        if ( FragCoeffs[FragIndex] <= EncodedCoeffs ) {
-          pbi.FragCoefEOB[FragIndex] = FragCoeffs[FragIndex];
-          /* If we are in the middle of an EOB run */
-          if ( EOB_Run != 0) {
-            /* Mark the current block as fully expanded and decrement
-               EOB_RUN count */
-            FragCoeffs[FragIndex] = Constants.BLOCK_SIZE;
-            EOB_Run --;
-            BlocksToDecode --;
-          }else{
-            /* Else unpack an AC token */
-            /* Work out which huffman table to use, then decode a token */
-            if ( FragIndex < (int)pbi.YPlaneFragments )
-              AcHuffChoice = AcHuffChoice1;
-            else
-              AcHuffChoice = AcHuffChoice2;
-  
-            unpackAndExpandToken(pbi.QFragData[FragIndex],
-                                 FragCoeffs,
-  				 FragIndex,
-				 AcHuffChoice);
-          }
+    private int loadFrame() {
+        Buffer opb = pbi.opb;
+        pbi.FrameType = (byte) opb.readB(1);
+        int dctQMask = (int) opb.readB(6);
+        pbi.frameQIS[0] = dctQMask;
+        pbi.frameNQIS = 1;
+        
+        int moreQs = opb.readB(1);
+        if (moreQs > 0) {
+            pbi.frameQIS[1] = (int) opb.readB(6);
+            pbi.frameNQIS = 2;
+            moreQs = opb.readB(1);
+            if (moreQs > 0) {
+                pbi.frameQIS[2] = (int) opb.readB(6);
+                pbi.frameNQIS = 3;
+            }
         }
-        cbl++;
-      }
-  
-      /* Test for condition where there are no blocks left with any
-         tokesn to decode */
-      if ( BlocksToDecode == 0)
-        break;
-  
-      EncodedCoeffs ++;
+        
+        if (pbi.FrameType == Constants.BASE_FRAME) {
+            pbi.KeyFrameType = (byte) opb.readB(1);
+            opb.readB(2);
+        }
+        
+        pbi.frArray.quadDecodeDisplayFragments(pbi);
+        return 1;
     }
-  }
-  
-  public int loadAndDecode()
-  {
-    int    loadFrameOK;
 
-    /* Load the next frame. */
-    loadFrameOK = loadFrame();
-  
-    if (loadFrameOK != 0){
-    //System.out.println("Load: "+loadFrameOK+" "+pbi.ThisFrameQualityValue+" "+pbi.LastFrameQualityValue);
- 
-      /* Decode the data into the fragment buffer. */
-      /* Bail out immediately if a decode error has already been reported. */
-      if (pbi.DecoderErrorCode != 0) 
-        return 0;
-
-      /* Zero Decoder EOB run count */
-      EOB_Run = 0;
-
-      /* Make a note of the number of coded blocks this frame */
-      pbi.CodedBlocksThisFrame = pbi.CodedBlockIndex;
-
-      /* Decode the modes data */
-      decodeModes(pbi.YSBRows, pbi.YSBCols);
-
-      /* Unpack and decode the motion vectors. */
-      decodeMVectors (pbi.YSBRows, pbi.YSBCols);
-      
-      /* Unpack per-block quantizer information */
-      decodeBlockLevelQi();
-      
-      /* Unpack and decode the actual video data. */
-      unPackVideo();
-
-      /* Reconstruct and display the frame */
-      dctDecode.ReconRefFrames(pbi);
-
-      return 0;
+    private void decodeModes(int sbRows, int sbCols) {
+        CodingMode[] fragCodingMethod = pbi.FragCodingMethod;
+        
+        if (pbi.getFrameType() == Constants.BASE_FRAME) {
+            MemUtils.set(fragCodingMethod, 0, CodingMode.CODE_INTRA, pbi.UnitFragments);
+        } else {
+            MemUtils.set(fragCodingMethod, 0, CodingMode.CODE_INTER_NO_MV, pbi.UnitFragments);
+            CodingMode[] modeList;
+            long ret = pbi.opb.readB(Constants.MODE_METHOD_BITS);
+            int codingScheme = (int) ret;
+            
+            if (codingScheme == 0) {
+                CodingMode[] customModeAlphabet = new CodingMode[Constants.MAX_MODES];
+                for (int i = 0; i < Constants.MAX_MODES; i++) {
+                    ret = pbi.opb.readB(Constants.MODE_BITS);
+                    customModeAlphabet[(int) ret] = CodingMode.MODES[i];
+                }
+                modeList = customModeAlphabet;
+            } else {
+                modeList = modeAlphabet[codingScheme - 1];
+            }
+            
+            int sb = 0;
+            int mbListIndex = 0;
+            for (int sbRow = 0; sbRow < sbRows; sbRow++) {
+                for (int sbCol = 0; sbCol < sbCols; sbCol++) {
+                    for (int mb = 0; mb < 4; mb++) {
+                        int fragIndex = pbi.BlockMap.quadMapToMBTopLeft(sb, mb);
+                        if (fragIndex >= 0) {
+                            if (pbi.MBCodedFlags[mbListIndex++] != 0) {
+                                CodingMode codingMethod;
+                                if (codingScheme == (Constants.MODE_METHODS - 1)) {
+                                    ret = pbi.opb.readB(Constants.MODE_BITS);
+                                    codingMethod = CodingMode.MODES[(int) ret];
+                                } else {
+                                    CodingMode modeEntry = pbi.frArray.unpackMode(pbi.opb);
+                                    codingMethod = modeList[modeEntry.getValue()];
+                                }
+                                
+                                fragCodingMethod[fragIndex] = codingMethod;
+                                fragCodingMethod[fragIndex + 1] = codingMethod;
+                                fragCodingMethod[fragIndex + pbi.HFragments] = codingMethod;
+                                fragCodingMethod[fragIndex + pbi.HFragments + 1] = codingMethod;
+                                
+                                if (pbi.UVShiftX == 1 && pbi.UVShiftY == 1) {
+                                    int uvRow = (fragIndex / (pbi.HFragments * 2));
+                                    int uvColumn = (fragIndex % pbi.HFragments) / 2;
+                                    int uvFragOffset = (uvRow * (pbi.HFragments / 2)) + uvColumn;
+                                    fragCodingMethod[pbi.YPlaneFragments + uvFragOffset] = codingMethod;
+                                    fragCodingMethod[pbi.YPlaneFragments + pbi.UVPlaneFragments + uvFragOffset] = codingMethod;
+                                } else if (pbi.UVShiftX == 0) {
+                                    int tempIdx = fragIndex + pbi.YPlaneFragments;
+                                    fragCodingMethod[tempIdx] = fragCodingMethod[tempIdx + 1] =
+                                    fragCodingMethod[tempIdx + pbi.HFragments] = fragCodingMethod[tempIdx + pbi.HFragments + 1] = codingMethod;
+                                    tempIdx += pbi.UVPlaneFragments;
+                                    fragCodingMethod[tempIdx] = fragCodingMethod[tempIdx + 1] =
+                                    fragCodingMethod[tempIdx + pbi.HFragments] = fragCodingMethod[tempIdx + pbi.HFragments + 1] = codingMethod;
+                                } else {
+                                    int tempIdx = pbi.YPlaneFragments + fragIndex / 2;
+                                    fragCodingMethod[tempIdx] = fragCodingMethod[tempIdx + pbi.HFragments / 2] = codingMethod;
+                                    tempIdx += pbi.UVPlaneFragments;
+                                    fragCodingMethod[tempIdx] = fragCodingMethod[tempIdx + pbi.HFragments / 2] = codingMethod;
+                                }
+                            }
+                        }
+                    }
+                    sb++;
+                }
+            }
+        }
     }
-  
-    return(Result.BADPACKET);
-  }
+
+    private void decodeMVectors(int sbRows, int sbCols) {
+        Buffer opb = pbi.opb;
+        if (pbi.getFrameType() == Constants.BASE_FRAME) {
+            return;
+        }
+        
+        MotionVector dummy = new MotionVector();
+        lastInterMV.x = 0;
+        lastInterMV.y = 0;
+        priorLastInterMV.x = 0;
+        priorLastInterMV.y = 0;
+        
+        ExtractMVectorComponent mvc = (opb.readB(1) == 0) ? MVA : MVB;
+        
+        int sb = 0;
+        int mbListIndex = 0;
+        for (int sbRow = 0; sbRow < sbRows; sbRow++) {
+            for (int sbCol = 0; sbCol < sbCols; sbCol++) {
+                for (int mb = 0; mb < 4; mb++) {
+                    int fragIndex = pbi.BlockMap.quadMapToMBTopLeft(sb, mb);
+                    if (fragIndex >= 0) {
+                        if (pbi.MBCodedFlags[mbListIndex++] != 0) {
+                            CodingMode codingMethod = pbi.FragCodingMethod[fragIndex];
+                            MotionVector mvect0 = pbi.FragMVect[fragIndex];
+                            MotionVector mvect1 = pbi.FragMVect[fragIndex + 1];
+                            MotionVector mvect2 = pbi.FragMVect[fragIndex + pbi.HFragments];
+                            MotionVector mvect3 = pbi.FragMVect[fragIndex + pbi.HFragments + 1];
+                            
+                            int uvRow = (fragIndex / (pbi.HFragments << pbi.UVShiftY));
+                            int uvColumn = (fragIndex % pbi.HFragments) >> pbi.UVShiftX;
+                            int uvFragOffset = (uvRow * (pbi.HFragments >> pbi.UVShiftX)) + uvColumn;
+                            
+                            MotionVector mvectU0 = pbi.FragMVect[pbi.YPlaneFragments + uvFragOffset];
+                            MotionVector mvectV0 = pbi.FragMVect[pbi.YPlaneFragments + pbi.UVPlaneFragments + uvFragOffset];
+                            MotionVector mvectU1 = dummy;
+                            MotionVector mvectV1 = dummy;
+                            MotionVector mvectU2 = dummy;
+                            MotionVector mvectV2 = dummy;
+                            MotionVector mvectU3 = dummy;
+                            MotionVector mvectV3 = dummy;
+                            
+                            if (pbi.UVShiftY == 0) {
+                                mvectU2 = pbi.FragMVect[pbi.YPlaneFragments + uvFragOffset + (pbi.HFragments >> pbi.UVShiftX)];
+                                mvectV2 = pbi.FragMVect[pbi.YPlaneFragments + pbi.UVPlaneFragments + uvFragOffset + (pbi.HFragments >> pbi.UVShiftX)];
+                                if (pbi.UVShiftX == 0) {
+                                    mvectU1 = pbi.FragMVect[pbi.YPlaneFragments + uvFragOffset + 1];
+                                    mvectV1 = pbi.FragMVect[pbi.YPlaneFragments + pbi.UVPlaneFragments + uvFragOffset + 1];
+                                    mvectU3 = pbi.FragMVect[pbi.YPlaneFragments + uvFragOffset + pbi.HFragments + 1];
+                                    mvectV3 = pbi.FragMVect[pbi.YPlaneFragments + pbi.UVPlaneFragments + uvFragOffset + pbi.HFragments + 1];
+                                }
+                            }
+                            
+                            if (codingMethod == CodingMode.CODE_INTER_PLUS_MV) {
+                                priorLastInterMV.x = lastInterMV.x;
+                                priorLastInterMV.y = lastInterMV.y;
+                                
+                                int extractedX = mvc.extract(opb);
+                                int extractedY = mvc.extract(opb);
+                                
+                                lastInterMV.x = mvect0.x = mvect1.x = mvect2.x = mvect3.x = 
+                                mvectU0.x = mvectV0.x = mvectU1.x = mvectV1.x = 
+                                mvectU2.x = mvectV2.x = mvectU3.x = mvectV3.x = extractedX;
+                                
+                                lastInterMV.y = mvect0.y = mvect1.y = mvect2.y = mvect3.y = 
+                                mvectU0.y = mvectV0.y = mvectU1.y = mvectV1.y = 
+                                mvectU2.y = mvectV2.y = mvectU3.y = mvectV3.y = extractedY;
+                                
+                            } else if (codingMethod == CodingMode.CODE_GOLDEN_MV) {
+                                int extractedX = mvc.extract(opb);
+                                int extractedY = mvc.extract(opb);
+                                
+                                mvect0.x = mvect1.x = mvect2.x = mvect3.x = 
+                                mvectU0.x = mvectV0.x = mvectU1.x = mvectV1.x = 
+                                mvectU2.x = mvectV2.x = mvectU3.x = mvectV3.x = extractedX;
+                                
+                                mvect0.y = mvect1.y = mvect2.y = mvect3.y = 
+                                mvectU0.y = mvectV0.y = mvectU1.y = mvectV1.y = 
+                                mvectU2.y = mvectV2.y = mvectU3.y = mvectV3.y = extractedY;
+                                
+                            } else if (codingMethod == CodingMode.CODE_INTER_FOURMV) {
+                                priorLastInterMV.x = lastInterMV.x;
+                                priorLastInterMV.y = lastInterMV.y;
+                                
+                                int x = 0, y = 0;
+                                if (pbi.display_fragments[fragIndex] != 0) {
+                                    x = mvect0.x = mvc.extract(opb);
+                                    y = mvect0.y = mvc.extract(opb);
+                                    lastInterMV.x = mvect0.x;
+                                    lastInterMV.y = mvect0.y;
+                                } else {
+                                    mvect0.x = 0;
+                                    mvect0.y = 0;
+                                }
+                                
+                                if (pbi.display_fragments[fragIndex + 1] != 0) {
+                                    x += mvect1.x = mvc.extract(opb);
+                                    y += mvect1.y = mvc.extract(opb);
+                                    lastInterMV.x = mvect1.x;
+                                    lastInterMV.y = mvect1.y;
+                                } else {
+                                    mvect1.x = 0;
+                                    mvect1.y = 0;
+                                }
+                                
+                                if (pbi.display_fragments[fragIndex + pbi.HFragments] != 0) {
+                                    x += mvect2.x = mvc.extract(opb);
+                                    y += mvect2.y = mvc.extract(opb);
+                                    lastInterMV.x = mvect2.x;
+                                    lastInterMV.y = mvect2.y;
+                                } else {
+                                    mvect2.x = 0;
+                                    mvect2.y = 0;
+                                }
+                                
+                                if (pbi.display_fragments[fragIndex + pbi.HFragments + 1] != 0) {
+                                    x += mvect3.x = mvc.extract(opb);
+                                    y += mvect3.y = mvc.extract(opb);
+                                    lastInterMV.x = mvect3.x;
+                                    lastInterMV.y = mvect3.y;
+                                } else {
+                                    mvect3.x = 0;
+                                    mvect3.y = 0;
+                                }
+                                
+                                if (pbi.UVShiftY == 0) {
+                                    if (pbi.UVShiftX == 0) {
+                                        mvectU0.x = mvectV0.x = mvect0.x;
+                                        mvectU0.y = mvectV0.y = mvect0.y;
+                                        mvectU1.x = mvectV1.x = mvect1.x;
+                                        mvectU1.y = mvectV1.y = mvect1.y;
+                                        mvectU2.x = mvectV2.x = mvect2.x;
+                                        mvectU2.y = mvectV2.y = mvect2.y;
+                                        mvectU3.x = mvectV3.x = mvect3.x;
+                                        mvectU3.y = mvectV3.y = mvect3.y;
+                                    } else {
+                                        int ux0 = mvect0.x + mvect1.x;
+                                        ux0 = (ux0 >= 0) ? (ux0 + 1) / 2 : (ux0 - 1) / 2;
+                                        mvectU0.x = mvectV0.x = ux0;
+                                        
+                                        int uy0 = mvect0.y + mvect1.y;
+                                        uy0 = (uy0 >= 0) ? (uy0 + 1) / 2 : (uy0 - 1) / 2;
+                                        mvectU0.y = mvectV0.y = uy0;
+                                        
+                                        int ux2 = mvect2.x + mvect3.x;
+                                        ux2 = (ux2 >= 0) ? (ux2 + 1) / 2 : (ux2 - 1) / 2;
+                                        mvectU2.x = mvectV2.x = ux2;
+                                        
+                                        int uy2 = mvect2.y + mvect3.y;
+                                        uy2 = (uy2 >= 0) ? (uy2 + 1) / 2 : (uy2 - 1) / 2;
+                                        mvectU2.y = mvectV2.y = uy2;
+                                    }
+                                } else {
+                                    x = (x >= 0) ? (x + 2) / 4 : (x - 2) / 4;
+                                    mvectU0.x = mvectV0.x = x;
+                                    y = (y >= 0) ? (y + 2) / 4 : (y - 2) / 4;
+                                    mvectU0.y = mvectV0.y = y;
+                                }
+                            } else if (codingMethod == CodingMode.CODE_INTER_LAST_MV) {
+                                mvect0.x = mvect1.x = mvect2.x = mvect3.x = 
+                                mvectU0.x = mvectV0.x = mvectU1.x = mvectV1.x = 
+                                mvectU2.x = mvectV2.x = mvectU3.x = mvectV3.x = lastInterMV.x;
+                                
+                                mvect0.y = mvect1.y = mvect2.y = mvect3.y = 
+                                mvectU0.y = mvectV0.y = mvectU1.y = mvectV1.y = 
+                                mvectU2.y = mvectV2.y = mvectU3.y = mvectV3.y = lastInterMV.y;
+                            } else if (codingMethod == CodingMode.CODE_INTER_PRIOR_LAST) {
+                                mvect0.x = mvect1.x = mvect2.x = mvect3.x = 
+                                mvectU0.x = mvectV0.x = mvectU1.x = mvectV1.x = 
+                                mvectU2.x = mvectV2.x = mvectU3.x = mvectV3.x = priorLastInterMV.x;
+                                
+                                mvect0.y = mvect1.y = mvect2.y = mvect3.y = 
+                                mvectU0.y = mvectV0.y = mvectU1.y = mvectV1.y = 
+                                mvectU2.y = mvectV2.y = mvectU3.y = mvectV3.y = priorLastInterMV.y;
+                                
+                                MotionVector tmpMVect = priorLastInterMV;
+                                priorLastInterMV = lastInterMV;
+                                lastInterMV = tmpMVect;
+                            } else {
+                                mvect0.x = 0;
+                                mvect0.y = 0;
+                            }
+                        }
+                    }
+                }
+                sb++;
+            }
+        }
+    }
+
+    private int extractToken(Buffer opb, HuffEntry currentRoot) {
+        while (currentRoot.value < 0) {
+            currentRoot = currentRoot.child[opb.readB(1)];
+        }
+        return currentRoot.value;
+    }
+
+    private void unpackAndExpandToken(short[] expandedBlock, byte[] coeffIndex, int fragIndex, int huffChoice) {
+        int extraBits = 0;
+        int token = extractToken(pbi.opb, pbi.HuffRoot_VP3x[huffChoice]);
+        if (pbi.ExtraBitLengths_VP3x[token] > 0) {
+            extraBits = (int) pbi.opb.readB(pbi.ExtraBitLengths_VP3x[token]);
+        }
+        if (token >= Huffman.DCT_SHORT_ZRL_TOKEN) {
+            dctDecode.expandToken(expandedBlock, coeffIndex, fragIndex, token, extraBits);
+            if (coeffIndex[fragIndex] >= Constants.BLOCK_SIZE)
+                blocksToDecode--;
+        } else {
+            switch (token) {
+                case Huffman.DCT_EOB_PAIR_TOKEN -> eobRun = 1;
+                case Huffman.DCT_EOB_TRIPLE_TOKEN -> eobRun = 2;
+                case Huffman.DCT_REPEAT_RUN_TOKEN -> eobRun = extraBits + 3;
+                case Huffman.DCT_REPEAT_RUN2_TOKEN -> eobRun = extraBits + 7;
+                case Huffman.DCT_REPEAT_RUN3_TOKEN -> eobRun = extraBits + 15;
+                case Huffman.DCT_REPEAT_RUN4_TOKEN -> eobRun = extraBits - 1;
+                case Huffman.DCT_EOB_TOKEN -> {}
+                default -> {
+                    return;
+                }
+            }
+            coeffIndex[fragIndex] = Constants.BLOCK_SIZE;
+            blocksToDecode--;
+        }
+    }
+
+    private void unPackVideo() {
+        if (pbi.DecoderErrorCode != 0) return;
+        
+        MemUtils.set(fragCoeffs, (byte) 0, (byte) 0, pbi.UnitFragments);
+        MemUtils.set(pbi.FragCoefEOB, (byte) 0, (byte) 0, pbi.UnitFragments);
+        blocksToDecode = pbi.CodedBlockIndex;
+        
+        int dcHuffChoice1 = (int) (pbi.opb.readB(Huffman.DC_HUFF_CHOICE_BITS) + Huffman.DC_HUFF_OFFSET);
+        int dcHuffChoice2 = (int) (pbi.opb.readB(Huffman.DC_HUFF_CHOICE_BITS) + Huffman.DC_HUFF_OFFSET);
+        
+        int cbl = 0;
+        int cble = pbi.CodedBlockIndex;
+        while (cbl < cble) {
+            int fragIndex = pbi.CodedBlockList[cbl];
+            pbi.FragCoefEOB[fragIndex] = fragCoeffs[fragIndex];
+            int dcHuffChoice = (fragIndex < (int) pbi.YPlaneFragments) ? dcHuffChoice1 : dcHuffChoice2;
+            
+            if (eobRun != 0) {
+                fragCoeffs[fragIndex] = Constants.BLOCK_SIZE;
+                eobRun--;
+                blocksToDecode--;
+            } else {
+                unpackAndExpandToken(pbi.QFragData[fragIndex], fragCoeffs, fragIndex, dcHuffChoice);
+            }
+            cbl++;
+        }
+        
+        int acHuffIndex1 = (int) (pbi.opb.readB(Huffman.AC_HUFF_CHOICE_BITS) + Huffman.AC_HUFF_OFFSET);
+        int acHuffIndex2 = (int) (pbi.opb.readB(Huffman.AC_HUFF_CHOICE_BITS) + Huffman.AC_HUFF_OFFSET);
+        int encodedCoeffs = 1;
+        
+        while (encodedCoeffs < 64) {
+            cbl = 0;
+            cble = pbi.CodedBlockIndex;
+            
+            int acHuffChoice1;
+            int acHuffChoice2;
+            if (encodedCoeffs <= Huffman.AC_TABLE_2_THRESH) {
+                acHuffChoice1 = acHuffIndex1;
+                acHuffChoice2 = acHuffIndex2;
+            } else if (encodedCoeffs <= Huffman.AC_TABLE_3_THRESH) {
+                acHuffChoice1 = acHuffIndex1 + Huffman.AC_HUFF_CHOICES;
+                acHuffChoice2 = acHuffIndex2 + Huffman.AC_HUFF_CHOICES;
+            } else if (encodedCoeffs <= Huffman.AC_TABLE_4_THRESH) {
+                acHuffChoice1 = acHuffIndex1 + (Huffman.AC_HUFF_CHOICES * 2);
+                acHuffChoice2 = acHuffIndex2 + (Huffman.AC_HUFF_CHOICES * 2);
+            } else {
+                acHuffChoice1 = acHuffIndex1 + (Huffman.AC_HUFF_CHOICES * 3);
+                acHuffChoice2 = acHuffIndex2 + (Huffman.AC_HUFF_CHOICES * 3);
+            }
+            
+            while (cbl < cble) {
+                int fragIndex = pbi.CodedBlockList[cbl];
+                if (fragCoeffs[fragIndex] <= encodedCoeffs) {
+                    pbi.FragCoefEOB[fragIndex] = fragCoeffs[fragIndex];
+                    if (eobRun != 0) {
+                        fragCoeffs[fragIndex] = Constants.BLOCK_SIZE;
+                        eobRun--;
+                        blocksToDecode--;
+                    } else {
+                        int acHuffChoice = (fragIndex < (int) pbi.YPlaneFragments) ? acHuffChoice1 : acHuffChoice2;
+                        unpackAndExpandToken(pbi.QFragData[fragIndex], fragCoeffs, fragIndex, acHuffChoice);
+                    }
+                }
+                cbl++;
+            }
+            if (blocksToDecode == 0) break;
+            encodedCoeffs++;
+        }
+    }
+
+    public int loadAndDecode() {
+        int loadFrameOK = loadFrame();
+        if (loadFrameOK != 0) {
+            if (pbi.DecoderErrorCode != 0) return 0;
+            eobRun = 0;
+            pbi.CodedBlocksThisFrame = pbi.CodedBlockIndex;
+            decodeModes(pbi.YSBRows, pbi.YSBCols);
+            decodeMVectors(pbi.YSBRows, pbi.YSBCols);
+            decodeBlockLevelQi();
+            unPackVideo();
+            dctDecode.reconRefFrames(pbi);
+            return 0;
+        }
+        return Result.BADPACKET;
+    }
 }
