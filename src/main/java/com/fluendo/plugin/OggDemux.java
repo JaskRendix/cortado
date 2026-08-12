@@ -31,13 +31,11 @@ public class OggDemux extends Element {
     private static final byte[] signature = { 0x4f, 0x67, 0x67, 0x53 };
     private static final byte[] fishead_signature = { 0x66, 0x69, 0x73, 0x68, 0x65, 0x61, 0x64 };
     private static final byte[] cmml_signature = { 0x43, 0x4d, 0x4d, 0x4c };
-
     private static final int TYPE_NEW = 0;
     private static final int TYPE_UNKNOWN = 1;
     private static final int TYPE_SKELETON = 2;
     private static final int TYPE_CMML = 3;
     private static final int TYPE_MEDIA = 4;
-
     private static final String[] payload_names = {
         "TheoraDec", "VorbisDec", "KateDec"
     };
@@ -48,10 +46,10 @@ public class OggDemux extends Element {
     class OggStream extends Pad {
         public int serialno;
         public StreamState os;
-        private Vector<com.fluendo.jst.Buffer> headers;
+        private List<com.fluendo.jst.Buffer> headers;
         private long baseTs;
         public boolean haveHeaders;
-        public Vector<com.fluendo.jst.Buffer> queue;
+        public List<com.fluendo.jst.Buffer> queue;
         public boolean started;
         public boolean complete;
         public boolean discont;
@@ -60,18 +58,16 @@ public class OggDemux extends Element {
         public boolean sentHeaders;
         public int type;
         public int lastRet;
-        
         private OggPayload payload;
 
         public OggStream(int serial) {
             super(Pad.SRC, "serial_" + serial);
-
             serialno = serial;
             os = new StreamState();
             os.init(serial);
             os.reset();
-            queue = new Vector<>();
-            headers = new Vector<>();
+            queue = new ArrayList<>();
+            headers = new ArrayList<>();
             haveHeaders = false;
             haveKeyframe = false;
             payload = null;
@@ -102,7 +98,6 @@ public class OggDemux extends Element {
         public void activate() {
             if (active)
                 return;
-
             sentHeaders = false;
             lastRet = OK;
             addPad(this);
@@ -120,44 +115,39 @@ public class OggDemux extends Element {
         public void reStart(long firstTs) {
             com.fluendo.jst.Buffer buf;
             long time;
-
             if (!active)
                 return;
-
             baseTs = firstTs;
             time = firstTs - baseTs;
-
             Debug.log(Debug.DEBUG, this + " pushing segment start " + firstTs + ", time " + time);
             pushEvent(Event.newNewsegment(false, Format.TIME, firstTs, -1, time));
-
             if (!sentHeaders) {
-                for (int i = 0; i < headers.size(); i++) {
-                    buf = headers.elementAt(i);
+                for (com.fluendo.jst.Buffer header : headers) {
+                    buf = header;
                     buf.setFlag(com.fluendo.jst.Buffer.FLAG_DISCONT, discont);
                     discont = false;
                     push(buf);
                 }
                 sentHeaders = true;
             }
-            for (int i = 0; i < queue.size(); i++) {
-                buf = queue.elementAt(i);
-                if (i == 0)
+            for (com.fluendo.jst.Buffer value : queue) {
+                buf = value;
+                if (buf == queue.get(0))
                     Debug.log(Debug.DEBUG, this + " first data buffer: " + buf.timestamp);
                 buf.setFlag(com.fluendo.jst.Buffer.FLAG_DISCONT, discont);
                 discont = false;
                 push(buf);
             }
-            queue.setSize(0);
+            queue.clear();
             started = true;
         }
 
         public long getFirstTs() {
-            return payload.getFirstTs((Vector) queue);
+            return payload.getFirstTs(queue);
         }
 
         private com.fluendo.jst.Buffer bufferFromPacket(Packet op) {
             com.fluendo.jst.Buffer data = com.fluendo.jst.Buffer.create();
-
             data.copyData(op.packet_base, op.packet, op.bytes);
             data.time_offset = op.granulepos;
             if (payload != null)
@@ -166,18 +156,13 @@ public class OggDemux extends Element {
                 data.timestamp = -1;
             data.setFlag(com.fluendo.jst.Buffer.FLAG_DISCONT, discont);
             data.setFlag(com.fluendo.jst.Buffer.FLAG_DELTA_UNIT, !payload.isKeyFrame(op));
-
             return data;
         }
 
         private void initNewStream(Packet op) {
-            int i;
-
             payload = null;
-            for (i = 0; i < payloads.length; i++) {
-                OggPayload pl = payloads[i];
+            for (OggPayload pl : payloads) {
                 if (pl == null) continue;
-
                 if (pl.isType(op)) {
                     try {
                         payload = (OggPayload) pl.getClass().getDeclaredConstructor().newInstance();
@@ -214,7 +199,6 @@ public class OggDemux extends Element {
                 complete = true;
                 return Pad.OK;
             }
-
             if (!haveHeaders) {
                 if (payload.isHeader(op)) {
                     int result = payload.takeHeader(op);
@@ -223,7 +207,7 @@ public class OggDemux extends Element {
                         return Pad.ERROR;
                     }
                     com.fluendo.jst.Buffer data = bufferFromPacket(op);
-                    headers.addElement(data);
+                    headers.add(data);
                     if (result > 0) {
                         haveHeaders = true;
                     }
@@ -240,7 +224,7 @@ public class OggDemux extends Element {
                 }
                 if (haveKeyframe || payload.isKeyFrame(op)) {
                     com.fluendo.jst.Buffer data = bufferFromPacket(op);
-                    queue.addElement(data);
+                    queue.add(data);
                     haveKeyframe = true;
                     if (op.granulepos != -1) {
                         complete = true;
@@ -253,7 +237,6 @@ public class OggDemux extends Element {
         public int pushPage(Page og) {
             int res;
             int flowRet = Pad.OK;
-
             res = os.pagein(og);
             if (res < 0) {
                 System.err.println("Error reading first page of Ogg bitstream data.");
@@ -281,13 +264,13 @@ public class OggDemux extends Element {
     }
 
     class OggChain {
-        private Vector<OggStream> streams;
+        private List<OggStream> streams;
         private boolean active;
         private boolean synced;
         private long firstTs;
 
         public OggChain() {
-            streams = new Vector<>();
+            streams = new ArrayList<>();
             synced = false;
             active = false;
             firstTs = -1;
@@ -300,10 +283,8 @@ public class OggDemux extends Element {
         public void activate() {
             if (active)
                 return;
-
             Debug.log(Debug.DEBUG, "activating chain");
-            for (int i = 0; i < streams.size(); i++) {
-                OggStream stream = streams.elementAt(i);
+            for (OggStream stream : streams) {
                 stream.activate();
             }
             active = true;
@@ -314,8 +295,7 @@ public class OggDemux extends Element {
             if (!active)
                 return;
             Debug.log(Debug.DEBUG, "deActivating chain");
-            for (int i = 0; i < streams.size(); i++) {
-                OggStream stream = streams.elementAt(i);
+            for (OggStream stream : streams) {
                 stream.deActivate();
             }
             active = false;
@@ -324,78 +304,62 @@ public class OggDemux extends Element {
         public void reStart() {
             if (!active)
                 return;
-
             if (firstTs == -1) {
                 long maxTs = 0;
                 long minTs = Long.MAX_VALUE;
-                for (int i = 0; i < streams.size(); i++) {
-                    OggStream stream = streams.elementAt(i);
-
+                for (OggStream stream : streams) {
                     if (stream.type != TYPE_MEDIA)
                         continue;
-
                     long ts = stream.getFirstTs();
                     maxTs = Math.max(maxTs, ts);
                     minTs = Math.min(minTs, ts);
                 }
                 firstTs = maxTs;
             }
-            for (int i = 0; i < streams.size(); i++) {
-                OggStream stream = streams.elementAt(i);
+            for (OggStream stream : streams) {
                 stream.reStart(firstTs);
             }
         }
 
         public void addStream(OggStream stream) {
-            streams.addElement(stream);
+            streams.add(stream);
         }
 
         public void markDiscont() {
             synced = false;
             firstTs = -1;
-            for (int i = 0; i < streams.size(); i++) {
-                OggStream stream = streams.elementAt(i);
+            for (OggStream stream : streams) {
                 stream.markDiscont();
             }
         }
 
         public OggStream findStream(int serial) {
-            OggStream stream = null;
-            for (int i = 0; i < streams.size(); i++) {
-                stream = streams.elementAt(i);
+            for (OggStream stream : streams) {
                 if (stream.serialno == serial)
-                    break;
-                stream = null;
+                    return stream;
             }
-            return stream;
+            return null;
         }
 
         public void resetStreams() {
-            for (int i = 0; i < streams.size(); i++) {
-                OggStream stream = streams.elementAt(i);
+            for (OggStream stream : streams) {
                 stream.reset();
             }
         }
 
         public boolean forwardEvent(com.fluendo.jst.Event event) {
-            for (int i = 0; i < streams.size(); i++) {
-                OggStream stream = streams.elementAt(i);
+            for (OggStream stream : streams) {
                 stream.pushEvent(event);
             }
             return true;
         }
 
         public int pushPage(Page og, OggStream stream) {
-            int flowRet = Pad.OK;
-
-            flowRet = stream.pushPage(og);
-
+            int flowRet = stream.pushPage(og);
             if (!synced) {
                 boolean check = true;
                 boolean hasMedia = false;
-                for (int i = 0; i < streams.size(); i++) {
-                    OggStream cstream = streams.elementAt(i);
-
+                for (OggStream cstream : streams) {
                     if (cstream.type == TYPE_MEDIA) {
                         hasMedia = true;
                         if (!(check = cstream.isComplete()))
@@ -452,19 +416,15 @@ public class OggDemux extends Element {
         protected int chainFunc(com.fluendo.jst.Buffer buf) {
             int res;
             int flowRet = OK;
-
             int index = oy.buffer(buf.length);
-
             if (buf.isFlagSet(com.fluendo.jst.Buffer.FLAG_DISCONT)) {
                 Debug.log(Debug.INFO, "ogg: got discont");
                 if (chain != null) {
                     chain.markDiscont();
                 }
             }
-
             System.arraycopy(buf.data, buf.offset, oy.data, index, buf.length);
             oy.wrote(buf.length);
-         
             while (flowRet == OK) {
                 res = oy.pageout(og);
                 if (res == 0)
@@ -489,7 +449,6 @@ public class OggDemux extends Element {
                         }
                         if (chain == null)
                             chain = new OggChain();
-
                         stream = new OggStream(serial);
                         chain.addStream(stream);
                     }
@@ -516,17 +475,12 @@ public class OggDemux extends Element {
 
     private int combineFlows(OggStream stream, int ret) {
         stream.lastRet = ret;
-
         if (Pad.isFlowSuccess(ret))
             return ret;
-
         if (ret != Pad.NOT_LINKED)
             return ret;
-
         if (chain != null) {
-            for (int i = 0; i < chain.streams.size(); i++) {
-                OggStream ostream = chain.streams.elementAt(i);
-
+            for (OggStream ostream : chain.streams) {
                 ret = ostream.lastRet;
                 if (ret != Pad.NOT_LINKED)
                     return ret;
@@ -549,13 +503,11 @@ public class OggDemux extends Element {
     public int typeFind(byte[] data, int offset, int length) {
         if (MemUtils.startsWith(data, offset, length, signature))
             return 10;
-
         return -1;
     }
 
     public OggDemux() {
         super();
-
         for (int n = 0; n < payload_names.length; ++n) {
             String name = "com.fluendo.plugin." + payload_names[n];
             try {
@@ -567,13 +519,10 @@ public class OggDemux extends Element {
                 payloads[n] = null;
             }
         }
-
         oy = new SyncState();
         og = new Page();
         op = new Packet();
-
         chain = null;
-
         addPad(sinkPad);
     }
 }
