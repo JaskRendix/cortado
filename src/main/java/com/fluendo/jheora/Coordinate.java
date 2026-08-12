@@ -1,12 +1,12 @@
 /* Jheora
  * Copyright (C) 2004 Fluendo S.L.
- *  
+ * 
  * Written by: 2004 Wim Taymans <wim@fluendo.com>
- *   
+ *  
  * Many thanks to 
  *   The Xiph.Org Foundation http://www.xiph.org/
  * Jheora was based on their Theora reference decoder.
- *   
+ *  
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
@@ -26,15 +26,15 @@ package com.fluendo.jheora;
 
 public class Coordinate 
 {
-  public int x, y;
+    public int x;
+    public int y;
 
-  public Coordinate() {
-    x=0;
-    y=0;
-  }
+    public Coordinate() {
+        this(0, 0);
+    }
 
-  public Coordinate(int x, int y) {
-    this.x = x;
-    this.y = y;
-  }
+    public Coordinate(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
 }
