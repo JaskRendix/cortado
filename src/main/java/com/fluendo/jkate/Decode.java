@@ -101,10 +101,10 @@ public final class Decode {
         if (opb.read1() != 0) {
             try {
                 if (opb.read1() != 0) {
-                    ev.text_encoding = KateTextEncoding.CreateTextEncoding(opb.read(8));
+                    ev.text_encoding = KateTextEncoding.createTextEncoding(opb.read(8));
                 }
                 if (opb.read1() != 0) {
-                    ev.text_directionality = KateTextDirectionality.CreateTextDirectionality(opb.read(8));
+                    ev.text_directionality = KateTextDirectionality.createTextDirectionality(opb.read(8));
                 }
             } catch (KateException ke) {
                 return Result.KATE_E_BAD_PACKET;
