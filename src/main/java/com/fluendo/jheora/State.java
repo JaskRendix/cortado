@@ -107,30 +107,30 @@ public final class State
     }
 
     public int decodeYUVout(YUVBuffer yuv) {
-        yuv.y_width = pbi.info.width;
-        yuv.y_height = pbi.info.height;
-        yuv.y_stride = pbi.YStride;
+        yuv.yWidth = pbi.info.width;
+        yuv.yHeight = pbi.info.height;
+        yuv.yStride = pbi.YStride;
 
-        yuv.uv_width = pbi.info.width >> pbi.UVShiftX;
-        yuv.uv_height = pbi.info.height >> pbi.UVShiftY;
-        yuv.uv_stride = pbi.UVStride;
+        yuv.uvWidth = pbi.info.width >> pbi.UVShiftX;
+        yuv.uvHeight = pbi.info.height >> pbi.UVShiftY;
+        yuv.uvStride = pbi.UVStride;
 
         if (pbi.PostProcessingLevel != 0) {
             yuv.data = pbi.PostProcessBuffer;
         } else {
             yuv.data = pbi.LastFrameRecon;
         }
-        yuv.y_offset = pbi.ReconYDataOffset;
-        yuv.u_offset = pbi.ReconUDataOffset;
-        yuv.v_offset = pbi.ReconVDataOffset;
+        yuv.yOffset = pbi.ReconYDataOffset;
+        yuv.uOffset = pbi.ReconUDataOffset;
+        yuv.vOffset = pbi.ReconVDataOffset;
     
         /* we must flip the internal representation,
            so make the stride negative and start at the end */
-        yuv.y_offset += yuv.y_stride * (yuv.y_height - 1);
-        yuv.u_offset += yuv.uv_stride * (yuv.uv_height - 1);
-        yuv.v_offset += yuv.uv_stride * (yuv.uv_height - 1);
-        yuv.y_stride = -yuv.y_stride;
-        yuv.uv_stride = -yuv.uv_stride;
+        yuv.yOffset += yuv.yStride * (yuv.yHeight - 1);
+        yuv.uOffset += yuv.uvStride * (yuv.uvHeight - 1);
+        yuv.vOffset += yuv.uvStride * (yuv.uvHeight - 1);
+        yuv.yStride = -yuv.yStride;
+        yuv.uvStride = -yuv.uvStride;
 
         yuv.newPixels();
     
