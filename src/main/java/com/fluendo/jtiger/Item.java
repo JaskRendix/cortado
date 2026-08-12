@@ -159,11 +159,11 @@ public final class Item {
      * Sets up the rendering region.
      */
     public void setupRegion(Component component, Image image) {
-        if (tracker != null && tracker.has[Tracker.has_region]) {
-            region.x = (int) (tracker.region_x + 0.5f);
-            region.y = (int) (tracker.region_y + 0.5f);
-            region.width = (int) (tracker.region_w + 0.5f);
-            region.height = (int) (tracker.region_h + 0.5f);
+        if (tracker != null && tracker.has[Tracker.HAS_REGION]) {
+            region.x = (int) (tracker.regionX + 0.5f);
+            region.y = (int) (tracker.regionY + 0.5f);
+            region.width = (int) (tracker.regionW + 0.5f);
+            region.height = (int) (tracker.regionH + 0.5f);
         } else if (image != null) {
             int imgWidth = image.getWidth(null);
             int imgHeight = image.getHeight(null);
