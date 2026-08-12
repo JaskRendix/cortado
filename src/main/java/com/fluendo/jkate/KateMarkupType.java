@@ -10,8 +10,8 @@
  * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Library General Public License for more details.
  * 
  * You should have received a copy of the GNU Library General Public
  * License along with this program; if not, write to the Free Software
@@ -20,29 +20,19 @@
 
 package com.fluendo.jkate;
 
-public class KateMarkupType {
-    public static final KateMarkupType KATE_MARKUP_NONE = new KateMarkupType();
-    public static final KateMarkupType KATE_MARKUP_SIMPLE = new KateMarkupType();
+public enum KateMarkupType {
+    KATE_MARKUP_NONE,
+    KATE_MARKUP_SIMPLE;
 
-    // Legacy references for backward compatibility
-    public static final KateMarkupType kate_markup_none = KATE_MARKUP_NONE;
-    public static final KateMarkupType kate_markup_simple = KATE_MARKUP_SIMPLE;
-
-    private static final KateMarkupType[] LIST = {
-        KATE_MARKUP_NONE,
-        KATE_MARKUP_SIMPLE,
-    };
-
-    private KateMarkupType() {
-    }
+    private static final KateMarkupType[] VALUES = values();
 
     /**
-     * Create a KateMarkupType object from an integer.
+     * Create a KateMarkupType object from an integer index.
      */
-    public static KateMarkupType CreateMarkupType(int idx) throws KateException {
-        if (idx < 0 || idx >= LIST.length) {
+    public static KateMarkupType createMarkupType(int idx) throws KateException {
+        if (idx < 0 || idx >= VALUES.length) {
             throw new KateException("Markup type " + idx + " out of bounds");
         }
-        return LIST[idx];
+        return VALUES[idx];
     }
 }
