@@ -10,8 +10,8 @@
  * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Library General Public License for more details.
  * 
  * You should have received a copy of the GNU Library General Public
  * License along with this program; if not, write to the Free Software
@@ -20,41 +20,23 @@
 
 package com.fluendo.jkate;
 
-public class KateMotionMapping {
-    public static final KateMotionMapping KMM_NONE = new KateMotionMapping();
-    public static final KateMotionMapping KMM_FRAME = new KateMotionMapping();
-    public static final KateMotionMapping KMM_WINDOW = new KateMotionMapping();
-    public static final KateMotionMapping KMM_REGION = new KateMotionMapping();
-    public static final KateMotionMapping KMM_EVENT_DURATION = new KateMotionMapping();
-    public static final KateMotionMapping KMM_BITMAP_SIZE = new KateMotionMapping();
+public enum KateMotionMapping {
+    KMM_NONE,
+    KMM_FRAME,
+    KMM_WINDOW,
+    KMM_REGION,
+    KMM_EVENT_DURATION,
+    KMM_BITMAP_SIZE;
 
-    // Legacy references for backward compatibility
-    public static final KateMotionMapping kmm_none = KMM_NONE;
-    public static final KateMotionMapping kmm_frame = KMM_FRAME;
-    public static final KateMotionMapping kmm_window = KMM_WINDOW;
-    public static final KateMotionMapping kmm_region = KMM_REGION;
-    public static final KateMotionMapping kmm_event_duration = KMM_EVENT_DURATION;
-    public static final KateMotionMapping kmm_bitmap_size = KMM_BITMAP_SIZE;
-
-    private static final KateMotionMapping[] LIST = {
-        KMM_NONE,
-        KMM_FRAME,
-        KMM_WINDOW,
-        KMM_REGION,
-        KMM_EVENT_DURATION,
-        KMM_BITMAP_SIZE,
-    };
-
-    private KateMotionMapping() {
-    }
+    private static final KateMotionMapping[] VALUES = values();
 
     /**
-     * Create a KateMotionMapping object from an integer.
+     * Create a KateMotionMapping object from an integer index.
      */
-    public static KateMotionMapping CreateMotionMapping(int idx) throws KateException {
-        if (idx < 0 || idx >= LIST.length) {
+    public static KateMotionMapping createMotionMapping(int idx) throws KateException {
+        if (idx < 0 || idx >= VALUES.length) {
             throw new KateException("Motion mapping " + idx + " out of bounds");
         }
-        return LIST[idx];
+        return VALUES[idx];
     }
 }
