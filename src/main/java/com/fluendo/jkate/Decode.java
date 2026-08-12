@@ -212,7 +212,7 @@ public final class Decode {
                 }
                 if (opb.read1() != 0) {
                     try {
-                        ev.markup_type = KateMarkupType.CreateMarkupType(opb.read(8));
+                        ev.markup_type = KateMarkupType.createMarkupType(opb.read(8));
                     } catch (KateException e) {
                         return Result.KATE_E_BAD_PACKET;
                     }
