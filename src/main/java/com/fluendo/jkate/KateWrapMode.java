@@ -10,8 +10,8 @@
  * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Library General Public License for more details.
  * 
  * You should have received a copy of the GNU Library General Public
  * License along with this program; if not, write to the Free Software
@@ -20,29 +20,19 @@
 
 package com.fluendo.jkate;
 
-public class KateWrapMode {
-    public static final KateWrapMode KATE_WRAP_WORD = new KateWrapMode();
-    public static final KateWrapMode KATE_WRAP_NONE = new KateWrapMode();
+public enum KateWrapMode {
+    KATE_WRAP_WORD,
+    KATE_WRAP_NONE;
 
-    // Legacy references for backward compatibility
-    public static final KateWrapMode kate_wrap_word = KATE_WRAP_WORD;
-    public static final KateWrapMode kate_wrap_none = KATE_WRAP_NONE;
-
-    private static final KateWrapMode[] LIST = {
-        KATE_WRAP_WORD,
-        KATE_WRAP_NONE,
-    };
-
-    private KateWrapMode() {
-    }
+    private static final KateWrapMode[] VALUES = values();
 
     /**
-     * Create a KateWrapMode object from an integer.
+     * Create a KateWrapMode object from an integer index.
      */
-    public static KateWrapMode CreateWrapMode(int idx) throws KateException {
-        if (idx < 0 || idx >= LIST.length) {
+    public static KateWrapMode createWrapMode(int idx) throws KateException {
+        if (idx < 0 || idx >= VALUES.length) {
             throw new KateException("Wrap mode " + idx + " out of bounds");
         }
-        return LIST[idx];
+        return VALUES[idx];
     }
 }
