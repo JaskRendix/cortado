@@ -5,7 +5,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,7 +38,7 @@ class OggPayloadTest {
         }
 
         @Override
-        public long getFirstTs(Vector<Packet> packets) {
+        public long getFirstTs(List<com.fluendo.jst.Buffer> packets) {
             if (packets == null || packets.isEmpty()) {
                 return -1L;
             }
@@ -115,13 +116,13 @@ class OggPayloadTest {
     }
 
     @Test
-    @DisplayName("Timestamp Extraction: Vector packet edges")
+    @DisplayName("Timestamp Extraction: List buffer edges")
     void testGetFirstTs() {
         assertEquals(-1L, payload.getFirstTs(null));
-        assertEquals(-1L, payload.getFirstTs(new Vector<>()));
+        assertEquals(-1L, payload.getFirstTs(new ArrayList<>()));
 
-        Vector<Packet> packets = new Vector<>();
-        packets.add(new Packet());
+        List<com.fluendo.jst.Buffer> packets = new ArrayList<>();
+        packets.add(new com.fluendo.jst.Buffer());
         assertEquals(1000L, payload.getFirstTs(packets));
     }
 
