@@ -107,7 +107,7 @@ public final class Info {
         aspect_numerator = opb.readB(24);
         aspect_denominator = opb.readB(24);
 
-        colorspace = Colorspace.spaces[opb.readB(8)];
+        colorspace = Colorspace.SPACES[opb.readB(8)];
         target_bitrate = opb.readB(24);
         quality = opb.readB(6);
 
