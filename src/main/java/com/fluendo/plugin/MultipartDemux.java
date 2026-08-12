@@ -18,55 +18,44 @@
 
 package com.fluendo.plugin;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import com.fluendo.jst.*;
 import com.fluendo.utils.*;
 
 public class MultipartDemux extends Element {
     private static final String MIME = "multipart/x-mixed-replace";
-
     private static final String DEFAULT_BOUNDARY = "--ThisRandomString";
 
-    private Vector<MultipartStream> streams;
+    private final List<MultipartStream> streams;
 
     private byte[] accum;
-
     private int accumSize;
-
     private int accumPos;
-
     private int dataEnd;
 
     private static final int STATE_FIND_BOUNDARY = 1;
-
     private static final int STATE_PARSE_HEADERS = 2;
-
     private static final int STATE_FIND_DATA_END = 3;
 
     private int state = STATE_FIND_BOUNDARY;
-
     private String boundaryString = DEFAULT_BOUNDARY;
-
-    private byte[] boundary = boundaryString.getBytes();
-
+    private byte[] boundary = boundaryString.getBytes(StandardCharsets.UTF_8);
     private int boundaryLen = boundary.length;
 
-    private static final byte[] headerEnd = "\n".getBytes();
-
+    private static final byte[] headerEnd = "\n".getBytes(StandardCharsets.UTF_8);
     private static final int headerEndLen = headerEnd.length;
 
     private static final String contentType = "content-type: ";
-
     private static final int contentTypeLen = contentType.length();
 
     private MultipartStream currentStream = null;
 
     class MultipartStream extends Pad {
-        private String mimeType;
+        private final String mimeType;
 
         public MultipartStream(String mime) {
             super(Pad.SRC, "src_" + mime);
-
             mimeType = mime;
             caps = new Caps(mime);
         }
@@ -96,26 +85,23 @@ public class MultipartDemux extends Element {
                     + "\"");
 
             boundaryString = capsBoundary + "\n";
-            boundary = boundaryString.getBytes();
+            boundary = boundaryString.getBytes(StandardCharsets.UTF_8);
             boundaryLen = boundary.length;
 
             return true;
         }
 
         private MultipartStream findStream(String mime) {
-            MultipartStream stream = null;
-            for (int i = 0; i < streams.size(); i++) {
-                stream = streams.elementAt(i);
-                if (stream.mimeType.equals(mime))
-                    break;
-                stream = null;
+            for (MultipartStream stream : streams) {
+                if (stream.mimeType.equals(mime)) {
+                    return stream;
+                }
             }
-            return stream;
+            return null;
         }
 
         private boolean forwardEvent(com.fluendo.jst.Event event) {
-            for (int i = 0; i < streams.size(); i++) {
-                MultipartStream stream = streams.elementAt(i);
+            for (MultipartStream stream : streams) {
                 stream.pushEvent(event);
             }
             return true;
@@ -124,22 +110,18 @@ public class MultipartDemux extends Element {
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
             switch (event.getType()) {
-            case FLUSH_START:
-                forwardEvent(event);
-                synchronized (streamLock) {
-                    Debug.log(Debug.INFO, "synced " + this);
-                }
-                break;
-            case NEWSEGMENT:
-            case FLUSH_STOP:
-            case EOS:
-                synchronized (streamLock) {
+                case FLUSH_START -> {
                     forwardEvent(event);
+                    synchronized (streamLock) {
+                        Debug.log(Debug.INFO, "synced " + this);
+                    }
                 }
-                break;
-            default:
-                forwardEvent(event);
-                break;
+                case NEWSEGMENT, FLUSH_STOP, EOS -> {
+                    synchronized (streamLock) {
+                        forwardEvent(event);
+                    }
+                }
+                default -> forwardEvent(event);
             }
             return true;
         }
@@ -153,9 +135,7 @@ public class MultipartDemux extends Element {
 
             /* make room */
             if (accum.length < lastPos + buf.length) {
-                byte[] newAcum;
-
-                newAcum = new byte[accum.length + buf.length];
+                byte[] newAcum = new byte[accum.length + buf.length];
                 System.arraycopy(accum, accumPos, newAcum, 0, accumSize);
                 accum = newAcum;
                 accumPos = 0;
@@ -232,7 +212,7 @@ public class MultipartDemux extends Element {
                     return true;
                 }
                 String header = new String(accum, headerStart, pos
-                        - headerStart);
+                        - headerStart, StandardCharsets.UTF_8);
                 header = header.toLowerCase();
 
                 if (header.startsWith(contentType)) {
@@ -241,7 +221,7 @@ public class MultipartDemux extends Element {
                     currentStream = findStream(mime);
                     if (currentStream == null) {
                         currentStream = new MultipartStream(mime);
-                        streams.addElement(currentStream);
+                        streams.add(currentStream);
                         addPad(currentStream);
                     }
                 }
@@ -267,39 +247,43 @@ public class MultipartDemux extends Element {
             buf.free();
 
             switch (state) {
-            case STATE_FIND_BOUNDARY:
-                if (!findBoundary())
+                case STATE_FIND_BOUNDARY -> {
+                    if (!findBoundary())
+                        break;
+                    /* skip boundary */
+                    flushBytes(boundary.length);
+                    state = STATE_PARSE_HEADERS;
+                    /* fallthrough */
+                }
+                case STATE_PARSE_HEADERS -> {
+                    if (!parseHeaders())
+                        break;
+                    state = STATE_FIND_DATA_END;
+                    /* fallthrough */
+                }
+                case STATE_FIND_DATA_END -> {
+                    if (!findDataEnd())
+                        break;
+
+                    com.fluendo.jst.Buffer data = com.fluendo.jst.Buffer.create();
+                    int dataSize = dataEnd - accumPos;
+
+                    data.copyData(accum, accumPos, dataSize);
+                    data.time_offset = -1;
+                    data.timestamp = -1;
+
+                    /* skip data */
+                    flushBytes(dataSize);
+
+                    /* and push */
+                    flowRet = currentStream.push(data);
+                    state = STATE_FIND_BOUNDARY;
                     break;
-                /* skip boundary */
-                flushBytes(boundary.length);
-                state = STATE_PARSE_HEADERS;
-            /* fallthrough */
-            case STATE_PARSE_HEADERS:
-                if (!parseHeaders())
+                }
+                default -> {
+                    flowRet = ERROR;
                     break;
-                state = STATE_FIND_DATA_END;
-            /* fallthrough */
-            case STATE_FIND_DATA_END:
-                if (!findDataEnd())
-                    break;
-
-                com.fluendo.jst.Buffer data = com.fluendo.jst.Buffer.create();
-                int dataSize = dataEnd - accumPos;
-
-                data.copyData(accum, accumPos, dataSize);
-                data.time_offset = -1;
-                data.timestamp = -1;
-
-                /* skip data */
-                flushBytes(dataSize);
-
-                /* and push */
-                flowRet = currentStream.push(data);
-                state = STATE_FIND_BOUNDARY;
-                break;
-            default:
-                flowRet = ERROR;
-                break;
+                }
             }
             return flowRet;
         }
@@ -327,7 +311,7 @@ public class MultipartDemux extends Element {
         accumSize = 0;
         accumPos = 0;
 
-        streams = new Vector<>();
+        streams = new ArrayList<>();
 
         addPad(sinkpad);
     }
