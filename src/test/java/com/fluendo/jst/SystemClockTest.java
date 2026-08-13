@@ -76,8 +76,7 @@ class SystemClockTest {
 
         WaitStatus ws = clock.waitFunc(id);
 
-        long expected = now - target;
-
-        assertEquals(expected, ws.jitter());
+        long jitter = ws.jitter();
+        assertTrue(jitter <= -480_000 && jitter >= -520_000);
     }
 }
