@@ -35,7 +35,6 @@ public abstract class Sink extends Element {
   protected long lastTime;
 
   // Maximum lateness before the buffer is dropped, or -1 for no limit
-  // property max-lateness
   protected long maxLateness = -1;
 
   protected Pad sinkpad =
@@ -45,7 +44,9 @@ public abstract class Sink extends Element {
             int res = OK;
             Sink sink = (Sink) parent;
 
-            if (isFlushing()) return WRONG_STATE;
+            if (isFlushing()) {
+              return WRONG_STATE;
+            }
 
             if (needPreroll) {
               havePreroll = true;
@@ -58,7 +59,10 @@ public abstract class Sink extends Element {
 
               boolean postPause = false;
               boolean postPlaying = false;
-              int current, next, pending, postPending;
+              int current;
+              int next;
+              int pending;
+              int postPending;
 
               synchronized (sink) {
                 current = currentState;
@@ -67,34 +71,34 @@ public abstract class Sink extends Element {
                 postPending = pending;
 
                 switch (pending) {
-                  case PLAY:
+                  case PLAY -> {
                     needPreroll = false;
                     postPlaying = true;
-                    if (current == STOP) postPause = true;
-                    break;
-                  case PAUSE:
+                    if (current == STOP) {
+                      postPause = true;
+                    }
+                  }
+                  case PAUSE -> {
                     needPreroll = true;
                     postPause = true;
                     postPending = NONE;
-                    break;
-                  case STOP:
+                  }
+                  case STOP -> {
                     havePreroll = false;
                     needPreroll = false;
                     return WRONG_STATE;
-                  case NONE:
+                  }
+                  case NONE -> {
                     switch (current) {
-                      case PLAY:
-                        needPreroll = false;
-                        break;
-                      case PAUSE:
-                        needPreroll = true;
-                        break;
-                      default:
+                      case PLAY -> needPreroll = false;
+                      case PAUSE -> needPreroll = true;
+                      default -> {
                         havePreroll = false;
                         needPreroll = false;
                         return WRONG_STATE;
+                      }
                     }
-                    break;
+                  }
                 }
                 if (pending != NONE) {
                   currentState = pending;
@@ -104,10 +108,16 @@ public abstract class Sink extends Element {
                 }
               }
 
-              if (postPause) postMessage(Message.newStateChanged(this, current, next, postPending));
-              if (postPlaying) postMessage(Message.newStateChanged(this, next, pending, NONE));
+              if (postPause) {
+                postMessage(Message.newStateChanged(this, current, next, postPending));
+              }
+              if (postPlaying) {
+                postMessage(Message.newStateChanged(this, next, pending, NONE));
+              }
 
-              if (postPause || postPlaying) postMessage(Message.newStateDirty(this));
+              if (postPause || postPlaying) {
+                postMessage(Message.newStateDirty(this));
+              }
 
               synchronized (sink) {
                 sink.notifyAll();
@@ -124,7 +134,9 @@ public abstract class Sink extends Element {
                 havePreroll = false;
               }
             }
-            if (isFlushing()) return WRONG_STATE;
+            if (isFlushing()) {
+              return WRONG_STATE;
+            }
 
             return res;
           }
@@ -136,7 +148,7 @@ public abstract class Sink extends Element {
           doEvent(event);
 
           switch (event.getType()) {
-            case FLUSH_START:
+            case FLUSH_START -> {
               synchronized (sink) {
                 sink.flushing = true;
                 if (clockID != null) {
@@ -153,14 +165,14 @@ public abstract class Sink extends Element {
                 Debug.debug(this + " synced " + havePreroll + " " + needPreroll);
                 lostState();
               }
-              break;
-            case FLUSH_STOP:
+            }
+            case FLUSH_STOP -> {
               synchronized (sink) {
                 sink.flushing = false;
                 pauseTime = 0;
               }
-              break;
-            case NEWSEGMENT:
+            }
+            case NEWSEGMENT -> {
               int segFmt = event.parseNewsegmentFormat();
               if (segFmt == Format.TIME) {
                 segStart = event.parseNewsegmentStart();
@@ -168,16 +180,15 @@ public abstract class Sink extends Element {
                 segPosition = event.parseNewsegmentPosition();
                 lastTime = segPosition;
               }
-              break;
-            case EOS:
+            }
+            case EOS -> {
               synchronized (prerollLock) {
                 isEOS = true;
                 Debug.log(Debug.INFO, this + " got EOS");
                 postMessage(Message.newEOS(parent));
               }
-              break;
-            default:
-              break;
+            }
+            default -> {}
           }
 
           return true;
@@ -189,7 +200,9 @@ public abstract class Sink extends Element {
           WaitStatus status;
           long time;
 
-          if (buf.isFlagSet(com.fluendo.jst.Buffer.FLAG_DISCONT)) discont = true;
+          if (buf.isFlagSet(com.fluendo.jst.Buffer.FLAG_DISCONT)) {
+            discont = true;
+          }
 
           time = buf.timestamp;
 
@@ -216,27 +229,25 @@ public abstract class Sink extends Element {
 
           Debug.debug(parent.getName() + " sync " + time);
           status = doSync(time);
-          switch (status.status()) {
-            case WaitStatus.LATE:
-              if (maxLateness != -1 && status.jitter() > maxLateness) {
-                Debug.debug(parent.getName() + " " + time + " >>> LATE, DROPPED");
-                break;
-              }
-              // Not too late, fall through...
-            case WaitStatus.OK:
-              try {
-                Debug.debug(parent.getName() + " >>> " + time);
-                res = render(buf);
-              } catch (Throwable t) {
-                postMessage(Message.newError(this, "render exception: " + t.getMessage()));
-                res = Pad.ERROR;
-              }
-              break;
-            default:
-              Debug.debug(parent.getName() + " " + time + " >>> SYNC DROP");
-              res = Pad.OK;
-              break;
+          int switchStatus = status.status();
+
+          if (switchStatus == WaitStatus.OK || 
+              (switchStatus == WaitStatus.LATE && (maxLateness == -1 || status.jitter() <= maxLateness))) {
+            try {
+              Debug.debug(parent.getName() + " >>> " + time);
+              res = render(buf);
+            } catch (Throwable t) {
+              postMessage(Message.newError(this, "render exception: " + t.getMessage()));
+              res = Pad.ERROR;
+            }
+          } else if (switchStatus == WaitStatus.LATE) {
+            Debug.debug(parent.getName() + " " + time + " >>> LATE, DROPPED");
+            res = OK;
+          } else {
+            Debug.debug(parent.getName() + " " + time + " >>> SYNC DROP");
+            res = Pad.OK;
           }
+
           buf.free();
 
           return res;
@@ -290,7 +301,9 @@ public abstract class Sink extends Element {
 
       time = time - segStart + baseTime;
 
-      if (clock != null) id = clockID = clock.newSingleShotID(time);
+      if (clock != null) {
+        id = clockID = clock.newSingleShotID(time);
+      }
     }
 
     if (id != null) {
@@ -326,29 +339,29 @@ public abstract class Sink extends Element {
   @Override
   public boolean query(Query query) {
     switch (query.getType()) {
-      case Query.DURATION:
+      case Query.DURATION -> {
         return sinkpad.getPeer().query(query);
-      case Query.POSITION:
-        {
-          long position = -1;
-          if (query.parsePositionFormat() == Format.TIME) {
-            synchronized (this) {
-              if (currentState == PLAY) {
-                if (clock != null) {
-                  position = clock.getTime() - baseTime + segPosition + segStart;
-                }
-              } else {
-                position = pauseTime + segPosition + segStart;
+      }
+      case Query.POSITION -> {
+        long position = -1;
+        if (query.parsePositionFormat() == Format.TIME) {
+          synchronized (this) {
+            if (currentState == PLAY) {
+              if (clock != null) {
+                position = clock.getTime() - baseTime + segPosition + segStart;
               }
+            } else {
+              position = pauseTime + segPosition + segStart;
             }
-            query.setPosition(Format.TIME, position);
-          } else {
-            return sinkpad.getPeer().query(query);
           }
-          break;
+          query.setPosition(Format.TIME, position);
+        } else {
+          return sinkpad.getPeer().query(query);
         }
-      default:
+      }
+      default -> {
         return sinkpad.getPeer().query(query);
+      }
     }
     return true;
   }
@@ -359,15 +372,15 @@ public abstract class Sink extends Element {
     int presult;
 
     switch (transition) {
-      case STOP_PAUSE:
+      case STOP_PAUSE -> {
         this.isEOS = false;
         synchronized (prerollLock) {
           needPreroll = true;
           havePreroll = false;
         }
         result = ASYNC;
-        break;
-      case PAUSE_PLAY:
+      }
+      case PAUSE_PLAY -> {
         synchronized (prerollLock) {
           if (havePreroll) {
             needPreroll = false;
@@ -376,14 +389,13 @@ public abstract class Sink extends Element {
             needPreroll = false;
           }
         }
-        break;
-      case PLAY_PAUSE:
+      }
+      case PLAY_PAUSE -> {
         synchronized (this) {
           pauseTime = clock.getTime() - baseTime;
         }
-        break;
-      default:
-        break;
+      }
+      default -> {}
     }
 
     presult = super.changeState(transition);
@@ -393,33 +405,29 @@ public abstract class Sink extends Element {
     }
 
     switch (transition) {
-      case PLAY_PAUSE:
-        {
-          boolean checkEOS;
-          Debug.debug(this + " play->paused");
+      case PLAY_PAUSE -> {
+        boolean checkEOS;
+        Debug.debug(this + " play->paused");
 
-          /* unlock clock */
-          synchronized (this) {
-            if (clockID != null) {
-              Debug.debug(this + " unschedule clockID: " + clockID);
-              clockID.unschedule();
-            }
-            checkEOS = this.isEOS;
-            Debug.debug(this + " checkEOS: " + checkEOS);
+        /* unlock clock */
+        synchronized (this) {
+          if (clockID != null) {
+            Debug.debug(this + " unschedule clockID: " + clockID);
+            clockID.unschedule();
           }
-          synchronized (prerollLock) {
-            Debug.debug(this + " havePreroll: " + havePreroll);
-            if (!havePreroll && !checkEOS && pendingState == PAUSE) {
-              needPreroll = true;
-              result = ASYNC;
-            }
-          }
-          break;
+          checkEOS = this.isEOS;
+          Debug.debug(this + " checkEOS: " + checkEOS);
         }
-      case PAUSE_STOP:
-        break;
-      default:
-        break;
+        synchronized (prerollLock) {
+          Debug.debug(this + " havePreroll: " + havePreroll);
+          if (!havePreroll && !checkEOS && pendingState == PAUSE) {
+            needPreroll = true;
+            result = ASYNC;
+          }
+        }
+      }
+      case PAUSE_STOP -> {}
+      default -> {}
     }
 
     return result;

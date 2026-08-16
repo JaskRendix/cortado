@@ -94,42 +94,46 @@ public final class CodeBook {
   }
 
   public int decodev_add(float[] a, int offset, Buffer b, int n) {
-    int i, j, entry;
-    int codeVal;
-
-    if (dim > 8) {
-      for (i = 0; i < n; ) {
-        entry = decode(b);
-        if (entry == -1) return -1;
-        codeVal = entry * dim;
-        for (j = 0; j < dim; ) {
-          a[offset + (i++)] += valuelist[codeVal + (j++)];
-        }
+    int i = 0;
+    while (i < n) {
+      int entry = decode(b);
+      if (entry == -1) {
+        return -1;
       }
-    } else {
-      for (i = 0; i < n; ) {
-        entry = decode(b);
-        if (entry == -1) return -1;
-        codeVal = entry * dim;
-        j = 0;
+      int codeVal = entry * dim;
+
+      if (dim > 8) {
+        for (int j = 0; j < dim; j++) {
+          a[offset + i++] += valuelist[codeVal + j];
+        }
+      } else {
+        int j = 0;
         switch (dim) {
           case 8:
-            a[offset + (i++)] += valuelist[codeVal + (j++)];
+            a[offset + i++] += valuelist[codeVal + (j++)];
+            break;
           case 7:
-            a[offset + (i++)] += valuelist[codeVal + (j++)];
+            a[offset + i++] += valuelist[codeVal + (j++)];
+            break;
           case 6:
-            a[offset + (i++)] += valuelist[codeVal + (j++)];
+            a[offset + i++] += valuelist[codeVal + (j++)];
+            break;
           case 5:
-            a[offset + (i++)] += valuelist[codeVal + (j++)];
+            a[offset + i++] += valuelist[codeVal + (j++)];
+            break;
           case 4:
-            a[offset + (i++)] += valuelist[codeVal + (j++)];
+            a[offset + i++] += valuelist[codeVal + (j++)];
+            break;
           case 3:
-            a[offset + (i++)] += valuelist[codeVal + (j++)];
+            a[offset + i++] += valuelist[codeVal + (j++)];
+            break;
           case 2:
-            a[offset + (i++)] += valuelist[codeVal + (j++)];
+            a[offset + i++] += valuelist[codeVal + (j++)];
+            break;
           case 1:
-            a[offset + (i++)] += valuelist[codeVal + (j++)];
-          case 0:
+            a[offset + i++] += valuelist[codeVal + (j++)];
+            break;
+          default:
             break;
         }
       }

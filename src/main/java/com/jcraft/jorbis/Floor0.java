@@ -199,32 +199,3 @@ class Floor0 extends FuncFloor {
     return ret;
   }
 }
-
-class InfoFloor0 {
-  int order;
-  int rate;
-  int barkmap;
-
-  int ampbits;
-  int ampdB;
-
-  int numbooks;
-  int[] books = new int[16];
-}
-
-class LookFloor0 {
-  int n;
-  int ln;
-  int m;
-  int[] linearmap;
-
-  InfoFloor0 vi;
-  Lpc lpclook = new Lpc();
-}
-
-class EchstateFloor0 {
-  int[] codewords;
-  float[] curve;
-  long frameno;
-  long codes;
-}

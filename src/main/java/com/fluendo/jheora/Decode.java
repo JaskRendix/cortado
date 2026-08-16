@@ -209,17 +209,17 @@ public final class Decode {
   private int loadFrame() {
     Buffer opb = pbi.opb;
     pbi.FrameType = (byte) opb.readB(1);
-    int dctQMask = (int) opb.readB(6);
+    int dctQMask = opb.readB(6);
     pbi.frameQIS[0] = dctQMask;
     pbi.frameNQIS = 1;
 
     int moreQs = opb.readB(1);
     if (moreQs > 0) {
-      pbi.frameQIS[1] = (int) opb.readB(6);
+      pbi.frameQIS[1] = opb.readB(6);
       pbi.frameNQIS = 2;
       moreQs = opb.readB(1);
       if (moreQs > 0) {
-        pbi.frameQIS[2] = (int) opb.readB(6);
+        pbi.frameQIS[2] = opb.readB(6);
         pbi.frameNQIS = 3;
       }
     }
@@ -592,7 +592,7 @@ public final class Decode {
     int extraBits = 0;
     int token = extractToken(pbi.opb, pbi.HuffRoot_VP3x[huffChoice]);
     if (pbi.ExtraBitLengths_VP3x[token] > 0) {
-      extraBits = (int) pbi.opb.readB(pbi.ExtraBitLengths_VP3x[token]);
+      extraBits = pbi.opb.readB(pbi.ExtraBitLengths_VP3x[token]);
     }
     if (token >= Huffman.DCT_SHORT_ZRL_TOKEN) {
       dctDecode.expandToken(expandedBlock, coeffIndex, fragIndex, token, extraBits);
