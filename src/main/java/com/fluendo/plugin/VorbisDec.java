@@ -34,10 +34,10 @@ public class VorbisDec extends Element implements OggPayload {
   private boolean discont;
 
   private Packet op;
-  private final float[][][] _pcmf = new float[1][][];
-  private int[] _index;
+  private final float[][][] pcmfData = new float[1][][];
+  private int[] pcmIndex;
 
-  private static final byte[] signature = {0x01, 0x76, 0x6f, 0x72, 0x62, 0x69, 0x73};
+  private static final byte[] SIGNATURE = {0x01, 0x76, 0x6f, 0x72, 0x62, 0x69, 0x73};
 
   @Override
   public boolean isType(Packet op) {
@@ -47,9 +47,13 @@ public class VorbisDec extends Element implements OggPayload {
   @Override
   public int takeHeader(Packet op) {
     int ret = vi.synthesisHeaderIn(vc, op);
-    if (ret < 0) return ret;
+    if (ret < 0) {
+      return ret;
+    }
     byte header = op.packetBase[op.packet];
-    if (header == 0x05) return 1;
+    if (header == 0x05) {
+      return 1;
+    }
     return 0;
   }
 
@@ -71,15 +75,14 @@ public class VorbisDec extends Element implements OggPayload {
   @Override
   public long getFirstTs(List<com.fluendo.jst.Buffer> packets) {
     int len = packets.size();
-    int i;
     long total = 0;
     long prevSamples = 0;
     Packet p = new Packet();
 
     com.fluendo.jst.Buffer buf;
 
-    /* add samples */
-    for (i = 0; i < len; i++) {
+    // add samples
+    for (int i = 0; i < len; i++) {
       boolean ignore;
       long temp;
 
@@ -90,11 +93,13 @@ public class VorbisDec extends Element implements OggPayload {
       p.bytes = buf.length;
 
       long samples = vi.blocksize(p);
-      if (samples <= 0) return -1;
+      if (samples <= 0) {
+        return -1;
+      }
 
       if (prevSamples == 0) {
         prevSamples = samples;
-        /* ignore first packet */
+        // ignore first packet
         ignore = true;
       } else {
         ignore = false;
@@ -103,7 +108,9 @@ public class VorbisDec extends Element implements OggPayload {
       temp = (samples + prevSamples) / 4;
       prevSamples = samples;
 
-      if (!ignore) total += temp;
+      if (!ignore) {
+        total += temp;
+      }
 
       if (buf.time_offset != -1) {
         total = buf.time_offset - total;
@@ -119,7 +126,9 @@ public class VorbisDec extends Element implements OggPayload {
 
   @Override
   public long granuleToTime(long gp) {
-    if (gp < 0) return -1;
+    if (gp < 0) {
+      return -1;
+    }
 
     return gp * Clock.SECOND / vi.getRate();
   }
@@ -139,22 +148,19 @@ public class VorbisDec extends Element implements OggPayload {
           boolean result;
 
           switch (event.getType()) {
-            case FLUSH_START:
+            case FLUSH_START -> {
               result = srcPad.pushEvent(event);
               synchronized (streamLock) {
                 Debug.log(Debug.DEBUG, "synced " + this);
               }
-              break;
-            case FLUSH_STOP:
+            }
+            case FLUSH_STOP, EOS -> {
+              if (event.getType() == Event.Type.EOS) {
+                Debug.log(Debug.INFO, "got EOS " + this);
+              }
               result = srcPad.pushEvent(event);
-              break;
-            case EOS:
-              Debug.log(Debug.INFO, "got EOS " + this);
-              result = srcPad.pushEvent(event);
-              break;
-            default:
-              result = srcPad.pushEvent(event);
-              break;
+            }
+            default -> result = srcPad.pushEvent(event);
           }
           return result;
         }
@@ -167,8 +173,8 @@ public class VorbisDec extends Element implements OggPayload {
           op.packetBase = buf.data;
           op.packet = buf.offset;
           op.bytes = buf.length;
-          op.b_o_s = (packet == 0 ? 1 : 0);
-          op.e_o_s = 0;
+          op.bos = (packet == 0 ? 1 : 0);
+          op.eos = 0;
           op.packetNo = packet;
 
           if (buf.isFlagSet(com.fluendo.jst.Buffer.FLAG_DISCONT)) {
@@ -190,7 +196,7 @@ public class VorbisDec extends Element implements OggPayload {
               Debug.log(Debug.INFO, "vorbis rate: " + vi.getRate());
               Debug.log(Debug.INFO, "vorbis channels: " + vi.getChannels());
 
-              _index = new int[vi.getChannels()];
+              pcmIndex = new int[vi.getChannels()];
 
               caps = new Caps("audio/raw");
               caps.setFieldInt("width", 16);
@@ -223,8 +229,8 @@ public class VorbisDec extends Element implements OggPayload {
               return ERROR;
             }
 
-            while ((samples = vd.synthesis_pcmout(_pcmf, _index)) > 0) {
-              float[][] pcmf = _pcmf[0];
+            while ((samples = vd.synthesis_pcmout(pcmfData, pcmIndex)) > 0) {
+              float[][] pcmf = pcmfData[0];
               int numbytes = samples * 2 * vi.getChannels();
               int k = 0;
 
@@ -239,9 +245,12 @@ public class VorbisDec extends Element implements OggPayload {
 
               for (int j = 0; j < samples; j++) {
                 for (int i = 0; i < vi.getChannels(); i++) {
-                  int val = (int) (pcmf[i][_index[i] + j] * 32767.0);
-                  if (val > 32767) val = 32767;
-                  else if (val < -32768) val = -32768;
+                  int val = (int) (pcmf[i][pcmIndex[i] + j] * 32767.0);
+                  if (val > 32767) {
+                    val = 32767;
+                  } else if (val < -32768) {
+                    val = -32768;
+                  }
 
                   buf.data[k] = (byte) ((val >> 8) & 0xff);
                   buf.data[k + 1] = (byte) (val & 0xff);
@@ -252,7 +261,9 @@ public class VorbisDec extends Element implements OggPayload {
 
               offset += samples;
 
-              if ((result = srcPad.push(buf)) != OK) break;
+              if ((result = srcPad.push(buf)) != OK) {
+                break;
+              }
             }
           }
           packet++;
@@ -279,14 +290,13 @@ public class VorbisDec extends Element implements OggPayload {
     int res;
 
     switch (transition) {
-      case STOP_PAUSE:
+      case STOP_PAUSE -> {
         packet = 0;
         offset = -1;
         vi.init();
         vc.init();
-        break;
-      default:
-        break;
+      }
+      default -> {}
     }
 
     res = super.changeState(transition);
@@ -306,13 +316,17 @@ public class VorbisDec extends Element implements OggPayload {
 
   @Override
   public String getMime(Packet op) {
-    if (!isType(op)) return null;
+    if (!isType(op)) {
+      return null;
+    }
     return getMime();
   }
 
   @Override
   public int typeFind(byte[] data, int offset, int length) {
-    if (MemUtils.startsWith(data, offset, length, signature)) return 10;
+    if (MemUtils.startsWith(data, offset, length, SIGNATURE)) {
+      return 10;
+    }
     return -1;
   }
 }

@@ -33,13 +33,13 @@ public final class CodeBook {
   public int entries; // Codebook entries
   public StaticCodeBook c = new StaticCodeBook();
 
-  public float[] valuelist; // List of dim*entries actual entry values
-  public int[] codelist; // List of bitstream codewords for each entry
-  public DecodeAux decode_tree;
+  public float[] valueList; // List of dim*entries actual entry values
+  public int[] codeList; // List of bitstream codewords for each entry
+  public DecodeAux decodeTree;
 
   // Returns the number of bits
   public int encode(int a, Buffer b) {
-    b.write(codelist[a], c.lengthlist[a]);
+    b.write(codeList[a], c.lengthlist[a]);
     return c.lengthlist[a];
   }
 
@@ -48,7 +48,7 @@ public final class CodeBook {
   public int errorv(float[] a) {
     int best = best(a, 1);
     for (int k = 0; k < dim; k++) {
-      a[k] = valuelist[best * dim + k];
+      a[k] = valueList[best * dim + k];
     }
     return best;
   }
@@ -56,7 +56,7 @@ public final class CodeBook {
   // Returns the number of bits and modifies a to the quantization value
   public int encodev(int best, float[] a, Buffer b) {
     for (int k = 0; k < dim; k++) {
-      a[k] = valuelist[best * dim + k];
+      a[k] = valueList[best * dim + k];
     }
     return encode(best, b);
   }
@@ -70,7 +70,7 @@ public final class CodeBook {
 
   private int[] t = new int[15]; // decodevs_add is synchronized for re-using t.
 
-  public synchronized int decodevs_add(float[] a, int offset, Buffer b, int n) {
+  public synchronized int decodevsAdd(float[] a, int offset, Buffer b, int n) {
     int step = n / dim;
     int entry;
     int i, j, o;
@@ -86,14 +86,14 @@ public final class CodeBook {
     }
     for (i = 0, o = 0; i < dim; i++, o += step) {
       for (j = 0; j < step; j++) {
-        a[offset + o + j] += valuelist[t[j] + i];
+        a[offset + o + j] += valueList[t[j] + i];
       }
     }
 
     return 0;
   }
 
-  public int decodev_add(float[] a, int offset, Buffer b, int n) {
+  public int decodevAdd(float[] a, int offset, Buffer b, int n) {
     int i = 0;
     while (i < n) {
       int entry = decode(b);
@@ -104,44 +104,27 @@ public final class CodeBook {
 
       if (dim > 8) {
         for (int j = 0; j < dim; j++) {
-          a[offset + i++] += valuelist[codeVal + j];
+          a[offset + i++] += valueList[codeVal + j];
         }
       } else {
         int j = 0;
         switch (dim) {
-          case 8:
-            a[offset + i++] += valuelist[codeVal + (j++)];
-            break;
-          case 7:
-            a[offset + i++] += valuelist[codeVal + (j++)];
-            break;
-          case 6:
-            a[offset + i++] += valuelist[codeVal + (j++)];
-            break;
-          case 5:
-            a[offset + i++] += valuelist[codeVal + (j++)];
-            break;
-          case 4:
-            a[offset + i++] += valuelist[codeVal + (j++)];
-            break;
-          case 3:
-            a[offset + i++] += valuelist[codeVal + (j++)];
-            break;
-          case 2:
-            a[offset + i++] += valuelist[codeVal + (j++)];
-            break;
-          case 1:
-            a[offset + i++] += valuelist[codeVal + (j++)];
-            break;
-          default:
-            break;
+          case 8 -> a[offset + i++] += valueList[codeVal + (j++)];
+          case 7 -> a[offset + i++] += valueList[codeVal + (j++)];
+          case 6 -> a[offset + i++] += valueList[codeVal + (j++)];
+          case 5 -> a[offset + i++] += valueList[codeVal + (j++)];
+          case 4 -> a[offset + i++] += valueList[codeVal + (j++)];
+          case 3 -> a[offset + i++] += valueList[codeVal + (j++)];
+          case 2 -> a[offset + i++] += valueList[codeVal + (j++)];
+          case 1 -> a[offset + i++] += valueList[codeVal + (j++)];
+          default -> {}
         }
       }
     }
     return 0;
   }
 
-  public int decodev_set(float[] a, int offset, Buffer b, int n) {
+  public int decodevSet(float[] a, int offset, Buffer b, int n) {
     int i, j, entry;
     int codeVal;
 
@@ -150,13 +133,13 @@ public final class CodeBook {
       if (entry == -1) return -1;
       codeVal = entry * dim;
       for (j = 0; j < dim; ) {
-        a[offset + i++] = valuelist[codeVal + (j++)];
+        a[offset + i++] = valueList[codeVal + (j++)];
       }
     }
     return 0;
   }
 
-  public int decodevv_add(float[][] a, int offset, int ch, Buffer b, int n) {
+  public int decodevvAdd(float[][] a, int offset, int ch, Buffer b, int n) {
     int i, j, entry;
     int chptr = 0;
 
@@ -166,7 +149,7 @@ public final class CodeBook {
 
       int codeVal = entry * dim;
       for (j = 0; j < dim; j++) {
-        a[chptr++][i] += valuelist[codeVal + j];
+        a[chptr++][i] += valueList[codeVal + j];
         if (chptr == ch) {
           chptr = 0;
           i++;
@@ -179,7 +162,7 @@ public final class CodeBook {
   // Returns the entry number or -1 on eof
   public int decode(Buffer b) {
     int ptr = 0;
-    DecodeAux tree = decode_tree;
+    DecodeAux tree = decodeTree;
     int lok = b.look(tree.tabn);
 
     if (lok >= 0) {
@@ -191,15 +174,11 @@ public final class CodeBook {
     }
     do {
       switch (b.read1()) {
-        case 0:
-          ptr = tree.ptr0[ptr];
-          break;
-        case 1:
-          ptr = tree.ptr1[ptr];
-          break;
-        case -1:
-        default:
+        case 0 -> ptr = tree.ptr0[ptr];
+        case 1 -> ptr = tree.ptr1[ptr];
+        default -> {
           return -1;
+        }
       }
     } while (ptr > 0);
     return -ptr;
@@ -210,17 +189,22 @@ public final class CodeBook {
     int entry = decode(b);
     if (entry == -1) return -1;
     switch (addmul) {
-      case -1:
-        for (int i = 0, o = 0; i < dim; i++, o += step) a[index + o] = valuelist[entry * dim + i];
-        break;
-      case 0:
-        for (int i = 0, o = 0; i < dim; i++, o += step) a[index + o] += valuelist[entry * dim + i];
-        break;
-      case 1:
-        for (int i = 0, o = 0; i < dim; i++, o += step) a[index + o] *= valuelist[entry * dim + i];
-        break;
-      default:
-        System.err.println("CodeBook.decodevs: addmul=" + addmul);
+      case -1 -> {
+        for (int i = 0, o = 0; i < dim; i++, o += step) {
+          a[index + o] = valueList[entry * dim + i];
+        }
+      }
+      case 0 -> {
+        for (int i = 0, o = 0; i < dim; i++, o += step) {
+          a[index + o] += valueList[entry * dim + i];
+        }
+      }
+      case 1 -> {
+        for (int i = 0, o = 0; i < dim; i++, o += step) {
+          a[index + o] *= valueList[entry * dim + i];
+        }
+      }
+      default -> System.err.println("CodeBook.decodevs: addmul=" + addmul);
     }
     return entry;
   }
@@ -252,8 +236,8 @@ public final class CodeBook {
         int q = nt.q[ptr];
         for (int k = 0, o = 0; k < dim; k++, o += step) {
           sum +=
-              (valuelist[p + k] - valuelist[q + k])
-                  * (a[o] - (valuelist[p + k] + valuelist[q + k]) * 0.5f);
+              (valueList[p + k] - valueList[q + k])
+                  * (a[o] - (valueList[p + k] + valueList[q + k]) * 0.5f);
         }
         if (sum > 0.0f) {
           ptr = -nt.ptr0[ptr];
@@ -271,7 +255,7 @@ public final class CodeBook {
       int e = 0;
       for (int i = 0; i < entries; i++) {
         if (c.lengthlist[i] > 0) {
-          float thisVal = dist(dim, valuelist, e, a, step);
+          float thisVal = dist(dim, valueList, e, a, step);
           if (besti == -1 || thisVal < bestVal) {
             bestVal = thisVal;
             besti = i;
@@ -287,19 +271,22 @@ public final class CodeBook {
   public int besterror(float[] a, int step, int addmul) {
     int bestVal = best(a, step);
     switch (addmul) {
-      case 0:
-        for (int i = 0, o = 0; i < dim; i++, o += step) a[o] -= valuelist[bestVal * dim + i];
-        break;
-      case 1:
+      case 0 -> {
         for (int i = 0, o = 0; i < dim; i++, o += step) {
-          float val = valuelist[bestVal * dim + i];
+          a[o] -= valueList[bestVal * dim + i];
+        }
+      }
+      case 1 -> {
+        for (int i = 0, o = 0; i < dim; i++, o += step) {
+          float val = valueList[bestVal * dim + i];
           if (val == 0) {
             a[o] = 0;
           } else {
             a[o] /= val;
           }
         }
-        break;
+      }
+      default -> {}
     }
     return bestVal;
   }
@@ -315,21 +302,21 @@ public final class CodeBook {
     return acc;
   }
 
-  public int init_decode(StaticCodeBook s) {
+  public int initDecode(StaticCodeBook s) {
     c = s;
     entries = s.entries;
     dim = s.dim;
-    valuelist = s.unquantize();
+    valueList = s.unquantize();
 
-    decode_tree = make_decode_tree();
-    if (decode_tree == null) {
+    decodeTree = makeDecodeTree();
+    if (decodeTree == null) {
       clear();
       return -1;
     }
     return 0;
   }
 
-  public static int[] make_words(int[] l, int n) {
+  public static int[] makeWords(int[] l, int n) {
     int[] marker = new int[33];
     int[] r = new int[n];
 
@@ -375,12 +362,12 @@ public final class CodeBook {
     return r;
   }
 
-  public DecodeAux make_decode_tree() {
+  public DecodeAux makeDecodeTree() {
     int top = 0;
     DecodeAux tree = new DecodeAux();
     int[] ptr0 = tree.ptr0 = new int[entries * 2];
     int[] ptr1 = tree.ptr1 = new int[entries * 2];
-    int[] generatedCodelist = make_words(c.lengthlist, c.entries);
+    int[] generatedCodelist = makeWords(c.lengthlist, c.entries);
 
     if (generatedCodelist == null) return null;
     tree.aux = entries * 2;

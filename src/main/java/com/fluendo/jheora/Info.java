@@ -211,7 +211,7 @@ public final class Info {
 
     return switch (typeflag) {
       case 0x80 -> {
-        if (op.b_o_s == 0) {
+        if (op.bos == 0) {
           /* Not the initial packet */
           yield Result.BADHEADER;
         }

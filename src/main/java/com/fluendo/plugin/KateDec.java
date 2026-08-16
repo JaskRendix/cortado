@@ -35,7 +35,7 @@ import java.util.*;
 public class KateDec extends Element implements OggPayload {
 
   /* Kate magic: 0x80 (BOS header) followed by "kate\0\0\0" */
-  private static final byte[] signature = {-128, 0x6b, 0x61, 0x74, 0x65, 0x00, 0x00, 0x00};
+  private static final byte[] SIGNATURE = {-128, 0x6b, 0x61, 0x74, 0x65, 0x00, 0x00, 0x00};
 
   private Info ki;
   private Comment kc;
@@ -96,9 +96,13 @@ public class KateDec extends Element implements OggPayload {
     for (i = 0; i < len; i++) {
       data = packets.get(i);
 
-      if (data.time_offset != -1) break;
+      if (data.time_offset != -1) {
+        break;
+      }
     }
-    if (i == packets.size()) return -1;
+    if (i == packets.size()) {
+      return -1;
+    }
 
     long time = granuleToTime(data.time_offset);
 
@@ -113,7 +117,9 @@ public class KateDec extends Element implements OggPayload {
   public long granuleToTime(long gp) {
     long res;
 
-    if (gp < 0 || !haveDecoder) return -1;
+    if (gp < 0 || !haveDecoder) {
+      return -1;
+    }
 
     res = (long) (k.granuleTime(gp) * Clock.SECOND);
 
@@ -124,7 +130,9 @@ public class KateDec extends Element implements OggPayload {
   public long granuleToDuration(long gp) {
     long res;
 
-    if (gp < 0 || !haveDecoder) return -1;
+    if (gp < 0 || !haveDecoder) {
+      return -1;
+    }
 
     res = (long) (k.granuleDuration(gp) * Clock.SECOND);
 
@@ -146,27 +154,23 @@ public class KateDec extends Element implements OggPayload {
           boolean result;
 
           switch (event.getType()) {
-            case FLUSH_START:
+            case FLUSH_START -> {
               result = srcPad.pushEvent(event);
               synchronized (streamLock) {
                 Debug.log(Debug.DEBUG, "synced " + this);
               }
-              break;
-            case FLUSH_STOP:
-              result = srcPad.pushEvent(event);
-              break;
-            case EOS:
+            }
+            case FLUSH_STOP -> result = srcPad.pushEvent(event);
+            case EOS -> {
               Debug.log(Debug.INFO, "got EOS " + this);
               result = srcPad.pushEvent(event);
-              break;
-            case NEWSEGMENT:
+            }
+            case NEWSEGMENT -> {
               basetime = event.parseNewsegmentStart();
               Debug.info("new segment: base time " + basetime);
               result = srcPad.pushEvent(event);
-              break;
-            default:
-              result = srcPad.pushEvent(event);
-              break;
+            }
+            default -> result = srcPad.pushEvent(event);
           }
           return result;
         }
@@ -182,8 +186,8 @@ public class KateDec extends Element implements OggPayload {
           op.packetBase = buf.data;
           op.packet = buf.offset;
           op.bytes = buf.length;
-          op.b_o_s = (packetNo == 0 ? 1 : 0);
-          op.e_o_s = 0;
+          op.bos = (packetNo == 0 ? 1 : 0);
+          op.eos = 0;
           op.packetNo = packetNo;
           timestamp = buf.timestamp;
 
@@ -280,24 +284,22 @@ public class KateDec extends Element implements OggPayload {
     int res;
 
     switch (transition) {
-      case STOP_PAUSE:
+      case STOP_PAUSE -> {
         lastTs = -1;
         packetNo = 0;
-        break;
-      default:
-        break;
+      }
+      default -> {}
     }
 
     res = super.changeState(transition);
 
     switch (transition) {
-      case PAUSE_STOP:
+      case PAUSE_STOP -> {
         ki.clear();
         kc.clear();
         k.clear();
-        break;
-      default:
-        break;
+      }
+      default -> {}
     }
 
     return res;
@@ -328,18 +330,28 @@ public class KateDec extends Element implements OggPayload {
   public String getMime(Packet op) {
     Info ki = new Info();
     Comment kc = new Comment();
-    if (!isType(op)) return null;
+    if (!isType(op)) {
+      return null;
+    }
     int ret = ki.decodeHeader(kc, op);
-    if (ret < 0) return null;
+    if (ret < 0) {
+      return null;
+    }
     String mime = "application/x-kate";
-    if (ki.language != null && !ki.language.equals("")) mime += ";language=" + ki.language;
-    if (ki.category != null && !ki.category.equals("")) mime += ";category=" + ki.category;
+    if (ki.language != null && !ki.language.equals("")) {
+      mime += ";language=" + ki.language;
+    }
+    if (ki.category != null && !ki.category.equals("")) {
+      mime += ";category=" + ki.category;
+    }
     return mime;
   }
 
   @Override
   public int typeFind(byte[] data, int offset, int length) {
-    if (MemUtils.startsWith(data, offset, length, signature)) return 10;
+    if (MemUtils.startsWith(data, offset, length, SIGNATURE)) {
+      return 10;
+    }
     return -1;
   }
 }

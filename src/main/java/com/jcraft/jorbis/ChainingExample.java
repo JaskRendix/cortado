@@ -28,14 +28,12 @@ package com.jcraft.jorbis;
 public final class ChainingExample {
 
   public static void main(String[] args) {
-    VorbisFile ov = null;
-
     try {
-      ov = new VorbisFile(System.in, null, -1);
+      VorbisFile ov = new VorbisFile(System.in, null, -1);
       if (ov.seekable()) {
         System.out.printf(
             "Input bitstream contained %d logical bitstream section(s).%n", ov.streams());
-        System.out.printf("Total bitstream playing time: %.2f seconds%n%n", ov.time_total(-1));
+        System.out.printf("Total bitstream playing time: %.2f seconds%n%n", ov.timeTotal(-1));
       } else {
         System.out.println("Standard input was not seekable.");
         System.out.println("First logical bitstream information:%n");
@@ -49,7 +47,7 @@ public final class ChainingExample {
             vi.getRate(), vi.getChannels(), ov.bitrate(i) / 1000, ov.serialnumber(i));
         System.out.printf(
             "\t\tcompressed length: %d bytes play time: %.2fs%n",
-            ov.raw_total(i), ov.time_total(i));
+            ov.rawTotal(i), ov.timeTotal(i));
         Comment vc = ov.getComment(i);
         System.out.println(vc);
       }

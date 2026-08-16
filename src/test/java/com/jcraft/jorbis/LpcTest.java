@@ -10,8 +10,8 @@ class LpcTest {
   void defaultConstructorShouldInitializeFields() {
     Lpc lpc = new Lpc();
 
-    assertEquals(0, lpc.getLn());
-    assertEquals(0, lpc.getM());
+    assertEquals(0, lpc.ln);
+    assertEquals(0, lpc.m);
   }
 
   @Test
@@ -19,8 +19,8 @@ class LpcTest {
     Lpc lpc = new Lpc();
     lpc.init(128, 10);
 
-    assertEquals(128, lpc.getLn());
-    assertEquals(10, lpc.getM());
+    assertEquals(128, lpc.ln);
+    assertEquals(10, lpc.m);
   }
 
   @Test
@@ -147,13 +147,13 @@ class LpcTest {
   }
 
   @Test
-  void settersShouldStoreValuesCorrectly() {
+  void fieldsShouldStoreValuesCorrectly() {
     Lpc lpc = new Lpc();
 
-    lpc.setLn(100);
-    lpc.setM(7);
+    lpc.ln = 100;
+    lpc.m = 7;
 
-    assertEquals(100, lpc.getLn());
-    assertEquals(7, lpc.getM());
+    assertEquals(100, lpc.ln);
+    assertEquals(7, lpc.m);
   }
 }

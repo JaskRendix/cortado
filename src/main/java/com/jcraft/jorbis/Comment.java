@@ -193,8 +193,8 @@ public class Comment {
     op.packet = 0;
     op.bytes = opb.bytes();
     System.arraycopy(opb.buffer(), 0, op.packetBase, 0, op.bytes);
-    op.b_o_s = 0;
-    op.e_o_s = 0;
+    op.bos = 0;
+    op.eos = 0;
     op.granulepos = 0;
     return 0;
   }

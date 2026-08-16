@@ -152,8 +152,8 @@ class CommentTest {
 
     assertNotNull(p.packetBase);
     assertTrue(p.bytes > 0);
-    assertEquals(0, p.b_o_s);
-    assertEquals(0, p.e_o_s);
+    assertEquals(0, p.bos);
+    assertEquals(0, p.eos);
     assertEquals(0, p.granulepos);
   }
 

@@ -28,7 +28,7 @@ class OggPayloadTest {
 
     @Override
     public boolean isHeader(Packet op) {
-      return op != null && op.b_o_s != 0;
+      return op != null && op.bos != 0;
     }
 
     @Override
@@ -104,7 +104,7 @@ class OggPayloadTest {
   @DisplayName("Header & Keyframe Flag Checks")
   void testFlags() {
     Packet packet = new Packet();
-    packet.b_o_s = 1;
+    packet.bos = 1;
     packet.packetNo = 0;
 
     assertTrue(payload.isHeader(packet));

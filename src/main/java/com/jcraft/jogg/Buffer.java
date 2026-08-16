@@ -54,7 +54,9 @@ public class Buffer {
 
   public void write(byte[] s) {
     for (byte b : s) {
-      if (b == 0) break;
+      if (b == 0) {
+        break;
+      }
       write(b, 8);
     }
   }
@@ -148,7 +150,9 @@ public class Buffer {
   }
 
   public int look1() {
-    if (endbyte >= storage) return -1;
+    if (endbyte >= storage) {
+      return -1;
+    }
     return (buffer[ptr] >> endbit) & 1;
   }
 

@@ -29,11 +29,11 @@ public abstract class AudioSink extends Sink implements ClockProvider {
     private long diff = -1;
     private boolean started = false;
 
-    public void setStarted(boolean s) {
-      started = s;
-      if (started) {
-        diff = -1;
-        lastTime = -1;
+    public void setStarted(boolean started) {
+      this.started = started;
+      if (this.started) {
+        this.diff = -1;
+        this.lastTime = -1;
       }
     }
 
@@ -45,13 +45,15 @@ public abstract class AudioSink extends Sink implements ClockProvider {
       long now;
 
       synchronized (ringBuffer) {
-        if (ringBuffer == null || ringBuffer.rate == 0) return 0;
+        if (ringBuffer == null || ringBuffer.rate == 0) {
+          return 0;
+        }
 
         samples = ringBuffer.samplesPlayed();
         timePos = samples * Clock.SECOND / ringBuffer.rate;
 
         if (started) {
-          /* Interpolate as the position can jump a lot */
+          // Interpolate as the position can jump a lot
           now = System.currentTimeMillis() * Clock.MSECOND;
           if (diff == -1) {
             diff = now;
@@ -78,7 +80,6 @@ public abstract class AudioSink extends Sink implements ClockProvider {
     return audioClock;
   }
 
-  // Removed the 'abstract' keyword here:
   protected class RingBuffer implements Runnable {
     protected byte[] buffer;
     private int state;
@@ -92,12 +93,14 @@ public abstract class AudioSink extends Sink implements ClockProvider {
     protected static final int PAUSE = 1;
     protected static final int PLAY = 2;
 
-    public int bps, sps;
+    public int bps;
+    public int sps;
     public byte[] emptySeg;
     public long playSeg;
     public int segTotal;
     public int segSize;
-    public int rate, channels;
+    public int rate;
+    public int channels;
 
     @Override
     public void run() {
@@ -123,13 +126,14 @@ public abstract class AudioSink extends Sink implements ClockProvider {
 
         int segNum = (int) (playSeg % segTotal);
         int index = segNum * segSize;
-        int ret, toWrite;
+        int ret;
+        int toWrite = segSize;
 
-        toWrite = segSize;
         while (toWrite > 0) {
           ret = write(buffer, index, segSize);
-          if (ret == -1) break;
-
+          if (ret == -1) {
+            break;
+          }
           toWrite -= ret;
         }
 
@@ -163,18 +167,22 @@ public abstract class AudioSink extends Sink implements ClockProvider {
     public synchronized boolean acquire(Caps caps) {
       boolean res;
 
-      if (thread != null) return false;
-
-      if (opened) return false;
+      if (thread != null || opened) {
+        return false;
+      }
 
       String mime = caps.getMime();
-      if (!mime.equals("audio/raw")) return false;
+      if (!mime.equals("audio/raw")) {
+        return false;
+      }
 
       rate = caps.getFieldInt("rate", 44100);
       channels = caps.getFieldInt("channels", 1);
       bps = 2 * channels;
 
-      if (!(res = open(this))) return res;
+      if (!(res = open(this))) {
+        return res;
+      }
 
       opened = true;
 
@@ -204,7 +212,9 @@ public abstract class AudioSink extends Sink implements ClockProvider {
 
       synchronized (this) {
         if (opened) {
-          if (!close(this)) return false;
+          if (!close(this)) {
+            return false;
+          }
         }
         opened = false;
       }
@@ -213,7 +223,9 @@ public abstract class AudioSink extends Sink implements ClockProvider {
     }
 
     private synchronized boolean waitSegment() {
-      if (flushing) return false;
+      if (flushing) {
+        return false;
+      }
 
       if (state != PLAY && autoStart) {
         play();
@@ -225,9 +237,13 @@ public abstract class AudioSink extends Sink implements ClockProvider {
         }
 
         wait();
-        if (flushing) return false;
+        if (flushing) {
+          return false;
+        }
 
-        if (state != PLAY) return false;
+        if (state != PLAY) {
+          return false;
+        }
       } catch (InterruptedException ie) {
         Thread.currentThread().interrupt();
       }
@@ -245,8 +261,11 @@ public abstract class AudioSink extends Sink implements ClockProvider {
         return len;
       }
       if (nextSample != -1) {
-        if (Math.abs(sample - nextSample) < (rate / 10)) sample = nextSample;
-        else System.out.println("discont: found " + sample + " expected " + nextSample);
+        if (Math.abs(sample - nextSample) < (rate / 10)) {
+          sample = nextSample;
+        } else {
+          System.out.println("discont: found " + sample + " expected " + nextSample);
+        }
       }
 
       idx = offset;
@@ -262,21 +281,23 @@ public abstract class AudioSink extends Sink implements ClockProvider {
         writeOff = (int) ((sample % sps) * bps);
 
         while (true) {
-          /* Get the currently playing segment */
+          // Get the currently playing segment
           synchronized (this) {
-            /* See how far away it is from the write segment */
+            // See how far away it is from the write segment
             diff = writeSeg - playSeg;
           }
 
-          /* Play segment too far ahead, we need to drop */
+          // Play segment too far ahead, we need to drop
           if (diff < 0) {
             writeLen = Math.min(segSize, len);
             break;
           } else {
-            /* Write segment is within writable range */
-            if (diff < segTotal) break;
+            // Write segment is within writable range
+            if (diff < segTotal) {
+              break;
+            }
 
-            /* Else wait for the segment to become writable */
+            // Else wait for the segment to become writable
             if (!waitSegment()) {
               return -1;
             }
@@ -285,7 +306,7 @@ public abstract class AudioSink extends Sink implements ClockProvider {
         if (diff >= 0) {
           int writeSegRel;
 
-          /* We can write now */
+          // We can write now
           writeSegRel = (int) (writeSeg % segTotal);
           writeLen = Math.min(segSize - writeOff, len);
 
@@ -301,18 +322,22 @@ public abstract class AudioSink extends Sink implements ClockProvider {
     }
 
     public long samplesPlayed() {
-      long delay, samples;
+      long delay;
+      long samples;
       long seg;
 
-      /* Get the number of samples not yet played */
+      // Get the number of samples not yet played
       delay = delay();
 
       seg = Math.max(0, playSeg - 1);
 
       samples = (seg * sps);
 
-      if (samples >= delay) samples -= delay;
-      else samples = 0;
+      if (samples >= delay) {
+        samples -= delay;
+      } else {
+        samples = 0;
+      }
 
       return samples;
     }
@@ -329,7 +354,9 @@ public abstract class AudioSink extends Sink implements ClockProvider {
     }
 
     public synchronized void setSample(long sample) {
-      if (sample == -1) sample = 0;
+      if (sample == -1) {
+        sample = 0;
+      }
 
       playSeg = sample / sps;
       nextSample = sample;
@@ -337,13 +364,15 @@ public abstract class AudioSink extends Sink implements ClockProvider {
       clearAll();
     }
 
-    public synchronized void setAutoStart(boolean start) {
-      autoStart = start;
+    public synchronized void setAutoStart(boolean autoStart) {
+      this.autoStart = autoStart;
     }
 
     public boolean play() {
       synchronized (this) {
-        if (flushing) return false;
+        if (flushing) {
+          return false;
+        }
 
         state = PLAY;
         audioClock.setStarted(true);
@@ -397,7 +426,7 @@ public abstract class AudioSink extends Sink implements ClockProvider {
     }
   }
 
-  /* Test whether the audio sink is likely to work. */
+  // Test whether the audio sink is likely to work.
   public boolean test() {
     return true;
   }
@@ -410,23 +439,10 @@ public abstract class AudioSink extends Sink implements ClockProvider {
   @Override
   protected boolean doEvent(Event event) {
     switch (event.getType()) {
-      case FLUSH_START:
-        ringBuffer.setFlushing(true);
-        break;
-
-      case FLUSH_STOP:
-        ringBuffer.setFlushing(false);
-        break;
-
-      case NEWSEGMENT:
-        break;
-
-      case EOS:
-        drain();
-        break;
-
-      case SEEK:
-        break;
+      case FLUSH_START -> ringBuffer.setFlushing(true);
+      case FLUSH_STOP -> ringBuffer.setFlushing(false);
+      case NEWSEGMENT, SEEK -> {}
+      case EOS -> drain();
     }
     return true;
   }
@@ -436,10 +452,14 @@ public abstract class AudioSink extends Sink implements ClockProvider {
     long sample;
     long time;
 
-    if (buf.isFlagSet(com.fluendo.jst.Buffer.FLAG_DISCONT)) ringBuffer.nextSample = -1;
+    if (buf.isFlagSet(com.fluendo.jst.Buffer.FLAG_DISCONT)) {
+      ringBuffer.nextSample = -1;
+    }
 
     time = buf.timestamp - segStart;
-    if (time < 0) return Pad.OK;
+    if (time < 0) {
+      return Pad.OK;
+    }
     time += baseTime;
 
     sample = time * ringBuffer.rate / Clock.SECOND;
@@ -463,34 +483,28 @@ public abstract class AudioSink extends Sink implements ClockProvider {
     int result;
 
     switch (transition) {
-      case STOP_PAUSE:
+      case STOP_PAUSE -> {
         ringBuffer = createRingBuffer();
         ringBuffer.setFlushing(false);
-        break;
-      case PAUSE_PLAY:
-        ringBuffer.setAutoStart(true);
-        break;
-      case PLAY_PAUSE:
+      }
+      case PAUSE_PLAY -> ringBuffer.setAutoStart(true);
+      case PLAY_PAUSE -> {
         reset();
         ringBuffer.setAutoStart(false);
         ringBuffer.pause();
-        break;
-      case PAUSE_STOP:
-        ringBuffer.setFlushing(true);
-        break;
+      }
+      case PAUSE_STOP -> ringBuffer.setFlushing(true);
     }
     result = super.changeState(transition);
 
-    switch (transition) {
-      case PAUSE_STOP:
-        ringBuffer.release();
-        break;
+    if (transition == PAUSE_STOP) {
+      ringBuffer.release();
     }
 
     return result;
   }
 
-  /* Block until audio playback is finished */
+  // Block until audio playback is finished
   protected void drain() {
     if (ringBuffer.rate <= 0) {
       return;

@@ -109,21 +109,21 @@ public class TextOverlay extends Overlay {
 
   @Override
   public boolean setProperty(String name, java.lang.Object value) {
-    if ("text".equals(name)) {
-      text = value != null ? value.toString() : null;
-    } else {
-      return super.setProperty(name, value);
+    switch (name) {
+      case "text" -> text = value != null ? value.toString() : null;
+      default -> {
+        return super.setProperty(name, value);
+      }
     }
     return true;
   }
 
   @Override
   public java.lang.Object getProperty(String name) {
-    if ("text".equals(name)) {
-      return text;
-    } else {
-      return super.getProperty(name);
-    }
+    return switch (name) {
+      case "text" -> text;
+      default -> super.getProperty(name);
+    };
   }
 
   @Override

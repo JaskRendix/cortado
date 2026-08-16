@@ -23,7 +23,7 @@ import com.fluendo.utils.*;
 import java.util.*;
 
 public class Queue extends Element {
-  /* Leaky types */
+  // Leaky types
   public static final int NO_LEAK = 0;
   public static final int LEAK_UPSTREAM = 1;
   public static final int LEAK_DOWNSTREAM = 2;
@@ -64,8 +64,8 @@ public class Queue extends Element {
 
   private void clearQueue() {
     for (java.lang.Object obj : queue) {
-      if (obj instanceof Buffer) {
-        ((Buffer) obj).free();
+      if (obj instanceof Buffer buffer) {
+        buffer.free();
       }
     }
     queue.clear();
@@ -74,7 +74,9 @@ public class Queue extends Element {
   }
 
   private void updateBuffering() {
-    if (!isBuffer || srcResult != Pad.OK) return;
+    if (!isBuffer || srcResult != Pad.OK) {
+      return;
+    }
     if (isEOS) {
       if (isBuffering) {
         isBuffering = false;
@@ -83,9 +85,11 @@ public class Queue extends Element {
       return;
     }
 
-    /* Figure out the percentage we are filled */
+    // Figure out the percentage we are filled
     int percent = size * 100 / maxSize;
-    if (percent > 100) percent = 100;
+    if (percent > 100) {
+      percent = 100;
+    }
 
     if (isBuffering) {
       if (percent >= highPercent) {
@@ -100,7 +104,7 @@ public class Queue extends Element {
   }
 
   private void leakDownstream() {
-    /* For as long as the queue is filled, dequeue an item and discard it */
+    // For as long as the queue is filled, dequeue an item and discard it
     java.lang.Object leak;
     while (isFilled()) {
       synchronized (queue) {
@@ -110,8 +114,8 @@ public class Queue extends Element {
               "There is nothing to dequeue and the queue is still filled. This should not happen.");
         }
         queue.remove(queue.size() - 1);
-        if (leak instanceof Buffer) {
-          ((Buffer) leak).free();
+        if (leak instanceof Buffer buffer) {
+          buffer.free();
         }
         headNeedsDiscont = true;
         queue.notifyAll();
@@ -127,12 +131,16 @@ public class Queue extends Element {
           int res;
 
           synchronized (queue) {
-            if (srcResult != OK) return;
+            if (srcResult != OK) {
+              return;
+            }
 
             while (isEmpty()) {
               try {
                 queue.wait();
-                if (srcResult != OK) return;
+                if (srcResult != OK) {
+                  return;
+                }
               } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
               }
@@ -141,8 +149,7 @@ public class Queue extends Element {
             queue.notifyAll();
           }
 
-          if (obj instanceof Event) {
-            Event event = (Event) obj;
+          if (obj instanceof Event event) {
             pushEvent(event);
             res = OK;
             if (event.getType() == Event.Type.EOS) {
@@ -304,9 +311,7 @@ public class Queue extends Element {
                   queue.notifyAll();
                   return OK;
                 }
-                case LEAK_DOWNSTREAM -> {
-                  leakDownstream();
-                }
+                case LEAK_DOWNSTREAM -> leakDownstream();
                 case NO_LEAK -> {
                   try {
                     Debug.debug(parent.getName() + " full, waiting...");

@@ -74,7 +74,7 @@ class Residue2 extends Residue0 {
           if ((info.secondstages[partword[l][k]] & (1 << s)) != 0) {
             CodeBook stagebook = look.fullbooks[look.partbooks[partword[l][k]][s]];
             if (stagebook != null) {
-              if (stagebook.decodevv_add(in, offset, ch, vb.opb, samples_per_partition) == -1) {
+              if (stagebook.decodevvAdd(in, offset, ch, vb.opb, samples_per_partition) == -1) {
                 return 0;
               }
             }

@@ -169,7 +169,7 @@ public class DspState {
     fullbooks = new CodeBook[vi.getBooks()];
     for (int i = 0; i < vi.getBooks(); i++) {
       fullbooks[i] = new CodeBook();
-      fullbooks[i].init_decode(vi.getBookParam()[i]);
+      fullbooks[i].initDecode(vi.getBookParam()[i]);
     }
 
     pcm_storage = 8192;

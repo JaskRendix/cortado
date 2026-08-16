@@ -31,7 +31,7 @@ public class KateOverlay extends Overlay {
   private Font font = null;
   private String text = null;
   private final Renderer tr = new Renderer();
-  private Dimension image_dimension = null;
+  private Dimension imageDimension = null;
 
   /* This class allows lazy rendering, which may not even happen
   if the buffer is late, saving cycles, and ensuring buffers are
@@ -82,18 +82,18 @@ public class KateOverlay extends Overlay {
 
       addConsumer(ic);
 
-      if (image_dimension == null) {
+      if (imageDimension == null) {
         img = getImage(object);
         if (img == null) {
           sendError();
           return;
         }
-        image_dimension = new Dimension(img.getWidth(null), img.getHeight(null));
+        imageDimension = new Dimension(img.getWidth(null), img.getHeight(null));
       }
 
       /* before rendering, we update the state of the events; for now this
       just weeds out old ones, but at some point motions could be tracked. */
-      int ret = tr.update(component, image_dimension, buf.timestamp / (double) Clock.SECOND);
+      int ret = tr.update(component, imageDimension, buf.timestamp / (double) Clock.SECOND);
 
       if (ret < 0) {
         Debug.log(Debug.WARNING, "Failed to update jtiger renderer");
@@ -174,16 +174,16 @@ public class KateOverlay extends Overlay {
                       | ImageConsumer.COMPLETESCANLINES
                       | ImageConsumer.SINGLEFRAME
                       | ImageConsumer.SINGLEPASS);
-              ic.setDimensions(image_dimension.width, image_dimension.height);
+              ic.setDimensions(imageDimension.width, imageDimension.height);
               ic.setPixels(
                   0,
                   0,
-                  image_dimension.width,
-                  image_dimension.height,
+                  imageDimension.width,
+                  imageDimension.height,
                   pg.getColorModel(),
                   pixels,
                   0,
-                  image_dimension.width);
+                  imageDimension.width);
               ic.imageComplete(ImageConsumer.STATICIMAGEDONE);
             }
           }
@@ -295,7 +295,7 @@ public class KateOverlay extends Overlay {
    */
   protected synchronized void onFlush() {
     tr.flush();
-    image_dimension = null;
+    imageDimension = null;
     Debug.log(Debug.DEBUG, "Kate overlay flushing");
   }
 

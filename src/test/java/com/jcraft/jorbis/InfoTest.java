@@ -22,7 +22,7 @@ class InfoTest {
     p.packetBase = raw;
     p.packet = 0;
     p.bytes = raw.length;
-    p.b_o_s = 1;
+    p.bos = 1;
     return p;
   }
 

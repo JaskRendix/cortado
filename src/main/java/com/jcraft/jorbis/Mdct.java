@@ -27,16 +27,16 @@ package com.jcraft.jorbis;
 
 public class Mdct {
 
-  private int n;
-  private int log2n;
+  public int n;
+  public int log2n;
 
-  private float[] trig;
-  private int[] bitrev;
+  public float[] trig;
+  public int[] bitrev;
 
-  private float scale;
+  public float scale;
 
-  private float[] xBuffer = new float[1024];
-  private float[] wBuffer = new float[1024];
+  public float[] xBuffer = new float[1024];
+  public float[] wBuffer = new float[1024];
 
   public Mdct() {}
 
@@ -47,23 +47,23 @@ public class Mdct {
     this.log2n = (int) Math.rint(Math.log(n) / Math.log(2));
     this.n = n;
 
-    int AE = 0;
-    int AO = 1;
-    int BE = AE + n / 2;
-    int BO = BE + 1;
-    int CE = BE + n / 2;
-    int CO = CE + 1;
+    int ae = 0;
+    int ao = 1;
+    int be = ae + n / 2;
+    int bo = be + 1;
+    int ce = be + n / 2;
+    int co = ce + 1;
 
     // trig lookups...
     for (int i = 0; i < n / 4; i++) {
-      trig[AE + i * 2] = (float) Math.cos((Math.PI / n) * (4 * i));
-      trig[AO + i * 2] = (float) -Math.sin((Math.PI / n) * (4 * i));
-      trig[BE + i * 2] = (float) Math.cos((Math.PI / (2 * n)) * (2 * i + 1));
-      trig[BO + i * 2] = (float) Math.sin((Math.PI / (2 * n)) * (2 * i + 1));
+      trig[ae + i * 2] = (float) Math.cos((Math.PI / n) * (4 * i));
+      trig[ao + i * 2] = (float) -Math.sin((Math.PI / n) * (4 * i));
+      trig[be + i * 2] = (float) Math.cos((Math.PI / (2 * n)) * (2 * i + 1));
+      trig[bo + i * 2] = (float) Math.sin((Math.PI / (2 * n)) * (2 * i + 1));
     }
     for (int i = 0; i < n / 8; i++) {
-      trig[CE + i * 2] = (float) Math.cos((Math.PI / n) * (4 * i + 2));
-      trig[CO + i * 2] = (float) -Math.sin((Math.PI / n) * (4 * i + 2));
+      trig[ce + i * 2] = (float) Math.cos((Math.PI / n) * (4 * i + 2));
+      trig[co + i * 2] = (float) -Math.sin((Math.PI / n) * (4 * i + 2));
     }
 
     int mask = (1 << (log2n - 1)) - 1;
@@ -102,22 +102,22 @@ public class Mdct {
     {
       int inO = 1;
       int xO = 0;
-      int A = n2;
+      int a = n2;
 
       int i;
       for (i = 0; i < n8; i++) {
-        A -= 2;
-        x[xO++] = -in[inO + 2] * trig[A + 1] - in[inO] * trig[A];
-        x[xO++] = in[inO] * trig[A + 1] - in[inO + 2] * trig[A];
+        a -= 2;
+        x[xO++] = -in[inO + 2] * trig[a + 1] - in[inO] * trig[a];
+        x[xO++] = in[inO] * trig[a + 1] - in[inO + 2] * trig[a];
         inO += 4;
       }
 
       inO = n2 - 4;
 
       for (i = 0; i < n8; i++) {
-        A -= 2;
-        x[xO++] = in[inO] * trig[A + 1] + in[inO + 2] * trig[A];
-        x[xO++] = in[inO] * trig[A] - in[inO + 2] * trig[A + 1];
+        a -= 2;
+        x[xO++] = in[inO] * trig[a + 1] + in[inO + 2] * trig[a];
+        x[xO++] = in[inO] * trig[a] - in[inO + 2] * trig[a + 1];
         inO -= 4;
       }
     }
@@ -127,13 +127,15 @@ public class Mdct {
 
     // step 8
     {
-      int B = n2;
-      int o1 = n4, o2 = o1 - 1;
-      int o3 = n4 + n2, o4 = o3 - 1;
+      int b = n2;
+      int o1 = n4;
+      int o2 = o1 - 1;
+      int o3 = n4 + n2;
+      int o4 = o3 - 1;
 
       for (int i = 0; i < n4; i++) {
-        float temp1 = (xxx[xx] * trig[B + 1] - xxx[xx + 1] * trig[B]);
-        float temp2 = -(xxx[xx] * trig[B] + xxx[xx + 1] * trig[B + 1]);
+        float temp1 = (xxx[xx] * trig[b + 1] - xxx[xx + 1] * trig[b]);
+        float temp2 = -(xxx[xx] * trig[b] + xxx[xx + 1] * trig[b + 1]);
 
         out[o1] = -temp1;
         out[o2] = temp1;
@@ -145,7 +147,7 @@ public class Mdct {
         o3++;
         o4--;
         xx += 2;
-        B += 2;
+        b += 2;
       }
     }
   }
@@ -155,7 +157,7 @@ public class Mdct {
     int xA = n4;
     int xB = 0;
     int w2 = n4;
-    int A = n2;
+    int a = n2;
 
     for (int i = 0; i < n4; ) {
       float x0 = x[xA] - x[xB];
@@ -163,10 +165,10 @@ public class Mdct {
       w[w2 + i] = x[xA++] + x[xB++];
 
       x1 = x[xA] - x[xB];
-      A -= 4;
+      a -= 4;
 
-      w[i++] = x0 * trig[A] + x1 * trig[A + 1];
-      w[i] = x1 * trig[A] - x0 * trig[A + 1];
+      w[i++] = x0 * trig[a] + x1 * trig[a + 1];
+      w[i] = x1 * trig[a] - x0 * trig[a + 1];
 
       w[w2 + i] = x[xA++] + x[xB++];
       i++;
@@ -177,17 +179,19 @@ public class Mdct {
       for (int i = 0; i < log2n - 3; i++) {
         int k0 = n >>> (i + 2);
         int k1 = 1 << (i + 3);
-        int wbase = n2 - 2;
+        int wBase = n2 - 2;
 
-        A = 0;
+        a = 0;
         float[] temp;
 
         for (int r = 0; r < (k0 >>> 2); r++) {
-          int w1 = wbase;
+          int w1 = wBase;
           w2 = w1 - (k0 >>> 1);
-          float AEv = trig[A], wA;
-          float AOv = trig[A + 1], wB;
-          wbase -= 2;
+          float aEv = trig[a];
+          float wA;
+          float aOv = trig[a + 1];
+          float wB;
+          wBase -= 2;
 
           k0++;
           for (int s = 0; s < (2 << i); s++) {
@@ -197,14 +201,14 @@ public class Mdct {
             wA = w[++w1] - w[++w2];
             x[w1] = w[w1] + w[w2];
 
-            x[w2] = wA * AEv - wB * AOv;
-            x[w2 - 1] = wB * AEv + wA * AOv;
+            x[w2] = wA * aEv - wB * aOv;
+            x[w2 - 1] = wB * aEv + wA * aOv;
 
             w1 -= k0;
             w2 -= k0;
           }
           k0--;
-          A += k1;
+          a += k1;
         }
 
         temp = w;
@@ -215,7 +219,7 @@ public class Mdct {
 
     // step 4, 5, 6, 7
     {
-      int C = n;
+      int c = n;
       int bit = 0;
       int x1 = 0;
       int x2 = n2 - 1;
@@ -229,10 +233,10 @@ public class Mdct {
         float wC = w[t1] + w[t2 + 1];
         float wD = w[t1 - 1] - w[t2];
 
-        float wACE = wA * trig[C];
-        float wBCE = wB * trig[C++];
-        float wACO = wA * trig[C];
-        float wBCO = wB * trig[C++];
+        float wACE = wA * trig[c];
+        float wBCE = wB * trig[c++];
+        float wACO = wA * trig[c];
+        float wBCO = wB * trig[c++];
 
         x[x1++] = (wC + wACO + wBCE) * .5f;
         x[x2--] = (-wD + wBCO - wACE) * .5f;
@@ -241,53 +245,5 @@ public class Mdct {
       }
     }
     return x;
-  }
-
-  public int getN() {
-    return n;
-  }
-
-  public void setN(int n) {
-    this.n = n;
-  }
-
-  public int getLog2n() {
-    return log2n;
-  }
-
-  public void setLog2n(int log2n) {
-    this.log2n = log2n;
-  }
-
-  public float[] getTrig() {
-    return trig;
-  }
-
-  public void setTrig(float[] trig) {
-    this.trig = trig;
-  }
-
-  public int[] getBitrev() {
-    return bitrev;
-  }
-
-  public void setBitrev(int[] bitrev) {
-    this.bitrev = bitrev;
-  }
-
-  public float getScale() {
-    return scale;
-  }
-
-  public void setScale(float scale) {
-    this.scale = scale;
-  }
-
-  public float[] getXBuffer() {
-    return xBuffer;
-  }
-
-  public float[] getWBuffer() {
-    return wBuffer;
   }
 }

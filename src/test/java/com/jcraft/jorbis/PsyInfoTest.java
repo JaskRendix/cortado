@@ -10,93 +10,93 @@ class PsyInfoTest {
   void defaultConstructorShouldInitializeArraysAndScalars() {
     PsyInfo pi = new PsyInfo();
 
-    assertEquals(0, pi.getAthp());
-    assertEquals(0, pi.getDecayp());
-    assertEquals(0, pi.getSmoothp());
-    assertEquals(0, pi.getNoisefitp());
-    assertEquals(0, pi.getNoisefitSubblock());
-    assertEquals(0f, pi.getNoisefitThreshdB());
-    assertEquals(0f, pi.getAthAtt());
-    assertEquals(0, pi.getTonemaskp());
-    assertEquals(0, pi.getPeakattp());
-    assertEquals(0, pi.getNoisemaskp());
-    assertEquals(0f, pi.getMaxCurveDb());
-    assertEquals(0f, pi.getAttackCoeff());
-    assertEquals(0f, pi.getDecayCoeff());
+    assertEquals(0, pi.athp);
+    assertEquals(0, pi.decayp);
+    assertEquals(0, pi.smoothp);
+    assertEquals(0, pi.noisefitp);
+    assertEquals(0, pi.noisefitSubblock);
+    assertEquals(0f, pi.noisefitThreshdB);
+    assertEquals(0f, pi.athAtt);
+    assertEquals(0, pi.tonemaskp);
+    assertEquals(0, pi.peakattp);
+    assertEquals(0, pi.noisemaskp);
+    assertEquals(0f, pi.maxCurveDb);
+    assertEquals(0f, pi.attackCoeff);
+    assertEquals(0f, pi.decayCoeff);
 
     // All arrays must exist and have length 5
-    assertEquals(5, pi.getToneatt125Hz().length);
-    assertEquals(5, pi.getToneatt250Hz().length);
-    assertEquals(5, pi.getToneatt500Hz().length);
-    assertEquals(5, pi.getToneatt1000Hz().length);
-    assertEquals(5, pi.getToneatt2000Hz().length);
-    assertEquals(5, pi.getToneatt4000Hz().length);
-    assertEquals(5, pi.getToneatt8000Hz().length);
+    assertEquals(5, pi.toneatt125Hz.length);
+    assertEquals(5, pi.toneatt250Hz.length);
+    assertEquals(5, pi.toneatt500Hz.length);
+    assertEquals(5, pi.toneatt1000Hz.length);
+    assertEquals(5, pi.toneatt2000Hz.length);
+    assertEquals(5, pi.toneatt4000Hz.length);
+    assertEquals(5, pi.toneatt8000Hz.length);
 
-    assertEquals(5, pi.getPeakatt125Hz().length);
-    assertEquals(5, pi.getPeakatt250Hz().length);
-    assertEquals(5, pi.getPeakatt500Hz().length);
-    assertEquals(5, pi.getPeakatt1000Hz().length);
-    assertEquals(5, pi.getPeakatt2000Hz().length);
-    assertEquals(5, pi.getPeakatt4000Hz().length);
-    assertEquals(5, pi.getPeakatt8000Hz().length);
+    assertEquals(5, pi.peakatt125Hz.length);
+    assertEquals(5, pi.peakatt250Hz.length);
+    assertEquals(5, pi.peakatt500Hz.length);
+    assertEquals(5, pi.peakatt1000Hz.length);
+    assertEquals(5, pi.peakatt2000Hz.length);
+    assertEquals(5, pi.peakatt4000Hz.length);
+    assertEquals(5, pi.peakatt8000Hz.length);
 
-    assertEquals(5, pi.getNoiseatt125Hz().length);
-    assertEquals(5, pi.getNoiseatt250Hz().length);
-    assertEquals(5, pi.getNoiseatt500Hz().length);
-    assertEquals(5, pi.getNoiseatt1000Hz().length);
-    assertEquals(5, pi.getNoiseatt2000Hz().length);
-    assertEquals(5, pi.getNoiseatt4000Hz().length);
-    assertEquals(5, pi.getNoiseatt8000Hz().length);
+    assertEquals(5, pi.noiseatt125Hz.length);
+    assertEquals(5, pi.noiseatt250Hz.length);
+    assertEquals(5, pi.noiseatt500Hz.length);
+    assertEquals(5, pi.noiseatt1000Hz.length);
+    assertEquals(5, pi.noiseatt2000Hz.length);
+    assertEquals(5, pi.noiseatt4000Hz.length);
+    assertEquals(5, pi.noiseatt8000Hz.length);
   }
 
   @Test
-  void settersShouldStoreScalarValuesCorrectly() {
+  void fieldsShouldStoreScalarValuesCorrectly() {
     PsyInfo pi = new PsyInfo();
 
-    pi.setAthp(1);
-    pi.setDecayp(2);
-    pi.setSmoothp(3);
-    pi.setNoisefitp(4);
-    pi.setNoisefitSubblock(5);
-    pi.setNoisefitThreshdB(6.5f);
-    pi.setAthAtt(7.5f);
-    pi.setTonemaskp(8);
-    pi.setPeakattp(9);
-    pi.setNoisemaskp(10);
-    pi.setMaxCurveDb(11.5f);
-    pi.setAttackCoeff(12.5f);
-    pi.setDecayCoeff(13.5f);
+    pi.athp = 1;
+    pi.decayp = 2;
+    pi.smoothp = 3;
+    pi.noisefitp = 4;
+    pi.noisefitSubblock = 5;
+    pi.noisefitThreshdB = 6.5f;
+    pi.athAtt = 7.5f;
+    pi.tonemaskp = 8;
+    pi.peakattp = 9;
+    pi.noisemaskp = 10;
+    pi.maxCurveDb = 11.5f;
+    pi.attackCoeff = 12.5f;
+    pi.decayCoeff = 13.5f;
 
-    assertEquals(1, pi.getAthp());
-    assertEquals(2, pi.getDecayp());
-    assertEquals(3, pi.getSmoothp());
-    assertEquals(4, pi.getNoisefitp());
-    assertEquals(5, pi.getNoisefitSubblock());
-    assertEquals(6.5f, pi.getNoisefitThreshdB());
-    assertEquals(7.5f, pi.getAthAtt());
-    assertEquals(8, pi.getTonemaskp());
-    assertEquals(9, pi.getPeakattp());
-    assertEquals(10, pi.getNoisemaskp());
-    assertEquals(11.5f, pi.getMaxCurveDb());
-    assertEquals(12.5f, pi.getAttackCoeff());
-    assertEquals(13.5f, pi.getDecayCoeff());
+    assertEquals(1, pi.athp);
+    assertEquals(2, pi.decayp);
+    assertEquals(3, pi.smoothp);
+    assertEquals(4, pi.noisefitp);
+    assertEquals(5, pi.noisefitSubblock);
+    assertEquals(6.5f, pi.noisefitThreshdB);
+    assertEquals(7.5f, pi.athAtt);
+    assertEquals(8, pi.tonemaskp);
+    assertEquals(9, pi.peakattp);
+    assertEquals(10, pi.noisemaskp);
+    assertEquals(11.5f, pi.maxCurveDb);
+    assertEquals(12.5f, pi.attackCoeff);
+    assertEquals(13.5f, pi.decayCoeff);
   }
 
   @Test
-  void settersShouldCopyArrayValuesCorrectly() {
+  void arraysShouldStoreValuesCorrectly() {
     PsyInfo pi = new PsyInfo();
 
     float[] arr = {1f, 2f, 3f, 4f, 5f};
 
-    pi.setToneatt125Hz(arr);
-    assertArrayEquals(arr, pi.getToneatt125Hz());
+    System.arraycopy(arr, 0, pi.toneatt125Hz, 0, arr.length);
+    assertArrayEquals(arr, pi.toneatt125Hz);
 
-    pi.setPeakatt4000Hz(arr);
-    assertArrayEquals(arr, pi.getPeakatt4000Hz());
+    System.arraycopy(arr, 0, pi.peakatt4000Hz, 0, arr.length);
+    assertArrayEquals(arr, pi.peakatt4000Hz);
 
-    pi.setNoiseatt8000Hz(arr);
-    assertArrayEquals(arr, pi.getNoiseatt8000Hz());
+    System.arraycopy(arr, 0, pi.noiseatt8000Hz, 0, arr.length);
+    assertArrayEquals(arr, pi.noiseatt8000Hz);
   }
 
   @Test
@@ -105,13 +105,13 @@ class PsyInfoTest {
 
     float[] special = {Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, 0f, -1f};
 
-    pi.setToneatt500Hz(special);
+    System.arraycopy(special, 0, pi.toneatt500Hz, 0, special.length);
 
-    assertTrue(Float.isNaN(pi.getToneatt500Hz()[0]));
-    assertEquals(Float.POSITIVE_INFINITY, pi.getToneatt500Hz()[1]);
-    assertEquals(Float.NEGATIVE_INFINITY, pi.getToneatt500Hz()[2]);
-    assertEquals(0f, pi.getToneatt500Hz()[3]);
-    assertEquals(-1f, pi.getToneatt500Hz()[4]);
+    assertTrue(Float.isNaN(pi.toneatt500Hz[0]));
+    assertEquals(Float.POSITIVE_INFINITY, pi.toneatt500Hz[1]);
+    assertEquals(Float.NEGATIVE_INFINITY, pi.toneatt500Hz[2]);
+    assertEquals(0f, pi.toneatt500Hz[3]);
+    assertEquals(-1f, pi.toneatt500Hz[4]);
   }
 
   @Test

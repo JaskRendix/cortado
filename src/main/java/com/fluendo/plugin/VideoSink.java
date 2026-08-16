@@ -30,8 +30,10 @@ public class VideoSink extends Sink {
   private boolean scale;
   private Frame frame;
 
-  private int width, height;
-  private int aspectX, aspectY;
+  private int width;
+  private int height;
+  private int aspectX;
+  private int aspectY;
   private Rectangle bounds;
 
   public VideoSink() {
@@ -43,12 +45,16 @@ public class VideoSink extends Sink {
   @Override
   protected boolean setCapsFunc(Caps caps) {
     String mime = caps.getMime();
-    if (!mime.equals("video/raw")) return false;
+    if (!mime.equals("video/raw")) {
+      return false;
+    }
 
     width = caps.getFieldInt("width", -1);
     height = caps.getFieldInt("height", -1);
 
-    if (width == -1 || height == -1) return false;
+    if (width == -1 || height == -1) {
+      return false;
+    }
 
     aspectX = caps.getFieldInt("aspect_x", 1);
     aspectY = caps.getFieldInt("aspect_y", 1);
@@ -83,21 +89,26 @@ public class VideoSink extends Sink {
   @Override
   protected int render(Buffer buf) {
     Image image;
-    int x, y, w, h;
+    int x;
+    int y;
+    int w;
+    int h;
 
     if (!buf.duplicate) {
       Debug.log(Debug.DEBUG, this.getName() + " starting buffer " + buf);
 
-      if (buf.object instanceof ImageProducer) {
-        image = component.createImage((ImageProducer) buf.object);
-      } else if (buf.object instanceof Image) {
-        image = (Image) buf.object;
+      if (buf.object instanceof ImageProducer imageProducer) {
+        image = component.createImage(imageProducer);
+      } else if (buf.object instanceof Image img) {
+        image = img;
       } else {
         System.out.println(this + ": unknown buffer received " + buf);
         return Pad.ERROR;
       }
 
-      if (!component.isVisible()) return Pad.NOT_NEGOTIATED;
+      if (!component.isVisible()) {
+        return Pad.NOT_NEGOTIATED;
+      }
 
       Graphics graphics = component.getGraphics();
 
@@ -106,21 +117,22 @@ public class VideoSink extends Sink {
       }
 
       if (keepAspect) {
-        double src_ratio, dst_ratio;
+        double srcRatio;
+        double dstRatio;
 
         if (bounds == null) {
           bounds = new Rectangle(component.getSize());
         }
-        src_ratio = (double) width / height;
-        dst_ratio = (double) bounds.width / bounds.height;
+        srcRatio = (double) width / height;
+        dstRatio = (double) bounds.width / bounds.height;
 
-        if (src_ratio > dst_ratio) {
+        if (srcRatio > dstRatio) {
           w = bounds.width;
-          h = (int) (bounds.width / src_ratio);
+          h = (int) (bounds.width / srcRatio);
           x = bounds.x;
           y = bounds.y + (bounds.height - h) / 2;
-        } else if (src_ratio < dst_ratio) {
-          w = (int) (bounds.height * src_ratio);
+        } else if (srcRatio < dstRatio) {
+          w = (int) (bounds.height * srcRatio);
           h = bounds.height;
           x = bounds.x + (bounds.width - w) / 2;
           y = bounds.y;
@@ -136,7 +148,7 @@ public class VideoSink extends Sink {
         x = bounds.x + (bounds.width - w) / 2;
         y = bounds.y + (bounds.height - h) / 2;
       } else {
-        /* draw in available area */
+        // draw in available area
         w = bounds.width;
         h = bounds.height;
         x = 0;
@@ -166,31 +178,30 @@ public class VideoSink extends Sink {
    */
   @Override
   public boolean setProperty(String name, java.lang.Object value) {
-    if (name.equals("component")) {
-      component = (Component) value;
-    } else if (name.equals("keep-aspect")) {
-      keepAspect = String.valueOf(value).equals("true");
-    } else if (name.equals("ignore-aspect")) {
-      ignoreAspect = String.valueOf(value).equals("true");
-    } else if (name.equals("scale")) {
-      scale = String.valueOf(value).equals("true");
-    } else if (name.equals("bounds")) {
-      bounds = (Rectangle) value;
-      if (bounds != null) {
-        Debug.info(
-            "Video bounding rectangle: x="
-                + bounds.x
-                + ", y="
-                + bounds.y
-                + ", w="
-                + bounds.width
-                + ", h="
-                + bounds.height);
-      } else {
-        Debug.info("Video bounding rectangle cleared");
+    switch (name) {
+      case "component" -> component = (Component) value;
+      case "keep-aspect" -> keepAspect = String.valueOf(value).equals("true");
+      case "ignore-aspect" -> ignoreAspect = String.valueOf(value).equals("true");
+      case "scale" -> scale = String.valueOf(value).equals("true");
+      case "bounds" -> {
+        bounds = (Rectangle) value;
+        if (bounds != null) {
+          Debug.info(
+              "Video bounding rectangle: x="
+                  + bounds.x
+                  + ", y="
+                  + bounds.y
+                  + ", w="
+                  + bounds.width
+                  + ", h="
+                  + bounds.height);
+        } else {
+          Debug.info("Video bounding rectangle cleared");
+        }
       }
-    } else {
-      return super.setProperty(name, value);
+      default -> {
+        return super.setProperty(name, value);
+      }
     }
 
     return true;
@@ -198,22 +209,19 @@ public class VideoSink extends Sink {
 
   @Override
   public java.lang.Object getProperty(String name) {
-    if (name.equals("component")) {
-      return component;
-    } else if (name.equals("keep-aspect")) {
-      return (keepAspect ? "true" : "false");
-    } else if (name.equals("bounds")) {
-      return bounds;
-    } else {
-      return super.getProperty(name);
-    }
+    return switch (name) {
+      case "component" -> component;
+      case "keep-aspect" -> (keepAspect ? "true" : "false");
+      case "bounds" -> bounds;
+      default -> super.getProperty(name);
+    };
   }
 
   @Override
   protected int changeState(int transition) {
     if (currentState == STOP && pendingState == PAUSE && component == null) {
       frame = new Frame();
-      component = (Component) frame;
+      component = frame;
     }
     return super.changeState(transition);
   }

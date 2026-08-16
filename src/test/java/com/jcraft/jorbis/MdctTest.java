@@ -11,11 +11,11 @@ class MdctTest {
     Mdct mdct = new Mdct();
 
     // Before init(), MDCT tables are not allocated
-    assertNull(mdct.getTrig());
-    assertNull(mdct.getBitrev());
-    assertEquals(0, mdct.getN());
-    assertEquals(0, mdct.getLog2n());
-    assertEquals(0f, mdct.getScale());
+    assertNull(mdct.trig);
+    assertNull(mdct.bitrev);
+    assertEquals(0, mdct.n);
+    assertEquals(0, mdct.log2n);
+    assertEquals(0f, mdct.scale);
   }
 
   @Test
@@ -23,8 +23,8 @@ class MdctTest {
     Mdct mdct = new Mdct();
     mdct.init(1024);
 
-    assertEquals(1024, mdct.getN());
-    assertEquals(10, mdct.getLog2n()); // log2(1024) = 10
+    assertEquals(1024, mdct.n);
+    assertEquals(10, mdct.log2n); // log2(1024) = 10
   }
 
   @Test
@@ -32,11 +32,11 @@ class MdctTest {
     Mdct mdct = new Mdct();
     mdct.init(512);
 
-    assertNotNull(mdct.getTrig());
-    assertNotNull(mdct.getBitrev());
+    assertNotNull(mdct.trig);
+    assertNotNull(mdct.bitrev);
 
-    assertEquals(512 + 512 / 4, mdct.getTrig().length);
-    assertEquals(512 / 4, mdct.getBitrev().length);
+    assertEquals(512 + 512 / 4, mdct.trig.length);
+    assertEquals(512 / 4, mdct.bitrev.length);
   }
 
   @Test
@@ -44,7 +44,7 @@ class MdctTest {
     Mdct mdct = new Mdct();
     mdct.init(256);
 
-    assertEquals(4f / 256f, mdct.getScale());
+    assertEquals(4f / 256f, mdct.scale);
   }
 
   @Test
@@ -52,7 +52,7 @@ class MdctTest {
     Mdct mdct = new Mdct();
 
     assertDoesNotThrow(() -> mdct.init(64));
-    assertEquals(64, mdct.getN());
+    assertEquals(64, mdct.n);
   }
 
   @Test
@@ -66,8 +66,8 @@ class MdctTest {
     // Force buffer resize
     mdct.backward(in, out);
 
-    assertTrue(mdct.getXBuffer().length >= 1024);
-    assertTrue(mdct.getWBuffer().length >= 1024);
+    assertTrue(mdct.xBuffer.length >= 1024);
+    assertTrue(mdct.wBuffer.length >= 1024);
   }
 
   @Test
@@ -117,7 +117,7 @@ class MdctTest {
     Mdct mdct = new Mdct();
     mdct.init(1024);
 
-    for (float t : mdct.getTrig()) {
+    for (float t : mdct.trig) {
       assertTrue(t >= -1.0f && t <= 1.0f);
     }
   }
@@ -127,7 +127,7 @@ class MdctTest {
     Mdct mdct = new Mdct();
     mdct.init(512);
 
-    int[] bitrev = mdct.getBitrev();
+    int[] bitrev = mdct.bitrev;
     for (int v : bitrev) {
       assertTrue(v >= 0);
       assertTrue(v < 512 / 2);
@@ -154,23 +154,23 @@ class MdctTest {
   }
 
   @Test
-  void settersShouldStoreValuesCorrectly() {
+  void fieldsShouldStoreValuesCorrectly() {
     Mdct mdct = new Mdct();
 
-    mdct.setN(128);
-    mdct.setLog2n(7);
-    mdct.setScale(0.5f);
+    mdct.n = 128;
+    mdct.log2n = 7;
+    mdct.scale = 0.5f;
 
     float[] trig = new float[] {1f, 2f, 3f};
     int[] bitrev = new int[] {4, 5, 6};
 
-    mdct.setTrig(trig);
-    mdct.setBitrev(bitrev);
+    mdct.trig = trig;
+    mdct.bitrev = bitrev;
 
-    assertEquals(128, mdct.getN());
-    assertEquals(7, mdct.getLog2n());
-    assertEquals(0.5f, mdct.getScale());
-    assertSame(trig, mdct.getTrig());
-    assertSame(bitrev, mdct.getBitrev());
+    assertEquals(128, mdct.n);
+    assertEquals(7, mdct.log2n);
+    assertEquals(0.5f, mdct.scale);
+    assertSame(trig, mdct.trig);
+    assertSame(bitrev, mdct.bitrev);
   }
 }

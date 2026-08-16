@@ -25,7 +25,7 @@ import com.jcraft.jogg.*;
 import java.util.*;
 
 public class TheoraDec extends Element implements OggPayload {
-  private static final byte[] signature = {-128, 0x74, 0x68, 0x65, 0x6f, 0x72, 0x61};
+  private static final byte[] SIGNATURE = {-128, 0x74, 0x68, 0x65, 0x6f, 0x72, 0x61};
 
   private Info ti;
   private Comment tc;
@@ -33,10 +33,10 @@ public class TheoraDec extends Element implements OggPayload {
   private Packet op;
   private int packet;
   private YUVBuffer yuv;
-  private java.lang.Object last_yuv_obj;
+  private java.lang.Object lastYuvObj;
 
   private long lastTs;
-  private long lastnondupe = -1;
+  private long lastNonDupe = -1;
   private boolean needKeyframe;
   private boolean haveBOS = false;
   private boolean haveDecoder = false;
@@ -88,13 +88,17 @@ public class TheoraDec extends Element implements OggPayload {
     int i;
     com.fluendo.jst.Buffer data = null;
 
-    /* first find buffer with valid offset */
+    // first find buffer with valid offset
     for (i = 0; i < len; i++) {
       data = packets.get(i);
 
-      if (data.time_offset != -1) break;
+      if (data.time_offset != -1) {
+        break;
+      }
     }
-    if (i == packets.size()) return -1;
+    if (i == packets.size()) {
+      return -1;
+    }
 
     long time = granuleToTime(data.time_offset);
 
@@ -107,7 +111,9 @@ public class TheoraDec extends Element implements OggPayload {
 
   @Override
   public long granuleToTime(long gp) {
-    if (gp < 0 || !haveBOS) return -1;
+    if (gp < 0 || !haveBOS) {
+      return -1;
+    }
 
     long iframe = gp >> ti.keyframe_granule_shift;
     long pframe = gp - (iframe << ti.keyframe_granule_shift);
@@ -131,23 +137,19 @@ public class TheoraDec extends Element implements OggPayload {
           boolean result;
 
           switch (event.getType()) {
-            case FLUSH_START:
+            case FLUSH_START -> {
               result = srcPad.pushEvent(event);
               synchronized (streamLock) {
                 Debug.log(Debug.DEBUG, "synced " + this);
               }
-              break;
-            case FLUSH_STOP:
+            }
+            case FLUSH_STOP, EOS, NEWSEGMENT -> {
+              if (event.getType() == Event.Type.EOS) {
+                Debug.log(Debug.INFO, "got EOS " + this);
+              }
               result = srcPad.pushEvent(event);
-              break;
-            case EOS:
-              Debug.log(Debug.INFO, "got EOS " + this);
-              result = srcPad.pushEvent(event);
-              break;
-            case NEWSEGMENT:
-            default:
-              result = srcPad.pushEvent(event);
-              break;
+            }
+            default -> result = srcPad.pushEvent(event);
           }
           return result;
         }
@@ -162,8 +164,8 @@ public class TheoraDec extends Element implements OggPayload {
           op.packetBase = buf.data;
           op.packet = buf.offset;
           op.bytes = buf.length;
-          op.b_o_s = (packet == 0 ? 1 : 0);
-          op.e_o_s = 0;
+          op.bos = (packet == 0 ? 1 : 0);
+          op.eos = 0;
           op.packetNo = packet;
           timestamp = buf.timestamp;
 
@@ -243,18 +245,18 @@ public class TheoraDec extends Element implements OggPayload {
                     return ERROR;
                   }
                   buf.duplicate = false;
-                  lastnondupe = timestamp;
-                  last_yuv_obj =
+                  lastNonDupe = timestamp;
+                  lastYuvObj =
                       yuv.getObject(ti.offset_x, ti.offset_y, ti.frame_width, ti.frame_height);
                 } else {
-                  if (timestamp - lastnondupe >= Clock.SECOND) {
+                  if (timestamp - lastNonDupe >= Clock.SECOND) {
                     buf.duplicate = false;
-                    lastnondupe = timestamp;
+                    lastNonDupe = timestamp;
                   } else {
                     buf.duplicate = true;
                   }
                 }
-                buf.object = last_yuv_obj;
+                buf.object = lastYuvObj;
                 buf.caps = caps;
                 buf.timestamp = timestamp;
                 Debug.log(Debug.DEBUG, parent.getName() + " >>> " + buf);
@@ -298,25 +300,23 @@ public class TheoraDec extends Element implements OggPayload {
     int res;
 
     switch (transition) {
-      case STOP_PAUSE:
+      case STOP_PAUSE -> {
         lastTs = -1;
         packet = 0;
         needKeyframe = true;
-        break;
-      default:
-        break;
+      }
+      default -> {}
     }
 
     res = super.changeState(transition);
 
     switch (transition) {
-      case PAUSE_STOP:
+      case PAUSE_STOP -> {
         ti.clear();
         tc.clear();
         ts.clear();
-        break;
-      default:
-        break;
+      }
+      default -> {}
     }
 
     return res;
@@ -334,13 +334,17 @@ public class TheoraDec extends Element implements OggPayload {
 
   @Override
   public String getMime(Packet op) {
-    if (!isType(op)) return null;
+    if (!isType(op)) {
+      return null;
+    }
     return "video/x-theora";
   }
 
   @Override
   public int typeFind(byte[] data, int offset, int length) {
-    if (MemUtils.startsWith(data, offset, length, signature)) return 10;
+    if (MemUtils.startsWith(data, offset, length, SIGNATURE)) {
+      return 10;
+    }
     return -1;
   }
 }

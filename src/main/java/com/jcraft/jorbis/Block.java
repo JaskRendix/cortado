@@ -101,7 +101,7 @@ public final class Block {
     // More setup
     granulepos = op.granulepos;
     sequence = op.packetNo - 3; // First block is third packet
-    eofflag = op.e_o_s;
+    eofflag = op.eos;
 
     // Allocate pcm passback storage
     pcmend = vi.getBlocksizes()[W];

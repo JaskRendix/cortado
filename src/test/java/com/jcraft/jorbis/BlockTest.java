@@ -36,7 +36,7 @@ public class BlockTest {
     p.bytes = data.length;
     p.granulepos = granule;
     p.packetNo = packetNo;
-    p.e_o_s = eos;
+    p.eos = eos;
     return p;
   }
 

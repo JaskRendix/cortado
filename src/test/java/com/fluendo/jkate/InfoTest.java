@@ -54,7 +54,7 @@ class InfoTest {
     packet.packet = 0;
     packet.bytes = packetData.length;
     packet.packetNo = 0;
-    packet.b_o_s = 0; // Not beginning of stream
+    packet.bos = 0; // Not beginning of stream
 
     int result = info.decodeHeader(comment, packet);
     assertEquals(Result.KATE_E_BAD_PACKET, result);
@@ -71,7 +71,7 @@ class InfoTest {
     packet.packet = 0;
     packet.bytes = packetData.length;
     packet.packetNo = 0;
-    packet.b_o_s = 1;
+    packet.bos = 1;
 
     int result = info.decodeHeader(comment, packet);
     assertEquals(Result.KATE_E_NOT_KATE, result);

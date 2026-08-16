@@ -483,7 +483,7 @@ public class Info {
 
       switch (packtype) {
         case 0x01:
-          if (op.b_o_s == 0) return -1;
+          if (op.bos == 0) return -1;
           if (rate != 0) return -1;
           return unpackInfo(opb);
         case 0x03:

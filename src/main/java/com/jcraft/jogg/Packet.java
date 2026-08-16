@@ -29,8 +29,8 @@ public class Packet {
   public byte[] packetBase;
   public int packet;
   public int bytes;
-  public int b_o_s;
-  public int e_o_s;
+  public int bos;
+  public int eos;
 
   public long granulepos;
 

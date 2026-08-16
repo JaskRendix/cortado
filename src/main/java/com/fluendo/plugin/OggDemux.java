@@ -28,15 +28,15 @@ public class OggDemux extends Element {
   private OggChain chain;
   private Page og;
   private Packet op;
-  private static final byte[] signature = {0x4f, 0x67, 0x67, 0x53};
-  private static final byte[] fishead_signature = {0x66, 0x69, 0x73, 0x68, 0x65, 0x61, 0x64};
-  private static final byte[] cmml_signature = {0x43, 0x4d, 0x4d, 0x4c};
+  private static final byte[] SIGNATURE = {0x4f, 0x67, 0x67, 0x53};
+  private static final byte[] FISHEAD_SIGNATURE = {0x66, 0x69, 0x73, 0x68, 0x65, 0x61, 0x64};
+  private static final byte[] CMML_SIGNATURE = {0x43, 0x4d, 0x4d, 0x4c};
   private static final int TYPE_NEW = 0;
   private static final int TYPE_UNKNOWN = 1;
   private static final int TYPE_SKELETON = 2;
   private static final int TYPE_CMML = 3;
   private static final int TYPE_MEDIA = 4;
-  private static final String[] payload_names = {"TheoraDec", "VorbisDec", "KateDec"};
+  private static final String[] PAYLOAD_NAMES = {"TheoraDec", "VorbisDec", "KateDec"};
   private final OggPayload[] payloads = {null, null, null};
 
   class OggStream extends Pad {
@@ -92,7 +92,9 @@ public class OggDemux extends Element {
     }
 
     public void activate() {
-      if (active) return;
+      if (active) {
+        return;
+      }
       sentHeaders = false;
       lastRet = OK;
       addPad(this);
@@ -100,7 +102,9 @@ public class OggDemux extends Element {
     }
 
     public void deActivate() {
-      if (!active) return;
+      if (!active) {
+        return;
+      }
       removePad(this);
       pushEvent(Event.newEOS());
       active = false;
@@ -109,7 +113,9 @@ public class OggDemux extends Element {
     public void reStart(long firstTs) {
       com.fluendo.jst.Buffer buf;
       long time;
-      if (!active) return;
+      if (!active) {
+        return;
+      }
       baseTs = firstTs;
       time = firstTs - baseTs;
       Debug.log(Debug.DEBUG, this + " pushing segment start " + firstTs + ", time " + time);
@@ -125,8 +131,9 @@ public class OggDemux extends Element {
       }
       for (com.fluendo.jst.Buffer value : queue) {
         buf = value;
-        if (buf == queue.get(0))
+        if (buf == queue.get(0)) {
           Debug.log(Debug.DEBUG, this + " first data buffer: " + buf.timestamp);
+        }
         buf.setFlag(com.fluendo.jst.Buffer.FLAG_DISCONT, discont);
         discont = false;
         push(buf);
@@ -143,8 +150,11 @@ public class OggDemux extends Element {
       com.fluendo.jst.Buffer data = com.fluendo.jst.Buffer.create();
       data.copyData(op.packetBase, op.packet, op.bytes);
       data.time_offset = op.granulepos;
-      if (payload != null) data.timestamp = payload.granuleToTime(op.granulepos);
-      else data.timestamp = -1;
+      if (payload != null) {
+        data.timestamp = payload.granuleToTime(op.granulepos);
+      } else {
+        data.timestamp = -1;
+      }
       data.setFlag(com.fluendo.jst.Buffer.FLAG_DISCONT, discont);
       data.setFlag(com.fluendo.jst.Buffer.FLAG_DELTA_UNIT, !payload.isKeyFrame(op));
       return data;
@@ -153,7 +163,9 @@ public class OggDemux extends Element {
     private void initNewStream(Packet op) {
       payload = null;
       for (OggPayload pl : payloads) {
-        if (pl == null) continue;
+        if (pl == null) {
+          continue;
+        }
         if (pl.isType(op)) {
           try {
             payload = (OggPayload) pl.getClass().getDeclaredConstructor().newInstance();
@@ -163,16 +175,17 @@ public class OggDemux extends Element {
             setCaps(new Caps(mime));
             return;
           } catch (Exception e) {
+            // Ignored
           }
         }
       }
-      if (MemUtils.startsWith(op.packetBase, op.packet, op.bytes, fishead_signature)) {
+      if (MemUtils.startsWith(op.packetBase, op.packet, op.bytes, FISHEAD_SIGNATURE)) {
         type = TYPE_SKELETON;
         Debug.log(Debug.INFO, "ignoring skeleton stream " + serialno);
         postMessage(Message.newWarning(this, "ignoring skeleton stream " + serialno));
         return;
       }
-      if (MemUtils.startsWith(op.packetBase, op.packet, op.bytes, cmml_signature)) {
+      if (MemUtils.startsWith(op.packetBase, op.packet, op.bytes, CMML_SIGNATURE)) {
         type = TYPE_CMML;
         Debug.log(Debug.INFO, "ignoring CMML stream " + serialno);
         postMessage(Message.newWarning(this, "ignoring CMML stream " + serialno));
@@ -237,7 +250,9 @@ public class OggDemux extends Element {
       }
       while (flowRet == OK) {
         res = os.packetout(op);
-        if (res == 0) break;
+        if (res == 0) {
+          break;
+        }
         if (res == -1) {
           Debug.log(Debug.WARNING, "ogg error: packetout gave " + res);
           discont = true;
@@ -272,7 +287,9 @@ public class OggDemux extends Element {
     }
 
     public void activate() {
-      if (active) return;
+      if (active) {
+        return;
+      }
       Debug.log(Debug.DEBUG, "activating chain");
       for (OggStream stream : streams) {
         stream.activate();
@@ -282,7 +299,9 @@ public class OggDemux extends Element {
     }
 
     public void deActivate() {
-      if (!active) return;
+      if (!active) {
+        return;
+      }
       Debug.log(Debug.DEBUG, "deActivating chain");
       for (OggStream stream : streams) {
         stream.deActivate();
@@ -291,12 +310,16 @@ public class OggDemux extends Element {
     }
 
     public void reStart() {
-      if (!active) return;
+      if (!active) {
+        return;
+      }
       if (firstTs == -1) {
         long maxTs = 0;
         long minTs = Long.MAX_VALUE;
         for (OggStream stream : streams) {
-          if (stream.type != TYPE_MEDIA) continue;
+          if (stream.type != TYPE_MEDIA) {
+            continue;
+          }
           long ts = stream.getFirstTs();
           maxTs = Math.max(maxTs, ts);
           minTs = Math.min(minTs, ts);
@@ -322,7 +345,9 @@ public class OggDemux extends Element {
 
     public OggStream findStream(int serial) {
       for (OggStream stream : streams) {
-        if (stream.serialno == serial) return stream;
+        if (stream.serialno == serial) {
+          return stream;
+        }
       }
       return null;
     }
@@ -348,7 +373,9 @@ public class OggDemux extends Element {
         for (OggStream cstream : streams) {
           if (cstream.type == TYPE_MEDIA) {
             hasMedia = true;
-            if (!(check = cstream.isComplete())) break;
+            if (!(check = cstream.isComplete())) {
+              break;
+            }
           }
         }
         if (check && hasMedia) {
@@ -367,29 +394,35 @@ public class OggDemux extends Element {
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
           switch (event.getType()) {
-            case FLUSH_START:
-              if (chain != null) chain.forwardEvent(event);
+            case FLUSH_START -> {
+              if (chain != null) {
+                chain.forwardEvent(event);
+              }
               synchronized (streamLock) {
                 Debug.log(Debug.DEBUG, this + " synced");
               }
-              break;
-            case FLUSH_STOP:
+            }
+            case FLUSH_STOP -> {
               oy.reset();
               if (chain != null) {
                 chain.resetStreams();
                 chain.forwardEvent(event);
               }
-              break;
-            case NEWSEGMENT:
-              break;
-            case EOS:
+            }
+            case NEWSEGMENT -> {}
+            case EOS -> {
               Debug.log(Debug.INFO, "ogg: got EOS");
-              if (chain != null) chain.forwardEvent(event);
-              else postMessage(Message.newError(this, "unsupported media type"));
-              break;
-            default:
-              if (chain != null) chain.forwardEvent(event);
-              break;
+              if (chain != null) {
+                chain.forwardEvent(event);
+              } else {
+                postMessage(Message.newError(this, "unsupported media type"));
+              }
+            }
+            default -> {
+              if (chain != null) {
+                chain.forwardEvent(event);
+              }
+            }
           }
           return true;
         }
@@ -409,7 +442,9 @@ public class OggDemux extends Element {
           oy.wrote(buf.length);
           while (flowRet == OK) {
             res = oy.pageOut(og);
-            if (res == 0) break;
+            if (res == 0) {
+              break;
+            }
             if (res == -1) {
               Debug.log(Debug.WARNING, "ogg: pageOut gave " + res);
               if (chain != null) {
@@ -428,7 +463,9 @@ public class OggDemux extends Element {
                     chain = null;
                   }
                 }
-                if (chain == null) chain = new OggChain();
+                if (chain == null) {
+                  chain = new OggChain();
+                }
                 stream = new OggStream(serial);
                 chain.addStream(stream);
               }
@@ -455,12 +492,18 @@ public class OggDemux extends Element {
 
   private int combineFlows(OggStream stream, int ret) {
     stream.lastRet = ret;
-    if (Pad.isFlowSuccess(ret)) return ret;
-    if (ret != Pad.NOT_LINKED) return ret;
+    if (Pad.isFlowSuccess(ret)) {
+      return ret;
+    }
+    if (ret != Pad.NOT_LINKED) {
+      return ret;
+    }
     if (chain != null) {
       for (OggStream ostream : chain.streams) {
         ret = ostream.lastRet;
-        if (ret != Pad.NOT_LINKED) return ret;
+        if (ret != Pad.NOT_LINKED) {
+          return ret;
+        }
       }
     }
     return ret;
@@ -478,14 +521,16 @@ public class OggDemux extends Element {
 
   @Override
   public int typeFind(byte[] data, int offset, int length) {
-    if (MemUtils.startsWith(data, offset, length, signature)) return 10;
+    if (MemUtils.startsWith(data, offset, length, SIGNATURE)) {
+      return 10;
+    }
     return -1;
   }
 
   public OggDemux() {
     super();
-    for (int n = 0; n < payload_names.length; ++n) {
-      String name = "com.fluendo.plugin." + payload_names[n];
+    for (int n = 0; n < PAYLOAD_NAMES.length; ++n) {
+      String name = "com.fluendo.plugin." + PAYLOAD_NAMES[n];
       try {
         Class<?> c = Class.forName(name);
         Debug.log(Debug.INFO, "Ogg payload " + name + " found");

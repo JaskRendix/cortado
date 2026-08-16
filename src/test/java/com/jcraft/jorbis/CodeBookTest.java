@@ -30,7 +30,7 @@ class CodeBookTest {
   private CodeBook makeMinimalCodeBook() {
     CodeBook cb = new CodeBook();
     StaticCodeBook scb = makeMinimalSCB();
-    assertEquals(0, cb.init_decode(scb));
+    assertEquals(0, cb.initDecode(scb));
     return cb;
   }
 
@@ -51,8 +51,8 @@ class CodeBookTest {
     CodeBook cb = makeMinimalCodeBook();
     assertEquals(4, cb.entries);
     assertEquals(2, cb.dim);
-    assertNotNull(cb.valuelist);
-    assertNotNull(cb.decode_tree);
+    assertNotNull(cb.valueList);
+    assertNotNull(cb.decodeTree);
   }
 
   @Test
@@ -63,8 +63,8 @@ class CodeBookTest {
     int best = cb.errorv(vec);
 
     assertTrue(best >= 0 && best < cb.entries);
-    assertEquals(cb.valuelist[best * cb.dim], vec[0]);
-    assertEquals(cb.valuelist[best * cb.dim + 1], vec[1]);
+    assertEquals(cb.valueList[best * cb.dim], vec[0]);
+    assertEquals(cb.valueList[best * cb.dim + 1], vec[1]);
   }
 
   @Test
@@ -81,7 +81,7 @@ class CodeBookTest {
     float[] a = new float[10];
     Buffer b = makeBufferWithBits(0, 1, 0, 1, 0, 1);
 
-    int ret = cb.decodevs_add(a, 0, b, 4);
+    int ret = cb.decodevsAdd(a, 0, b, 4);
     assertTrue(ret == 0 || ret == -1);
   }
 
@@ -93,7 +93,7 @@ class CodeBookTest {
     float[] a = new float[9];
     Buffer b = makeBufferWithBits(1, 0, 1, 0);
 
-    int ret = cb.decodev_add(a, 0, b, 9);
+    int ret = cb.decodevAdd(a, 0, b, 9);
     assertTrue(ret == 0 || ret == -1);
   }
 
@@ -103,7 +103,7 @@ class CodeBookTest {
     float[] a = new float[8];
     Buffer b = makeBufferWithBits(1, 0, 1, 0);
 
-    int ret = cb.decodev_set(a, 0, b, 4);
+    int ret = cb.decodevAdd(a, 0, b, 4);
     assertTrue(ret == 0 || ret == -1);
   }
 
@@ -114,7 +114,7 @@ class CodeBookTest {
 
     Buffer b = makeBufferWithBits(1, 0, 1, 0);
 
-    int ret = cb.decodevv_add(a, 0, 2, b, 4);
+    int ret = cb.decodevvAdd(a, 0, 2, b, 4);
     assertTrue(ret == 0 || ret == -1);
   }
 
@@ -146,12 +146,12 @@ class CodeBookTest {
   void makeWordsShouldReturnNullOnInvalidLengths() {
     // Truly invalid: overlapping codewords
     int[] lengths = {1, 1, 1};
-    assertNull(CodeBook.make_words(lengths, lengths.length));
+    assertNull(CodeBook.makeWords(lengths, lengths.length));
   }
 
   @Test
   void makeDecodeTreeShouldReturnNonNullTree() {
     CodeBook cb = makeMinimalCodeBook();
-    assertNotNull(cb.decode_tree);
+    assertNotNull(cb.decodeTree);
   }
 }

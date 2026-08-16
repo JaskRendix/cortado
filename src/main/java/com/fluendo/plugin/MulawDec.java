@@ -22,7 +22,8 @@ import com.fluendo.jst.*;
 import com.fluendo.utils.*;
 
 public class MulawDec extends Element {
-  private int rate, channels;
+  private int rate;
+  private int channels;
 
   private final Pad srcPad =
       new Pad(Pad.SRC, "src") {
@@ -39,20 +40,15 @@ public class MulawDec extends Element {
           boolean result;
 
           switch (event.getType()) {
-            case FLUSH_START:
+            case FLUSH_START -> {
               result = srcPad.pushEvent(event);
               synchronized (streamLock) {
                 Debug.log(Debug.INFO, "synced " + this);
               }
-              break;
-            case FLUSH_STOP:
-              result = srcPad.pushEvent(event);
-              break;
-            case EOS:
-            case NEWSEGMENT:
-            default:
-              result = srcPad.pushEvent(event);
-              break;
+            }
+            case FLUSH_STOP -> result = srcPad.pushEvent(event);
+            case EOS, NEWSEGMENT -> result = srcPad.pushEvent(event);
+            default -> result = srcPad.pushEvent(event);
           }
           return result;
         }

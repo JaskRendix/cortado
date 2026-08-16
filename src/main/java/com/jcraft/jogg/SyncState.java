@@ -66,7 +66,9 @@ public class SyncState {
   }
 
   public int wrote(int bytes) {
-    if (fill + bytes > storage) return -1;
+    if (fill + bytes > storage) {
+      return -1;
+    }
     fill += bytes;
     return 0;
   }
@@ -80,8 +82,11 @@ public class SyncState {
     int bytes = fill - returned;
 
     if (headerBytes == 0) {
-      int _headerbytes, i;
-      if (bytes < 27) return 0;
+      int headerBytesLocal;
+      int i;
+      if (bytes < 27) {
+        return 0;
+      }
 
       if (data[page] != 'O'
           || data[page + 1] != 'g'
@@ -97,21 +102,27 @@ public class SyncState {
             break;
           }
         }
-        if (next == 0) next = fill;
+        if (next == 0) {
+          next = fill;
+        }
 
         returned = next;
         return -(next - page);
       }
-      _headerbytes = (data[page + 26] & 0xff) + 27;
-      if (bytes < _headerbytes) return 0;
+      headerBytesLocal = (data[page + 26] & 0xff) + 27;
+      if (bytes < headerBytesLocal) {
+        return 0;
+      }
 
       for (i = 0; i < (data[page + 26] & 0xff); i++) {
         bodyBytes += (data[page + 27 + i] & 0xff);
       }
-      headerBytes = _headerbytes;
+      headerBytes = headerBytesLocal;
     }
 
-    if (bodyBytes + headerBytes > bytes) return 0;
+    if (bodyBytes + headerBytes > bytes) {
+      return 0;
+    }
 
     synchronized (chksum) {
       System.arraycopy(data, page + 22, chksum, 0, 4);
@@ -145,7 +156,9 @@ public class SyncState {
             break;
           }
         }
-        if (next == 0) next = fill;
+        if (next == 0) {
+          next = fill;
+        }
         returned = next;
         return -(next - page);
       }

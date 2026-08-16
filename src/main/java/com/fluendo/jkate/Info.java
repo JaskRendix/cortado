@@ -593,7 +593,7 @@ public class Info {
 
     switch (probe) {
       case 0:
-        if (op.b_o_s == 0) {
+        if (op.bos == 0) {
           return Result.KATE_E_BAD_PACKET;
         }
         ret = unpackInfo(opb);

@@ -202,11 +202,11 @@ class Residue0 extends FuncResidue {
               CodeBook stagebook = look.fullbooks[look.partbooks[partword[j][l][k]][s]];
               if (stagebook != null) {
                 if (decodepart == 0) {
-                  if (stagebook.decodevs_add(in[j], offset, vb.opb, samples_per_partition) == -1) {
+                  if (stagebook.decodevsAdd(in[j], offset, vb.opb, samples_per_partition) == -1) {
                     return 0;
                   }
                 } else if (decodepart == 1) {
-                  if (stagebook.decodev_add(in[j], offset, vb.opb, samples_per_partition) == -1) {
+                  if (stagebook.decodevAdd(in[j], offset, vb.opb, samples_per_partition) == -1) {
                     return 0;
                   }
                 }

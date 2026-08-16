@@ -140,7 +140,7 @@ public class StreamState {
     lacingFill += lacingVal;
     packetNo++;
 
-    if (op.e_o_s != 0) {
+    if (op.eos != 0) {
       e_o_s = 1;
     }
     return 0;
@@ -164,14 +164,14 @@ public class StreamState {
 
     op.packetBase = bodyData;
     op.packet = bodyReturned;
-    op.e_o_s = lacingVals[ptr] & 0x200;
-    op.b_o_s = lacingVals[ptr] & 0x100;
+    op.eos = lacingVals[ptr] & 0x200;
+    op.bos = lacingVals[ptr] & 0x100;
 
     while (size == 255) {
       int val = lacingVals[++ptr];
       size = val & 0xff;
       if ((val & 0x200) != 0) {
-        op.e_o_s = 0x200;
+        op.eos = 0x200;
       }
       bytes += size;
     }
@@ -199,9 +199,9 @@ public class StreamState {
     int continued = og.continued();
     int bos = og.bos();
     int eos = og.eos();
-    long granulepos = og.granulepos();
-    int _serialno = og.serialno();
-    int _pageno = og.pageno();
+    long granuleposLocal = og.granulepos();
+    int serialnoLocal = og.serialno();
+    int pagenoLocal = og.pageno();
     int segments = headerBase[header + 26] & 0xff;
 
     int lr = lacingReturned;
@@ -225,13 +225,13 @@ public class StreamState {
       lacingReturned = 0;
     }
 
-    if (_serialno != serialno || version > 0) {
+    if (serialnoLocal != serialno || version > 0) {
       return -1;
     }
 
     lacingExpand(segments + 1);
 
-    if (_pageno != pageno) {
+    if (pagenoLocal != pageno) {
       for (int i = lacingPacket; i < lacingFill; i++) {
         bodyFill -= lacingVals[i] & 0xff;
       }
@@ -288,7 +288,7 @@ public class StreamState {
     }
 
     if (saved != -1) {
-      granuleVals[saved] = granulepos;
+      granuleVals[saved] = granuleposLocal;
     }
 
     if (eos != 0) {
@@ -298,7 +298,7 @@ public class StreamState {
       }
     }
 
-    pageno = _pageno + 1;
+    pageno = pagenoLocal + 1;
     return 0;
   }
 
@@ -323,7 +323,9 @@ public class StreamState {
       }
     } else {
       for (vals = 0; vals < maxvals; vals++) {
-        if (acc > 4096) break;
+        if (acc > 4096) {
+          break;
+        }
         acc += (lacingVals[vals] & 0x0ff);
         granulePos = granuleVals[vals];
       }
@@ -334,9 +336,15 @@ public class StreamState {
     header[4] = 0x00;
 
     header[5] = 0x00;
-    if ((lacingVals[0] & 0x100) == 0) header[5] |= 0x01;
-    if (b_o_s == 0) header[5] |= 0x02;
-    if (e_o_s != 0 && lacingFill == vals) header[5] |= 0x04;
+    if ((lacingVals[0] & 0x100) == 0) {
+      header[5] |= 0x01;
+    }
+    if (b_o_s == 0) {
+      header[5] |= 0x02;
+    }
+    if (e_o_s != 0 && lacingFill == vals) {
+      header[5] |= 0x04;
+    }
     b_o_s = 1;
 
     for (int i = 6; i < 14; i++) {
@@ -344,17 +352,19 @@ public class StreamState {
       granulePos >>>= 8;
     }
 
-    int _serialno = serialno;
+    int serialnoLocal = serialno;
     for (int i = 14; i < 18; i++) {
-      header[i] = (byte) _serialno;
-      _serialno >>>= 8;
+      header[i] = (byte) serialnoLocal;
+      serialnoLocal >>>= 8;
     }
 
-    if (pageno == -1) pageno = 0;
-    int _pageno = pageno++;
+    if (pageno == -1) {
+      pageno = 0;
+    }
+    int pagenoLocal = pageno++;
     for (int i = 18; i < 22; i++) {
-      header[i] = (byte) _pageno;
-      _pageno >>>= 8;
+      header[i] = (byte) pagenoLocal;
+      pagenoLocal >>>= 8;
     }
 
     header[22] = 0;

@@ -91,26 +91,26 @@ public class Overlay extends Element {
    * image. By default, the image is passed without alteration.
    */
   protected void overlay(Buffer buf) {
-    /* straight pass through by default */
+    // straight pass through by default
   }
 
   @Override
   public boolean setProperty(String name, java.lang.Object value) {
-    if ("component".equals(name)) {
-      component = (Component) value;
-    } else {
-      return super.setProperty(name, value);
+    switch (name) {
+      case "component" -> component = (Component) value;
+      default -> {
+        return super.setProperty(name, value);
+      }
     }
     return true;
   }
 
   @Override
   public java.lang.Object getProperty(String name) {
-    if ("component".equals(name)) {
-      return component;
-    } else {
-      return super.getProperty(name);
-    }
+    return switch (name) {
+      case "component" -> component;
+      default -> super.getProperty(name);
+    };
   }
 
   @Override

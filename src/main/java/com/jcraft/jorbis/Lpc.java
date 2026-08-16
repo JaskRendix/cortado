@@ -28,10 +28,10 @@ package com.jcraft.jorbis;
 public class Lpc {
 
   // en/decode lookups
-  private final Drft fft = new Drft();
+  public final Drft fft = new Drft();
 
-  private int ln;
-  private int m;
+  public int ln;
+  public int m;
 
   public Lpc() {}
 
@@ -108,7 +108,7 @@ public class Lpc {
   public float lpcFromCurve(float[] curve, float[] lpc) {
     int n = ln;
     float[] work = new float[n + n];
-    float fscale = (float) (.5 / n);
+    float fscale = (float) (0.5 / n);
     int i, j;
 
     // input is a real curve. make it complex-real
@@ -135,7 +135,7 @@ public class Lpc {
   }
 
   public void init(int mapped, int m) {
-    ln = mapped;
+    this.ln = mapped;
     this.m = m;
 
     // we cheat decoding the LPC spectrum via FFTs
@@ -183,21 +183,5 @@ public class Lpc {
       float a = real + unit;
       curve[i] = (float) (1.0 / fastHypot(a, imag));
     }
-  }
-
-  public int getLn() {
-    return ln;
-  }
-
-  public void setLn(int ln) {
-    this.ln = ln;
-  }
-
-  public int getM() {
-    return m;
-  }
-
-  public void setM(int m) {
-    this.m = m;
   }
 }

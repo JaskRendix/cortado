@@ -86,7 +86,7 @@ class StreamStateTest {
     p.packetBase = new byte[] {1};
     p.packet = 0;
     p.bytes = 1;
-    p.e_o_s = 1;
+    p.eos = 1;
     ss.packetin(p);
     assertEquals(1, ss.e_o_s);
   }
@@ -163,7 +163,7 @@ class StreamStateTest {
     p.packetBase = new byte[300];
     p.packet = 0;
     p.bytes = 300;
-    p.e_o_s = 1;
+    p.eos = 1;
     p.granulepos = 999;
     ss.packetin(p);
 
@@ -176,7 +176,7 @@ class StreamStateTest {
     Packet out = new Packet();
     readerState.packetout(out);
 
-    assertEquals(0x200, out.e_o_s);
+    assertEquals(0x200, out.eos);
   }
 
   @Test

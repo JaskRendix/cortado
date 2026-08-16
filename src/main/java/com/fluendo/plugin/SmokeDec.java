@@ -50,18 +50,14 @@ public class SmokeDec extends Element {
           boolean result;
 
           switch (event.getType()) {
-            case FLUSH_START:
+            case FLUSH_START -> {
               result = srcPad.pushEvent(event);
               synchronized (streamLock) {
                 LOGGER.info("synced " + this);
               }
-              break;
-            case FLUSH_STOP:
-            case EOS:
-            case NEWSEGMENT:
-            default:
-              result = srcPad.pushEvent(event);
-              break;
+            }
+            case FLUSH_STOP, EOS, NEWSEGMENT -> result = srcPad.pushEvent(event);
+            default -> result = srcPad.pushEvent(event);
           }
           return result;
         }
@@ -112,20 +108,21 @@ public class SmokeDec extends Element {
 
   @Override
   public boolean setProperty(String name, java.lang.Object value) {
-    if (name.equals("component")) {
-      component = (Component) value;
-    } else {
-      return false;
+    switch (name) {
+      case "component" -> component = (Component) value;
+      default -> {
+        return false;
+      }
     }
     return true;
   }
 
   @Override
   public java.lang.Object getProperty(String name) {
-    if (name.equals("component")) {
-      return component;
-    }
-    return null;
+    return switch (name) {
+      case "component" -> component;
+      default -> null;
+    };
   }
 
   @Override

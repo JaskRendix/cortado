@@ -86,7 +86,9 @@ public class AudioSinkJ2 extends AudioSink {
         if (desc.indexOf("ALSA") >= 0 || vendor.indexOf("ALSA") >= 0) {
           /* Unfortunately, the alsa devices include useless ones that we have
            * no sane way of filtering out! Hence this insanity. */
-          if (desc.indexOf("IEC958") >= 0) continue;
+          if (desc.indexOf("IEC958") >= 0) {
+            continue;
+          }
 
           try {
             Line.Info[] lines = AudioSystem.getMixer(mixerInfo).getSourceLineInfo(info);
@@ -94,7 +96,9 @@ public class AudioSinkJ2 extends AudioSink {
             for (Line.Info lineInfo : lines) {
               Debug.log(Debug.INFO, "Mixer supports line: " + lineInfo.toString());
               AudioFormat[] formats = ((DataLine.Info) lineInfo).getFormats();
-              for (AudioFormat fmt : formats) Debug.log(Debug.INFO, "Format: " + fmt.toString());
+              for (AudioFormat fmt : formats) {
+                Debug.log(Debug.INFO, "Format: " + fmt.toString());
+              }
             }
             Debug.log(Debug.INFO, "Attempting to get a line from ALSA mixer");
             targetLine = (SourceDataLine) AudioSystem.getMixer(mixerInfo).getLine(info);

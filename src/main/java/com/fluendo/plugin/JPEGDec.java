@@ -26,7 +26,8 @@ public class JPEGDec extends Element {
   private Toolkit toolkit;
   private Component component;
   private MediaTracker mediaTracker;
-  private int width, height;
+  private int width;
+  private int height;
 
   private final Pad srcpad =
       new Pad(Pad.SRC, "src") {
@@ -43,20 +44,15 @@ public class JPEGDec extends Element {
           boolean result;
 
           switch (event.getType()) {
-            case FLUSH_START:
+            case FLUSH_START -> {
               result = srcpad.pushEvent(event);
               synchronized (streamLock) {
                 Debug.log(Debug.INFO, "synced " + this);
               }
-              break;
-            case FLUSH_STOP:
-              result = srcpad.pushEvent(event);
-              break;
-            case EOS:
-            case NEWSEGMENT:
-            default:
-              result = srcpad.pushEvent(event);
-              break;
+            }
+            case FLUSH_STOP -> result = srcpad.pushEvent(event);
+            case EOS, NEWSEGMENT -> result = srcpad.pushEvent(event);
+            default -> result = srcpad.pushEvent(event);
           }
           return result;
         }
@@ -68,7 +64,8 @@ public class JPEGDec extends Element {
 
           img = toolkit.createImage(buf.data, buf.offset, buf.length);
           if (img != null) {
-            int imgWidth, imgHeight;
+            int imgWidth;
+            int imgHeight;
 
             try {
               mediaTracker.addImage(img, 0);
@@ -122,12 +119,11 @@ public class JPEGDec extends Element {
     int res;
 
     switch (transition) {
-      case STOP_PAUSE:
+      case STOP_PAUSE -> {
         width = -1;
         height = -1;
-        break;
-      default:
-        break;
+      }
+      default -> {}
     }
 
     res = super.changeState(transition);

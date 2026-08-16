@@ -75,7 +75,9 @@ public class HTTPSrc extends Element {
             result = false;
             try {
               input = getInputStream(position);
-              if (input != null) result = true;
+              if (input != null) {
+                result = true;
+              }
             } catch (Exception e) {
               e.printStackTrace();
             }
@@ -98,12 +100,8 @@ public class HTTPSrc extends Element {
           boolean res;
 
           switch (event.getType()) {
-            case SEEK:
-              res = doSeek(event);
-              break;
-            default:
-              res = super.eventFunc(event);
-              break;
+            case SEEK -> res = doSeek(event);
+            default -> res = super.eventFunc(event);
           }
           return res;
         }
@@ -131,8 +129,11 @@ public class HTTPSrc extends Element {
           if (contentLength != -1) {
             if (microSoft) {
               /* don't read the last byte in microsoft VM, it screws up the socket completely. */
-              if (contentLength == 0) left = 0;
-              else left = (contentLength - 1) - offset;
+              if (contentLength == 0) {
+                left = 0;
+              } else {
+                left = (contentLength - 1) - offset;
+              }
             } else {
               left = contentLength - offset;
             }
@@ -140,8 +141,11 @@ public class HTTPSrc extends Element {
             left = -1;
           }
 
-          if (left != -1 && left < readSize) toRead = (int) left;
-          else toRead = readSize;
+          if (left != -1 && left < readSize) {
+            toRead = (int) left;
+          } else {
+            toRead = readSize;
+          }
 
           // Perform the read
           Buffer data = Buffer.create();
@@ -225,18 +229,20 @@ public class HTTPSrc extends Element {
           boolean res = true;
 
           switch (mode) {
-            case MODE_NONE:
+            case MODE_NONE -> {
               postMessage(Message.newStreamStatus(this, false, Pad.WRONG_STATE, "stopping"));
               res = stopTask();
               input = null;
               outCaps = null;
               mime = null;
-              break;
-            case MODE_PUSH:
+            }
+            case MODE_PUSH -> {
               try {
                 contentLength = -1;
                 input = getInputStream(0);
-                if (input == null) res = false;
+                if (input == null) {
+                  res = false;
+                }
               } catch (Exception e) {
                 res = false;
               }
@@ -244,10 +250,8 @@ public class HTTPSrc extends Element {
                 postMessage(Message.newStreamStatus(this, true, Pad.OK, "activating"));
                 res = startTask("cortado-HTTPSrc-Stream-" + Debug.genId());
               }
-              break;
-            default:
-              res = false;
-              break;
+            }
+            default -> res = false;
           }
           return res;
         }
@@ -261,9 +265,13 @@ public class HTTPSrc extends Element {
     uc.setRequestProperty("Connection", "Keep-Alive");
 
     String range;
-    if (offset != 0 && contentLength != -1) range = "bytes=" + offset + "-" + (contentLength - 1);
-    else if (offset != 0) range = "bytes=" + offset + "-";
-    else range = null;
+    if (offset != 0 && contentLength != -1) {
+      range = "bytes=" + offset + "-" + (contentLength - 1);
+    } else if (offset != 0) {
+      range = "bytes=" + offset + "-";
+    } else {
+      range = null;
+    }
     if (range != null) {
       Debug.info("doing range: " + range);
       uc.setRequestProperty("Range", range);

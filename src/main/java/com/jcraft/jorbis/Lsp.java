@@ -37,13 +37,13 @@ http://www2.xtdl.com/~rothwlr/lsfpaper/lsfpage.html
 
 public class Lsp {
 
-  public static final float M_PI = (float) (3.1415926539);
+  public static final float M_PI = (float) 3.1415926539;
 
   public Lsp() {}
 
   public static void lspToCurve(
       float[] curve, int[] map, int n, int ln, float[] lsp, int m, float amp, float ampoffset) {
-    float wdel = M_PI / ln;
+    float wDel = M_PI / ln;
     for (int i = 0; i < m; i++) {
       lsp[i] = Lookup.coslook(lsp[i]);
     }
@@ -52,9 +52,9 @@ public class Lsp {
     int i = 0;
     while (i < n) {
       int k = map[i];
-      float p = .7071067812f;
-      float q = .7071067812f;
-      float w = Lookup.coslook(wdel * k);
+      float p = 0.7071067812f;
+      float q = 0.7071067812f;
+      float w = Lookup.coslook(wDel * k);
 
       for (int j = 0; j < m2; j += 2) {
         q *= lsp[j] - w;
@@ -76,7 +76,7 @@ public class Lsp {
       q = p + q;
       int hx = Float.floatToIntBits(q);
       int ix = 0x7fffffff & hx;
-      int qexp = 0;
+      int qExp = 0;
 
       if (ix >= 0x7f800000 || (ix == 0)) {
         // 0, inf, nan
@@ -85,14 +85,14 @@ public class Lsp {
           q *= 3.3554432000e+07; // 0x4c000000
           hx = Float.floatToIntBits(q);
           ix = 0x7fffffff & hx;
-          qexp = -25;
+          qExp = -25;
         }
-        qexp += ((ix >>> 23) - 126);
+        qExp += ((ix >>> 23) - 126);
         hx = (hx & 0x807fffff) | 0x3f000000;
         q = Float.intBitsToFloat(hx);
       }
 
-      q = Lookup.fromdBlook(amp * Lookup.invsqlook(q) * Lookup.invsq2explook(qexp + m) - ampoffset);
+      q = Lookup.fromdBlook(amp * Lookup.invsqlook(q) * Lookup.invsq2explook(qExp + m) - ampoffset);
 
       do {
         curve[i++] *= q;

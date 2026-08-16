@@ -43,11 +43,11 @@ public class MultipartDemux extends Element {
   private byte[] boundary = boundaryString.getBytes(StandardCharsets.UTF_8);
   private int boundaryLen = boundary.length;
 
-  private static final byte[] headerEnd = "\n".getBytes(StandardCharsets.UTF_8);
-  private static final int headerEndLen = headerEnd.length;
+  private static final byte[] HEADER_END = "\n".getBytes(StandardCharsets.UTF_8);
+  private static final int HEADER_END_LEN = HEADER_END.length;
 
-  private static final String contentType = "content-type: ";
-  private static final int contentTypeLen = contentType.length();
+  private static final String CONTENT_TYPE = "content-type: ";
+  private static final int CONTENT_TYPE_LEN = CONTENT_TYPE.length();
 
   private MultipartStream currentStream = null;
 
@@ -201,8 +201,10 @@ public class MultipartDemux extends Element {
           while (true) {
             prevHdr = headerStart;
 
-            int pos = findBytes(headerStart, headerEnd, headerEndLen);
-            if (pos == -1) return false;
+            int pos = findBytes(headerStart, HEADER_END, HEADER_END_LEN);
+            if (pos == -1) {
+              return false;
+            }
 
             if (pos == prevHdr) {
               /* all headers parsed */
@@ -213,8 +215,8 @@ public class MultipartDemux extends Element {
                 new String(accum, headerStart, pos - headerStart, StandardCharsets.UTF_8);
             header = header.toLowerCase();
 
-            if (header.startsWith(contentType)) {
-              String mime = header.substring(contentTypeLen).trim();
+            if (header.startsWith(CONTENT_TYPE)) {
+              String mime = header.substring(CONTENT_TYPE_LEN).trim();
 
               currentStream = findStream(mime);
               if (currentStream == null) {
@@ -246,19 +248,25 @@ public class MultipartDemux extends Element {
 
           switch (state) {
             case STATE_FIND_BOUNDARY -> {
-              if (!findBoundary()) break;
+              if (!findBoundary()) {
+                break;
+              }
               /* skip boundary */
               flushBytes(boundary.length);
               state = STATE_PARSE_HEADERS;
               /* fallthrough */
             }
             case STATE_PARSE_HEADERS -> {
-              if (!parseHeaders()) break;
+              if (!parseHeaders()) {
+                break;
+              }
               state = STATE_FIND_DATA_END;
               /* fallthrough */
             }
             case STATE_FIND_DATA_END -> {
-              if (!findDataEnd()) break;
+              if (!findDataEnd()) {
+                break;
+              }
 
               com.fluendo.jst.Buffer data = com.fluendo.jst.Buffer.create();
               int dataSize = dataEnd - accumPos;

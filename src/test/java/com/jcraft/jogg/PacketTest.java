@@ -12,8 +12,8 @@ class PacketTest {
     assertNull(p.packetBase);
     assertEquals(0, p.packet);
     assertEquals(0, p.bytes);
-    assertEquals(0, p.b_o_s);
-    assertEquals(0, p.e_o_s);
+    assertEquals(0, p.bos);
+    assertEquals(0, p.eos);
     assertEquals(0L, p.granulepos);
     assertEquals(0L, p.packetNo);
   }
@@ -88,15 +88,15 @@ class PacketTest {
   @Test
   void testBOSFlag() {
     Packet p = new Packet();
-    p.b_o_s = 1;
-    assertEquals(1, p.b_o_s);
+    p.bos = 1;
+    assertEquals(1, p.bos);
   }
 
   @Test
   void testEOSFlag() {
     Packet p = new Packet();
-    p.e_o_s = 1;
-    assertEquals(1, p.e_o_s);
+    p.eos = 1;
+    assertEquals(1, p.eos);
   }
 
   @Test
@@ -155,14 +155,14 @@ class PacketTest {
     p.packetBase = new byte[] {1, 2, 3, 4};
     p.packet = 1;
     p.bytes = 2;
-    p.b_o_s = 1;
-    p.e_o_s = 0;
+    p.bos = 1;
+    p.eos = 0;
     p.granulepos = 123456;
     p.packetNo = 999;
     assertEquals(1, p.packet);
     assertEquals(2, p.bytes);
-    assertEquals(1, p.b_o_s);
-    assertEquals(0, p.e_o_s);
+    assertEquals(1, p.bos);
+    assertEquals(0, p.eos);
     assertEquals(123456, p.granulepos);
     assertEquals(999, p.packetNo);
   }

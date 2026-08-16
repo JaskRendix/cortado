@@ -93,29 +93,32 @@ public class Selector extends Element {
   /** The selected sink may be selected via the "selected" property - negative to select nothing */
   @Override
   public boolean setProperty(String name, java.lang.Object value) {
-    if (name.equals("selected")) {
-      int newSelected = Integer.parseInt(value.toString());
-      Debug.info(
-          "Selector: request to select "
-              + newSelected
-              + " (from "
-              + selected
-              + "), within 0-"
-              + (sinks.size() - 1));
+    switch (name) {
+      case "selected" -> {
+        int newSelected = Integer.parseInt(value.toString());
+        Debug.info(
+            "Selector: request to select "
+                + newSelected
+                + " (from "
+                + selected
+                + "), within 0-"
+                + (sinks.size() - 1));
 
-      if (newSelected != selected) {
-        srcPad.pushEvent(Event.newFlushStart());
-        if (newSelected < 0 || newSelected >= sinks.size()) {
-          selected = -1;
-          selectedPad = null;
-        } else {
-          selected = newSelected;
-          selectedPad = sinks.get(selected);
+        if (newSelected != selected) {
+          srcPad.pushEvent(Event.newFlushStart());
+          if (newSelected < 0 || newSelected >= sinks.size()) {
+            selected = -1;
+            selectedPad = null;
+          } else {
+            selected = newSelected;
+            selectedPad = sinks.get(selected);
+          }
+          srcPad.pushEvent(Event.newFlushStop());
         }
-        srcPad.pushEvent(Event.newFlushStop());
       }
-    } else {
-      return super.setProperty(name, value);
+      default -> {
+        return super.setProperty(name, value);
+      }
     }
 
     return true;
@@ -123,11 +126,10 @@ public class Selector extends Element {
 
   @Override
   public java.lang.Object getProperty(String name) {
-    if (name.equals("selected")) {
-      return Integer.valueOf(selected);
-    } else {
-      return super.getProperty(name);
-    }
+    return switch (name) {
+      case "selected" -> Integer.valueOf(selected);
+      default -> super.getProperty(name);
+    };
   }
 
   @Override
