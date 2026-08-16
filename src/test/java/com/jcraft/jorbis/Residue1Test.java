@@ -19,7 +19,7 @@ class Residue1Test {
 
   private Block newBlock(DspState vd) {
     Block vb = new Block(vd);
-    vb.opb.writeinit();
+    vb.opb.writeInit();
     return vb;
   }
 
@@ -29,7 +29,7 @@ class Residue1Test {
     Block vb = newBlock(vd);
 
     vb.opb.write(0, 1);
-    vb.opb.readinit(vb.opb.buffer(), vb.opb.bytes());
+    vb.opb.readInit(vb.opb.buffer(), vb.opb.bytes());
 
     InfoResidue0 info = new InfoResidue0();
     info.begin = 0;

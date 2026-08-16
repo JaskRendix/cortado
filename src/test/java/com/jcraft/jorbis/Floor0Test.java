@@ -20,13 +20,13 @@ class Floor0Test {
 
   private Block newBlock(DspState vd) {
     Block vb = new Block(vd);
-    vb.opb.writeinit(); // required before write()
+    vb.opb.writeInit(); // required before write()
     return vb;
   }
 
   private Buffer newWriteBuffer() {
     Buffer b = new Buffer();
-    b.writeinit(); // allocates internal buffer
+    b.writeInit(); // allocates internal buffer
     return b;
   }
 
@@ -59,13 +59,13 @@ class Floor0Test {
     info.books[1] = 7;
 
     Buffer buf = new Buffer();
-    buf.writeinit();
+    buf.writeInit();
 
     // Use Floor0.pack exactly as the codec expects
     floor.pack(info, buf);
 
     // Switch buffer from write mode → read mode
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
 
     Info vi = new Info();
     vi.setBooks(16);

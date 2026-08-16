@@ -566,7 +566,7 @@ public class Info {
     long ret;
     Buffer opb = new Buffer();
 
-    opb.readinit(op.packet_base, op.packet, op.bytes);
+    opb.readInit(op.packet_base, op.packet, op.bytes);
 
     byte[] id = new byte[7];
     int typeflag = opb.read(8);

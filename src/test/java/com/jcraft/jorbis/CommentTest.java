@@ -88,7 +88,7 @@ class CommentTest {
   @Test
   void unpackShouldFailOnNegativeVendorLength() {
     Buffer b = new Buffer();
-    b.readinit(new byte[] {(byte) 0xFF}, 0, 1); // read(32) → -1
+    b.readInit(new byte[] {(byte) 0xFF}, 0, 1); // read(32) → -1
 
     Comment c = new Comment();
     assertEquals(-1, c.unpack(b));
@@ -99,7 +99,7 @@ class CommentTest {
   @Test
   void unpackShouldFailIfFinalBitIsNotOne() {
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
 
     // vendor length = 3
     b.write(3, 32);
@@ -117,7 +117,7 @@ class CommentTest {
 
     byte[] data = b.buffer();
     Buffer read = new Buffer();
-    read.readinit(data, 0, data.length);
+    read.readInit(data, 0, data.length);
 
     Comment c = new Comment();
     assertEquals(-1, c.unpack(read));
@@ -130,7 +130,7 @@ class CommentTest {
     c.add_tag("TITLE", "Symphony");
 
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
 
     assertEquals(0, c.pack(b));
 

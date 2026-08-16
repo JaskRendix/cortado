@@ -20,13 +20,13 @@ class Residue0Test {
 
   private Block newBlock(DspState vd) {
     Block vb = new Block(vd);
-    vb.opb.writeinit();
+    vb.opb.writeInit();
     return vb;
   }
 
   private Buffer newWriteBuffer() {
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     return b;
   }
 
@@ -52,7 +52,7 @@ class Residue0Test {
     Info vi = new Info();
     vi.setBooks(16); // Max books allowed is 16
 
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     Object result = residue.unpack(vi, buf);
     assertNull(result);
   }
@@ -78,7 +78,7 @@ class Residue0Test {
     Info vi = new Info();
     vi.setBooks(16);
 
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     Object result = residue.unpack(vi, buf);
     assertNull(result);
   }
@@ -99,7 +99,7 @@ class Residue0Test {
     Buffer buf = newWriteBuffer();
     residue.pack(info, buf);
 
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
 
     Info vi = new Info();
     vi.setBooks(10);
@@ -172,7 +172,7 @@ class Residue0Test {
 
     // Write data that forces a read/decode failure (-1)
     vb.opb.write(0, 1);
-    vb.opb.readinit(vb.opb.buffer(), vb.opb.bytes());
+    vb.opb.readInit(vb.opb.buffer(), vb.opb.bytes());
 
     InfoResidue0 info = new InfoResidue0();
     info.begin = 0;

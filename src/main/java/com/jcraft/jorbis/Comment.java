@@ -185,7 +185,7 @@ public class Comment {
 
   public int header_out(Packet op) {
     Buffer opb = new Buffer();
-    opb.writeinit();
+    opb.writeInit();
 
     if (pack(opb) != 0) return OV_EIMPL;
 

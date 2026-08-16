@@ -466,7 +466,7 @@ public class Info {
     Buffer opb = new Buffer();
 
     if (op != null) {
-      opb.readinit(op.packet_base, op.packet, op.bytes);
+      opb.readInit(op.packet_base, op.packet, op.bytes);
 
       int packtype = opb.read(8);
       byte[] buffer = new byte[6];
@@ -567,7 +567,7 @@ public class Info {
     Buffer opb = new Buffer();
     int mode;
 
-    opb.readinit(op.packet_base, op.packet, op.bytes);
+    opb.readInit(op.packet_base, op.packet, op.bytes);
 
     if (opb.read(1) != 0) {
       return OV_ENOTAUDIO;

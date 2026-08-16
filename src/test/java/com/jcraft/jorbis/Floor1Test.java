@@ -20,13 +20,13 @@ class Floor1Test {
 
   private Block newBlock(DspState vd) {
     Block vb = new Block(vd);
-    vb.opb.writeinit();
+    vb.opb.writeInit();
     return vb;
   }
 
   private Buffer newWriteBuffer() {
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     return b;
   }
 
@@ -46,7 +46,7 @@ class Floor1Test {
     Info vi = new Info();
     vi.setBooks(16);
 
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     assertNull(floor.unpack(vi, buf));
   }
 
@@ -66,7 +66,7 @@ class Floor1Test {
     Info vi = new Info();
     vi.setBooks(16);
 
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     assertNull(floor.unpack(vi, buf));
   }
 
@@ -91,7 +91,7 @@ class Floor1Test {
     Buffer buf = newWriteBuffer();
     floor.pack(info, buf);
 
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
 
     Info vi = new Info();
     vi.setBooks(256);
@@ -147,7 +147,7 @@ class Floor1Test {
     vb.opb.write(200, 8);
     vb.opb.write(200, 8);
 
-    vb.opb.readinit(vb.opb.buffer(), vb.opb.bytes());
+    vb.opb.readInit(vb.opb.buffer(), vb.opb.bytes());
 
     InfoFloor1 info = new InfoFloor1();
     info.postlist[0] = 0;

@@ -36,7 +36,7 @@ class InfoTest {
   void testCheckEOPInvalidPadding() {
     Buffer buffer = new Buffer();
     byte[] data = {(byte) 0xFF}; // Non-zero bits remaining
-    buffer.readinit(data, 0, 1);
+    buffer.readInit(data, 0, 1);
 
     int result = Info.checkEOP(buffer);
     assertEquals(Result.KATE_E_BAD_PACKET, result);
@@ -87,7 +87,7 @@ class InfoTest {
         new byte[] {
           0, 10, 20, 30, 40, 1, 0, 0 // Minimal encoded content
         };
-    buffer.readinit(data, 0, data.length);
+    buffer.readInit(data, 0, data.length);
     info.bitstream_version_major = 0;
     info.bitstream_version_minor = 2;
 

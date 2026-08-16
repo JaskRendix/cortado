@@ -62,7 +62,7 @@ public final class State {
     pbi.DecoderErrorCode = 0;
 
     if (op.bytes > 0) {
-      pbi.opb.readinit(op.packet_base, op.packet, op.bytes);
+      pbi.opb.readInit(op.packet_base, op.packet, op.bytes);
 
       /* verify that this is a video frame */
       ret = pbi.opb.readB(1);

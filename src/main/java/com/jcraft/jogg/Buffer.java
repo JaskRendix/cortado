@@ -26,6 +26,7 @@
 package com.jcraft.jogg;
 
 public class Buffer {
+
   private static final int BUFFER_INCREMENT = 256;
 
   private static final int[] MASK = {
@@ -44,7 +45,7 @@ public class Buffer {
   private int endbyte = 0;
   private int storage = 0;
 
-  public void writeinit() {
+  public void writeInit() {
     buffer = new byte[BUFFER_INCREMENT];
     ptr = 0;
     buffer[0] = (byte) '\0';
@@ -73,15 +74,15 @@ public class Buffer {
     endbyte = 0;
   }
 
-  public void writeclear() {
+  public void writeClear() {
     buffer = null;
   }
 
-  public void readinit(byte[] buf, int bytes) {
-    readinit(buf, 0, bytes);
+  public void readInit(byte[] buf, int bytes) {
+    readInit(buf, 0, bytes);
   }
 
-  public void readinit(byte[] buf, int start, int bytes) {
+  public void readInit(byte[] buf, int start, int bytes) {
     ptr = start;
     buffer = buf;
     endbit = 0;

@@ -123,7 +123,7 @@ public class Mapping0Test {
     info.residuesubmap[0] = 5;
 
     Buffer buffer = new Buffer();
-    buffer.writeinit();
+    buffer.writeInit();
 
     mapping.pack(vi, info, buffer);
     flushBits(buffer);
@@ -132,7 +132,7 @@ public class Mapping0Test {
     int endbyte = getEndByte(buffer);
 
     Buffer reader = new Buffer();
-    reader.readinit(raw, 0, endbyte);
+    reader.readInit(raw, 0, endbyte);
 
     assertEquals(0, reader.read(1)); // no submaps flag
     assertEquals(0, reader.read(1)); // no coupling
@@ -151,7 +151,7 @@ public class Mapping0Test {
     vi.setResidues(1);
 
     Buffer buffer = new Buffer();
-    buffer.writeinit();
+    buffer.writeInit();
 
     buffer.write(0, 1); // submaps=1
     buffer.write(0, 1); // no coupling
@@ -162,7 +162,7 @@ public class Mapping0Test {
     int endbyte = getEndByte(buffer);
 
     Buffer reader = new Buffer();
-    reader.readinit(raw, 0, endbyte);
+    reader.readInit(raw, 0, endbyte);
 
     assertNull(mapping.unpack(vi, reader));
   }

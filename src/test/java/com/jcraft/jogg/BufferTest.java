@@ -16,19 +16,19 @@ class BufferTest {
 
   @Test
   void testWriteAndReadSingleByte() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0xAB, 8);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     assertEquals(0xAB, buf.read(8));
   }
 
   @Test
   void testWriteAndReadMultipleBytes() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0x12, 8);
     buf.write(0x34, 8);
     buf.write(0x56, 8);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     assertEquals(0x12, buf.read(8));
     assertEquals(0x34, buf.read(8));
     assertEquals(0x56, buf.read(8));
@@ -36,11 +36,11 @@ class BufferTest {
 
   @Test
   void testWriteBitsCrossingByteBoundary() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0b101, 3);
     buf.write(0b1110, 4);
     buf.write(0b1, 1);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     assertEquals(0b101, buf.read(3));
     assertEquals(0b1110, buf.read(4));
     assertEquals(0b1, buf.read(1));
@@ -48,25 +48,25 @@ class BufferTest {
 
   @Test
   void testWrite32Bits() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0xDEADBEEF, 32);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     assertEquals(0xDEADBEEF, buf.read(32));
   }
 
   @Test
   void testWriteLessThan32BitsMasking() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0xFFFF, 12);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     assertEquals(0xFFF, buf.read(12));
   }
 
   @Test
   void testLookDoesNotAdvancePointer() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0b11001100, 8);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     assertEquals(0b1100, buf.look(4));
     assertEquals(0b1100, buf.look(4));
     assertEquals(0b1100, buf.read(4));
@@ -74,9 +74,9 @@ class BufferTest {
 
   @Test
   void testLook1() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0b10110000, 8);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     assertEquals(0, buf.look1());
     assertEquals(0, buf.read1());
     assertEquals(0, buf.look1());
@@ -84,19 +84,19 @@ class BufferTest {
 
   @Test
   void testAdvMovesPointerCorrectly() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0xAB, 8);
     buf.write(0xCD, 8);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     buf.adv(8);
     assertEquals(0xCD, buf.read(8));
   }
 
   @Test
   void testAdv1MovesBitPointer() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0b10110011, 8);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     assertEquals(1, buf.look1());
     buf.adv1();
     assertEquals(1, buf.look1());
@@ -106,9 +106,9 @@ class BufferTest {
 
   @Test
   void testReadB32Bits() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0x11223344, 32);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     int v = buf.readB(32);
     assertTrue(v >= 0);
     assertTrue(v <= 0xFFFFFFFFL);
@@ -116,9 +116,9 @@ class BufferTest {
 
   @Test
   void testReadBLessThan32Bits() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0xAABBCCDD, 32);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     int b1 = buf.readB(8);
     int b2 = buf.readB(8);
     int b3 = buf.readB(8);
@@ -131,18 +131,18 @@ class BufferTest {
 
   @Test
   void testLookPastEndReturnsMinusOne() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0xAB, 8);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     buf.adv(8);
     assertEquals(-1, buf.look(8));
   }
 
   @Test
   void testReadPastEndReturnsMinusOneAndAdvances() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0xAB, 8);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     buf.adv(8);
     assertEquals(-1, buf.read(8));
     assertEquals(16, buf.bits());
@@ -150,16 +150,16 @@ class BufferTest {
 
   @Test
   void testRead1PastEndReturnsMinusOne() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0xAB, 8);
-    buf.readinit(buf.buffer(), buf.bytes());
+    buf.readInit(buf.buffer(), buf.bytes());
     buf.adv(8);
     assertEquals(-1, buf.read1());
   }
 
   @Test
   void testResetClearsPointersButNotBuffer() {
-    buf.writeinit();
+    buf.writeInit();
     buf.write(0xAB, 8);
     byte[] before = Arrays.copyOf(buf.buffer(), buf.buffer().length);
     buf.reset();
@@ -173,8 +173,8 @@ class BufferTest {
 
   @Test
   void testWriteClearNullsBuffer() {
-    buf.writeinit();
-    buf.writeclear();
+    buf.writeInit();
+    buf.writeClear();
     assertNull(buf.buffer());
   }
 

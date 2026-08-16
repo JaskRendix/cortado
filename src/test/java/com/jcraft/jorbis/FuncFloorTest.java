@@ -83,7 +83,7 @@ class FuncFloorTest {
   void packShouldWriteBits() {
     MockFloor f = new MockFloor();
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     f.pack(new Object(), b);
     assertTrue(f.packCalled);
     assertTrue(b.bits() > 0);
@@ -93,10 +93,10 @@ class FuncFloorTest {
   void unpackShouldReturnNonNull() {
     MockFloor f = new MockFloor();
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     b.write(5, 3);
     Buffer r = new Buffer();
-    r.readinit(b.buffer(), b.bytes());
+    r.readInit(b.buffer(), b.bytes());
     Object o = f.unpack(new Info(), r);
     assertTrue(f.unpackCalled);
     assertNotNull(o);
@@ -168,7 +168,7 @@ class FuncFloorTest {
     MockFloor f = new MockFloor();
 
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
 
     f.pack(null, b);
     f.unpack(null, b);

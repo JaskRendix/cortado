@@ -9,13 +9,13 @@ class StaticCodeBookTest {
 
   private Buffer writeBuffer() {
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     return b;
   }
 
   private Buffer readBuffer(Buffer src) {
     Buffer r = new Buffer();
-    r.readinit(src.buffer(), src.bytes());
+    r.readInit(src.buffer(), src.bytes());
     return r;
   }
 

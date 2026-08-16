@@ -16,7 +16,7 @@ class BitwiseTest {
     buffer = new Buffer();
     // Initialize an empty or dummy byte array for testing
     byte[] data = new byte[128];
-    buffer.readinit(data, data.length);
+    buffer.readInit(data, data.length);
   }
 
   @Test

@@ -42,7 +42,7 @@ class CodeBookTest {
       }
     }
     Buffer b = new Buffer();
-    b.readinit(data, 0, data.length);
+    b.readInit(data, 0, data.length);
     return b;
   }
 

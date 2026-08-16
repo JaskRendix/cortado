@@ -55,7 +55,7 @@ class InfoTest {
   @Test
   void unpackInfoFailsWhenVersionNonZero() {
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     b.write(123, 32);
     b.write(2, 8);
     b.write(44100, 32);
@@ -72,7 +72,7 @@ class InfoTest {
   @Test
   void unpackInfoFailsWhenChannelsZero() {
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     b.write(0, 32);
     b.write(0, 8);
     b.write(44100, 32);
@@ -89,7 +89,7 @@ class InfoTest {
   @Test
   void unpackInfoFailsWhenRateZero() {
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     b.write(0, 32);
     b.write(2, 8);
     b.write(0, 32);
@@ -106,7 +106,7 @@ class InfoTest {
   @Test
   void unpackInfoFailsWhenBlocksizeTooSmall() {
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     b.write(0, 32);
     b.write(2, 8);
     b.write(44100, 32);
@@ -123,7 +123,7 @@ class InfoTest {
   @Test
   void unpackInfoFailsWhenSecondBlocksizeSmallerThanFirst() {
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     b.write(0, 32);
     b.write(2, 8);
     b.write(44100, 32);
@@ -140,7 +140,7 @@ class InfoTest {
   @Test
   void unpackInfoFailsWhenFramingBitNotOne() {
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     b.write(0, 32);
     b.write(2, 8);
     b.write(44100, 32);
@@ -157,7 +157,7 @@ class InfoTest {
   @Test
   void synthesisHeaderInRejectsNonVorbisSignature() {
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     b.write(0x01, 8);
     b.write("xxxxx".getBytes());
 
@@ -170,7 +170,7 @@ class InfoTest {
   @Test
   void synthesisHeaderInRejectsCodebookHeaderWhenVendorMissing() {
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     b.write(0x05, 8);
     b.write("vorbis".getBytes());
 
@@ -185,7 +185,7 @@ class InfoTest {
   @Test
   void blocksizeFailsWhenFirstBitIsOne() {
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     b.write(1, 1);
 
     Packet p = makePacket(b);
@@ -210,7 +210,7 @@ class InfoTest {
     info.setModeParam(new InfoMode[] {m0, m1, m2, m3});
 
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     b.write(0, 1); // audio packet
     b.write(15, 4); // lower 2 bits = 3 → valid mode
 
@@ -233,7 +233,7 @@ class InfoTest {
     info.setModeParam(new InfoMode[] {m0, m1});
 
     Buffer b = new Buffer();
-    b.writeinit();
+    b.writeInit();
     b.write(0, 1);
     b.write(1, 1);
 

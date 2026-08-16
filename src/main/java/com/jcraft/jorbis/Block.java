@@ -54,7 +54,7 @@ public final class Block {
   public Block(DspState vd) {
     this.vd = vd;
     if (vd.analysisp != 0) {
-      opb.writeinit();
+      opb.writeInit();
     }
   }
 
@@ -65,7 +65,7 @@ public final class Block {
   public int clear() {
     if (vd != null) {
       if (vd.analysisp != 0) {
-        opb.writeclear();
+        opb.writeInit();
       }
     }
     return 0;
@@ -75,7 +75,7 @@ public final class Block {
     Info vi = vd.vi;
 
     // First things first. Make sure decode is ready
-    opb.readinit(op.packet_base, op.packet, op.bytes);
+    opb.readInit(op.packet_base, op.packet, op.bytes);
 
     // Check the packet type
     if (opb.read(1) != 0) {
