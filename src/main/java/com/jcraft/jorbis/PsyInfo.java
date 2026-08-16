@@ -1,27 +1,27 @@
 /* JOrbis
-* Copyright (C) 2000 ymnk, JCraft,Inc.
-*
-* Written by: 2000 ymnk<ymnk@jcaft.com>
-*
-* Many thanks to
-*  Monty <monty@xiph.org> and
-*  The XIPHOPHORUS Company http://www.xiph.org/ .
-* JOrbis has been based on their awesome works, Vorbis codec.
-*
-* This program is free software; you can redistribute it and/or
-* modify it under the terms of the GNU Library General Public License
-* as published by the Free Software Foundation; either version 2 of
-* the License, or (at your option) any later version.
+ * Copyright (C) 2000 ymnk, JCraft,Inc.
+ *
+ * Written by: 2000 ymnk<ymnk@jcaft.com>
+ *
+ * Many thanks to
+ *  Monty <monty@xiph.org> and
+ *  The XIPHOPHORUS Company http://www.xiph.org/ .
+ * JOrbis has been based on their awesome works, Vorbis codec.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Library General Public License
+ * as published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
 
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU Library General Public License for more details.
-*
-* You should have received a copy of the GNU Library General Public
-* License along with this program; if not, write to the Free Software
-* Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-*/
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Library General Public License for more details.
+ *
+ * You should have received a copy of the GNU Library General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
 
 package com.jcraft.jorbis;
 
@@ -37,31 +37,31 @@ public class PsyInfo {
   private float athAtt;
 
   private int tonemaskp;
-  private float[] toneatt125Hz = new float[5];
-  private float[] toneatt250Hz = new float[5];
-  private float[] toneatt500Hz = new float[5];
-  private float[] toneatt1000Hz = new float[5];
-  private float[] toneatt2000Hz = new float[5];
-  private float[] toneatt4000Hz = new float[5];
-  private float[] toneatt8000Hz = new float[5];
+  private final float[] toneatt125Hz = new float[5];
+  private final float[] toneatt250Hz = new float[5];
+  private final float[] toneatt500Hz = new float[5];
+  private final float[] toneatt1000Hz = new float[5];
+  private final float[] toneatt2000Hz = new float[5];
+  private final float[] toneatt4000Hz = new float[5];
+  private final float[] toneatt8000Hz = new float[5];
 
   private int peakattp;
-  private float[] peakatt125Hz = new float[5];
-  private float[] peakatt250Hz = new float[5];
-  private float[] peakatt500Hz = new float[5];
-  private float[] peakatt1000Hz = new float[5];
-  private float[] peakatt2000Hz = new float[5];
-  private float[] peakatt4000Hz = new float[5];
-  private float[] peakatt8000Hz = new float[5];
+  private final float[] peakatt125Hz = new float[5];
+  private final float[] peakatt250Hz = new float[5];
+  private final float[] peakatt500Hz = new float[5];
+  private final float[] peakatt1000Hz = new float[5];
+  private final float[] peakatt2000Hz = new float[5];
+  private final float[] peakatt4000Hz = new float[5];
+  private final float[] peakatt8000Hz = new float[5];
 
   private int noisemaskp;
-  private float[] noiseatt125Hz = new float[5];
-  private float[] noiseatt250Hz = new float[5];
-  private float[] noiseatt500Hz = new float[5];
-  private float[] noiseatt1000Hz = new float[5];
-  private float[] noiseatt2000Hz = new float[5];
-  private float[] noiseatt4000Hz = new float[5];
-  private float[] noiseatt8000Hz = new float[5];
+  private final float[] noiseatt125Hz = new float[5];
+  private final float[] noiseatt250Hz = new float[5];
+  private final float[] noiseatt500Hz = new float[5];
+  private final float[] noiseatt1000Hz = new float[5];
+  private final float[] noiseatt2000Hz = new float[5];
+  private final float[] noiseatt4000Hz = new float[5];
+  private final float[] noiseatt8000Hz = new float[5];
 
   private float maxCurveDb;
 
@@ -141,7 +141,7 @@ public class PsyInfo {
   }
 
   public void setToneatt125Hz(float[] toneatt125Hz) {
-    this.toneatt125Hz = toneatt125Hz;
+    System.arraycopy(toneatt125Hz, 0, this.toneatt125Hz, 0, Math.min(toneatt125Hz.length, this.toneatt125Hz.length));
   }
 
   public float[] getToneatt250Hz() {
@@ -149,7 +149,7 @@ public class PsyInfo {
   }
 
   public void setToneatt250Hz(float[] toneatt250Hz) {
-    this.toneatt250Hz = toneatt250Hz;
+    System.arraycopy(toneatt250Hz, 0, this.toneatt250Hz, 0, Math.min(toneatt250Hz.length, this.toneatt250Hz.length));
   }
 
   public float[] getToneatt500Hz() {
@@ -157,7 +157,7 @@ public class PsyInfo {
   }
 
   public void setToneatt500Hz(float[] toneatt500Hz) {
-    this.toneatt500Hz = toneatt500Hz;
+    System.arraycopy(toneatt500Hz, 0, this.toneatt500Hz, 0, Math.min(toneatt500Hz.length, this.toneatt500Hz.length));
   }
 
   public float[] getToneatt1000Hz() {
@@ -165,7 +165,7 @@ public class PsyInfo {
   }
 
   public void setToneatt1000Hz(float[] toneatt1000Hz) {
-    this.toneatt1000Hz = toneatt1000Hz;
+    System.arraycopy(toneatt1000Hz, 0, this.toneatt1000Hz, 0, Math.min(toneatt1000Hz.length, this.toneatt1000Hz.length));
   }
 
   public float[] getToneatt2000Hz() {
@@ -173,7 +173,7 @@ public class PsyInfo {
   }
 
   public void setToneatt2000Hz(float[] toneatt2000Hz) {
-    this.toneatt2000Hz = toneatt2000Hz;
+    System.arraycopy(toneatt2000Hz, 0, this.toneatt2000Hz, 0, Math.min(toneatt2000Hz.length, this.toneatt2000Hz.length));
   }
 
   public float[] getToneatt4000Hz() {
@@ -181,7 +181,7 @@ public class PsyInfo {
   }
 
   public void setToneatt4000Hz(float[] toneatt4000Hz) {
-    this.toneatt4000Hz = toneatt4000Hz;
+    System.arraycopy(toneatt4000Hz, 0, this.toneatt4000Hz, 0, Math.min(toneatt4000Hz.length, this.toneatt4000Hz.length));
   }
 
   public float[] getToneatt8000Hz() {
@@ -189,7 +189,7 @@ public class PsyInfo {
   }
 
   public void setToneatt8000Hz(float[] toneatt8000Hz) {
-    this.toneatt8000Hz = toneatt8000Hz;
+    System.arraycopy(toneatt8000Hz, 0, this.toneatt8000Hz, 0, Math.min(toneatt8000Hz.length, this.toneatt8000Hz.length));
   }
 
   public int getPeakattp() {
@@ -205,7 +205,7 @@ public class PsyInfo {
   }
 
   public void setPeakatt125Hz(float[] peakatt125Hz) {
-    this.peakatt125Hz = peakatt125Hz;
+    System.arraycopy(peakatt125Hz, 0, this.peakatt125Hz, 0, Math.min(peakatt125Hz.length, this.peakatt125Hz.length));
   }
 
   public float[] getPeakatt250Hz() {
@@ -213,7 +213,7 @@ public class PsyInfo {
   }
 
   public void setPeakatt250Hz(float[] peakatt250Hz) {
-    this.peakatt250Hz = peakatt250Hz;
+    System.arraycopy(peakatt250Hz, 0, this.peakatt250Hz, 0, Math.min(peakatt250Hz.length, this.peakatt250Hz.length));
   }
 
   public float[] getPeakatt500Hz() {
@@ -221,7 +221,7 @@ public class PsyInfo {
   }
 
   public void setPeakatt500Hz(float[] peakatt500Hz) {
-    this.peakatt500Hz = peakatt500Hz;
+    System.arraycopy(peakatt500Hz, 0, this.peakatt500Hz, 0, Math.min(peakatt500Hz.length, this.peakatt500Hz.length));
   }
 
   public float[] getPeakatt1000Hz() {
@@ -229,7 +229,7 @@ public class PsyInfo {
   }
 
   public void setPeakatt1000Hz(float[] peakatt1000Hz) {
-    this.peakatt1000Hz = peakatt1000Hz;
+    System.arraycopy(peakatt1000Hz, 0, this.peakatt1000Hz, 0, Math.min(peakatt1000Hz.length, this.peakatt1000Hz.length));
   }
 
   public float[] getPeakatt2000Hz() {
@@ -237,7 +237,7 @@ public class PsyInfo {
   }
 
   public void setPeakatt2000Hz(float[] peakatt2000Hz) {
-    this.peakatt2000Hz = peakatt2000Hz;
+    System.arraycopy(peakatt2000Hz, 0, this.peakatt2000Hz, 0, Math.min(peakatt2000Hz.length, this.peakatt2000Hz.length));
   }
 
   public float[] getPeakatt4000Hz() {
@@ -245,7 +245,7 @@ public class PsyInfo {
   }
 
   public void setPeakatt4000Hz(float[] peakatt4000Hz) {
-    this.peakatt4000Hz = peakatt4000Hz;
+    System.arraycopy(peakatt4000Hz, 0, this.peakatt4000Hz, 0, Math.min(peakatt4000Hz.length, this.peakatt4000Hz.length));
   }
 
   public float[] getPeakatt8000Hz() {
@@ -253,7 +253,7 @@ public class PsyInfo {
   }
 
   public void setPeakatt8000Hz(float[] peakatt8000Hz) {
-    this.peakatt8000Hz = peakatt8000Hz;
+    System.arraycopy(peakatt8000Hz, 0, this.peakatt8000Hz, 0, Math.min(peakatt8000Hz.length, this.peakatt8000Hz.length));
   }
 
   public int getNoisemaskp() {
@@ -269,7 +269,7 @@ public class PsyInfo {
   }
 
   public void setNoiseatt125Hz(float[] noiseatt125Hz) {
-    this.noiseatt125Hz = noiseatt125Hz;
+    System.arraycopy(noiseatt125Hz, 0, this.noiseatt125Hz, 0, Math.min(noiseatt125Hz.length, this.noiseatt125Hz.length));
   }
 
   public float[] getNoiseatt250Hz() {
@@ -277,7 +277,7 @@ public class PsyInfo {
   }
 
   public void setNoiseatt250Hz(float[] noiseatt250Hz) {
-    this.noiseatt250Hz = noiseatt250Hz;
+    System.arraycopy(noiseatt250Hz, 0, this.noiseatt250Hz, 0, Math.min(noiseatt250Hz.length, this.noiseatt250Hz.length));
   }
 
   public float[] getNoiseatt500Hz() {
@@ -285,7 +285,7 @@ public class PsyInfo {
   }
 
   public void setNoiseatt500Hz(float[] noiseatt500Hz) {
-    this.noiseatt500Hz = noiseatt500Hz;
+    System.arraycopy(noiseatt500Hz, 0, this.noiseatt500Hz, 0, Math.min(noiseatt500Hz.length, this.noiseatt500Hz.length));
   }
 
   public float[] getNoiseatt1000Hz() {
@@ -293,7 +293,7 @@ public class PsyInfo {
   }
 
   public void setNoiseatt1000Hz(float[] noiseatt1000Hz) {
-    this.noiseatt1000Hz = noiseatt1000Hz;
+    System.arraycopy(noiseatt1000Hz, 0, this.noiseatt1000Hz, 0, Math.min(noiseatt1000Hz.length, this.noiseatt1000Hz.length));
   }
 
   public float[] getNoiseatt2000Hz() {
@@ -301,7 +301,7 @@ public class PsyInfo {
   }
 
   public void setNoiseatt2000Hz(float[] noiseatt2000Hz) {
-    this.noiseatt2000Hz = noiseatt2000Hz;
+    System.arraycopy(noiseatt2000Hz, 0, this.noiseatt2000Hz, 0, Math.min(noiseatt2000Hz.length, this.noiseatt2000Hz.length));
   }
 
   public float[] getNoiseatt4000Hz() {
@@ -309,7 +309,7 @@ public class PsyInfo {
   }
 
   public void setNoiseatt4000Hz(float[] noiseatt4000Hz) {
-    this.noiseatt4000Hz = noiseatt4000Hz;
+    System.arraycopy(noiseatt4000Hz, 0, this.noiseatt4000Hz, 0, Math.min(noiseatt4000Hz.length, this.noiseatt4000Hz.length));
   }
 
   public float[] getNoiseatt8000Hz() {
@@ -317,7 +317,7 @@ public class PsyInfo {
   }
 
   public void setNoiseatt8000Hz(float[] noiseatt8000Hz) {
-    this.noiseatt8000Hz = noiseatt8000Hz;
+    System.arraycopy(noiseatt8000Hz, 0, this.noiseatt8000Hz, 0, Math.min(noiseatt8000Hz.length, this.noiseatt8000Hz.length));
   }
 
   public float getMaxCurveDb() {
@@ -342,110 +342,5 @@ public class PsyInfo {
 
   public void setDecayCoeff(float decayCoeff) {
     this.decayCoeff = decayCoeff;
-  }
-
-  @Deprecated
-  public float[] toneatt_125Hz() {
-    return toneatt125Hz;
-  }
-
-  @Deprecated
-  public float[] toneatt_250Hz() {
-    return toneatt250Hz;
-  }
-
-  @Deprecated
-  public float[] toneatt_500Hz() {
-    return toneatt500Hz;
-  }
-
-  @Deprecated
-  public float[] toneatt_1000Hz() {
-    return toneatt1000Hz;
-  }
-
-  @Deprecated
-  public float[] toneatt_2000Hz() {
-    return toneatt2000Hz;
-  }
-
-  @Deprecated
-  public float[] toneatt_4000Hz() {
-    return toneatt4000Hz;
-  }
-
-  @Deprecated
-  public float[] toneatt_8000Hz() {
-    return toneatt8000Hz;
-  }
-
-  @Deprecated
-  public float[] peakatt_125Hz() {
-    return peakatt125Hz;
-  }
-
-  @Deprecated
-  public float[] peakatt_250Hz() {
-    return peakatt250Hz;
-  }
-
-  @Deprecated
-  public float[] peakatt_500Hz() {
-    return peakatt500Hz;
-  }
-
-  @Deprecated
-  public float[] peakatt_1000Hz() {
-    return peakatt1000Hz;
-  }
-
-  @Deprecated
-  public float[] peakatt_2000Hz() {
-    return peakatt2000Hz;
-  }
-
-  @Deprecated
-  public float[] peakatt_4000Hz() {
-    return peakatt4000Hz;
-  }
-
-  @Deprecated
-  public float[] peakatt_8000Hz() {
-    return peakatt8000Hz;
-  }
-
-  @Deprecated
-  public float[] noiseatt_125Hz() {
-    return noiseatt125Hz;
-  }
-
-  @Deprecated
-  public float[] noiseatt_250Hz() {
-    return noiseatt250Hz;
-  }
-
-  @Deprecated
-  public float[] noiseatt_500Hz() {
-    return noiseatt500Hz;
-  }
-
-  @Deprecated
-  public float[] noiseatt_1000Hz() {
-    return noiseatt1000Hz;
-  }
-
-  @Deprecated
-  public float[] noiseatt_2000Hz() {
-    return noiseatt2000Hz;
-  }
-
-  @Deprecated
-  public float[] noiseatt_4000Hz() {
-    return noiseatt4000Hz;
-  }
-
-  @Deprecated
-  public float[] noiseatt_8000Hz() {
-    return noiseatt8000Hz;
   }
 }

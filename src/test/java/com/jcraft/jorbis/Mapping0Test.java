@@ -36,11 +36,9 @@ public class Mapping0Test {
   private void flushBits(Buffer b) throws Exception {
     Field fEndBit = Buffer.class.getDeclaredField("endbit");
     Field fEndByte = Buffer.class.getDeclaredField("endbyte");
-    Field fBuffer = Buffer.class.getDeclaredField("buffer");
 
     fEndBit.setAccessible(true);
     fEndByte.setAccessible(true);
-    fBuffer.setAccessible(true);
 
     int endbit = (int) fEndBit.get(b);
     int endbyte = (int) fEndByte.get(b);
@@ -176,9 +174,11 @@ public class Mapping0Test {
     vi.setChannels(2);
     vi.setBlocksizes(64, 128);
 
-    vd.window = new float[2][2][2][1][];
+    // Properly initialize window lookup hierarchy required by inverse()
+    vd.window = new float[2][2][2][1][128];
     vd.window[1][0][0][0] = new float[128];
 
+    // Properly initialize transform mock
     vd.transform = new Object[2][1];
     Mdct mockMdct = mock(Mdct.class);
     vd.transform[1][0] = mockMdct;
@@ -215,6 +215,7 @@ public class Mapping0Test {
     when(mockFloor.inverse1(any(), any(), any())).thenReturn(new Object());
     when(mockFloor.inverse2(any(), any(), any(), any())).thenReturn(0);
     when(mockResidue.inverse(any(), any(), any(), any(), anyInt())).thenReturn(0);
+    doNothing().when(mockMdct).backward(any(), any());
 
     assertEquals(0, mapping.inverse(vb, look));
   }

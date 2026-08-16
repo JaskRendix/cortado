@@ -84,32 +84,19 @@ class PsyInfoTest {
   }
 
   @Test
-  void settersShouldReplaceArraysCorrectly() {
+  void settersShouldCopyArrayValuesCorrectly() {
     PsyInfo pi = new PsyInfo();
 
     float[] arr = {1f, 2f, 3f, 4f, 5f};
 
     pi.setToneatt125Hz(arr);
-    assertSame(arr, pi.getToneatt125Hz());
+    assertArrayEquals(arr, pi.getToneatt125Hz());
 
     pi.setPeakatt4000Hz(arr);
-    assertSame(arr, pi.getPeakatt4000Hz());
+    assertArrayEquals(arr, pi.getPeakatt4000Hz());
 
     pi.setNoiseatt8000Hz(arr);
-    assertSame(arr, pi.getNoiseatt8000Hz());
-  }
-
-  @Test
-  void settersShouldAcceptNullArrays() {
-    PsyInfo pi = new PsyInfo();
-
-    pi.setToneatt125Hz(null);
-    pi.setPeakatt125Hz(null);
-    pi.setNoiseatt125Hz(null);
-
-    assertNull(pi.getToneatt125Hz());
-    assertNull(pi.getPeakatt125Hz());
-    assertNull(pi.getNoiseatt125Hz());
+    assertArrayEquals(arr, pi.getNoiseatt8000Hz());
   }
 
   @Test
@@ -125,36 +112,6 @@ class PsyInfoTest {
     assertEquals(Float.NEGATIVE_INFINITY, pi.getToneatt500Hz()[2]);
     assertEquals(0f, pi.getToneatt500Hz()[3]);
     assertEquals(-1f, pi.getToneatt500Hz()[4]);
-  }
-
-  @Test
-  void deprecatedToneattMethodsShouldReturnSameArrays() {
-    PsyInfo pi = new PsyInfo();
-
-    float[] arr = {1f, 2f, 3f, 4f, 5f};
-    pi.setToneatt1000Hz(arr);
-
-    assertSame(arr, pi.toneatt_1000Hz());
-  }
-
-  @Test
-  void deprecatedPeakattMethodsShouldReturnSameArrays() {
-    PsyInfo pi = new PsyInfo();
-
-    float[] arr = {9f, 8f, 7f, 6f, 5f};
-    pi.setPeakatt2000Hz(arr);
-
-    assertSame(arr, pi.peakatt_2000Hz());
-  }
-
-  @Test
-  void deprecatedNoiseattMethodsShouldReturnSameArrays() {
-    PsyInfo pi = new PsyInfo();
-
-    float[] arr = {3f, 3f, 3f, 3f, 3f};
-    pi.setNoiseatt4000Hz(arr);
-
-    assertSame(arr, pi.noiseatt_4000Hz());
   }
 
   @Test

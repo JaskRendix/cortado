@@ -4,8 +4,8 @@
 * Written by: 2000 ymnk<ymnk@jcaft.com>
 *
 * Many thanks to
-*  Monty <monty@xiph.org> and
-*  The XIPHOPHORUS Company http://www.xiph.org/ .
+*   Monty <monty@xiph.org> and
+*   The XIPHOPHORUS Company http://www.xiph.org/ .
 * JOrbis has been based on their awesome works, Vorbis codec.
 *
 * This program is free software; you can redistribute it and/or

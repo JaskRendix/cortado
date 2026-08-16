@@ -3,30 +3,62 @@ package com.jcraft.jorbis;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.jcraft.jogg.Buffer;
+import java.lang.reflect.Field;
 import org.junit.jupiter.api.Test;
 
 class Floor0Test {
 
   private final Floor0 floor = new Floor0();
 
+  /** Reflection: get private byte[] buffer */
+  private byte[] getBufferBytes(Buffer b) throws Exception {
+    Field f = Buffer.class.getDeclaredField("buffer");
+    f.setAccessible(true);
+    return (byte[]) f.get(b);
+  }
+
+  /** Reflection: get private endbyte (actual bytes written) */
+  private int getEndByte(Buffer b) throws Exception {
+    Field f = Buffer.class.getDeclaredField("endbyte");
+    f.setAccessible(true);
+    return (int) f.get(b);
+  }
+
+  /** Flush bit accumulator manually */
+  private void flushBits(Buffer b) throws Exception {
+    Field fEndBit = Buffer.class.getDeclaredField("endbit");
+    Field fEndByte = Buffer.class.getDeclaredField("endbyte");
+
+    fEndBit.setAccessible(true);
+    fEndByte.setAccessible(true);
+
+    int endbit = (int) fEndBit.get(b);
+    int endbyte = (int) fEndByte.get(b);
+
+    if (endbit > 0) {
+      endbyte++;
+      fEndByte.set(b, endbyte);
+    }
+  }
+
   private DspState newDspState() {
     DspState vd = new DspState();
     vd.vi = new Info();
     vd.vi.setBlocksizes(512, 1024);
-    vd.analysisp = 1; // Cortado uses int, not byte[]
+    vd.analysisp = 1;
     vd.fullbooks = new CodeBook[16];
     return vd;
   }
 
   private Block newBlock(DspState vd) {
     Block vb = new Block(vd);
-    vb.opb.writeInit(); // required before write()
+    vb.opb.writeInit();
     return vb;
   }
 
   private Buffer newWriteBuffer() {
     Buffer b = new Buffer();
-    b.writeInit(); // allocates internal buffer
+    b.writeInit();
     return b;
   }
 
@@ -47,7 +79,7 @@ class Floor0Test {
   }
 
   @Test
-  void testPackAndUnpackRoundTrip() {
+  void testPackAndUnpackRoundTrip() throws Exception {
     InfoFloor0 info = new InfoFloor0();
     info.order = 8;
     info.rate = 44100;
@@ -61,16 +93,19 @@ class Floor0Test {
     Buffer buf = new Buffer();
     buf.writeInit();
 
-    // Use Floor0.pack exactly as the codec expects
     floor.pack(info, buf);
+    flushBits(buf);
 
-    // Switch buffer from write mode → read mode
-    buf.readInit(buf.buffer(), buf.bytes());
+    byte[] raw = getBufferBytes(buf);
+    int endbyte = getEndByte(buf);
+
+    Buffer reader = new Buffer();
+    reader.readInit(raw, 0, endbyte);
 
     Info vi = new Info();
     vi.setBooks(16);
 
-    InfoFloor0 unpacked = (InfoFloor0) floor.unpack(vi, buf);
+    InfoFloor0 unpacked = (InfoFloor0) floor.unpack(vi, reader);
     assertNotNull(unpacked);
     assertEquals(info.order, unpacked.order);
     assertEquals(info.rate, unpacked.rate);
@@ -155,7 +190,7 @@ class Floor0Test {
 
     CodeBook failingBook = new CodeBook();
     failingBook.dim = 4;
-    failingBook.entries = 0; // decodev_set() will return -1
+    failingBook.entries = 0;
 
     vd.fullbooks[0] = failingBook;
 
