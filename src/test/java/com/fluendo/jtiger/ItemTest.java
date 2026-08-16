@@ -180,5 +180,7 @@ class ItemTest {
     }
   }
 
-  private static class MockComponent extends Component {}
+  private static class MockComponent extends Component {
+    private static final long serialVersionUID = 1L;
+  }
 }

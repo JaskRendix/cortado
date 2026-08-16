@@ -251,7 +251,7 @@ class TigerBitmapTest {
   }
 
   private static class MockComponent extends Component {
-    // Minimal headless-safe component for AWT image creation
+    private static final long serialVersionUID = 1L;
   }
 
   private static class DummyObserver implements ImageObserver {

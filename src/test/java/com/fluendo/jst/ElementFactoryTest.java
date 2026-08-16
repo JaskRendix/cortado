@@ -12,12 +12,13 @@ import org.junit.jupiter.api.Test;
 class ElementFactoryTest {
 
   @BeforeAll
+  @SuppressWarnings("unchecked")
   static void injectTestPlugins() throws Exception {
     // Replace the static plugin list with our test plugins
     Field f = ElementFactory.class.getDeclaredField("elements");
     f.setAccessible(true);
 
-    List<? super Element> list = (List<? super Element>) f.get(null);
+    List<Element> list = (List<Element>) f.get(null);
 
     list.clear();
     list.add(new TestElementA());

@@ -17,6 +17,8 @@ class VideoSinkTest {
 
   /** Offscreen deterministic component */
   private static class TestComponent extends Component {
+    private static final long serialVersionUID = 1L;
+
     BufferedImage canvas = new BufferedImage(800, 600, BufferedImage.TYPE_INT_ARGB);
     Graphics2D g = canvas.createGraphics();
 

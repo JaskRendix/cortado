@@ -89,6 +89,6 @@ class RendererTest {
 
   // --- Headless Test Double ---
   private static class MockComponent extends Component {
-    // Keeps component alive for AWT operations during testing without display server
+    private static final long serialVersionUID = 1L;
   }
 }
