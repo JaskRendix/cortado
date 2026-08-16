@@ -47,14 +47,14 @@ public class TheoraDecTest {
   @Test
   public void testIsHeaderCheck() {
     Packet packet = new Packet();
-    packet.packet_base = new byte[] {(byte) 0x80}; // High bit set indicates header
+    packet.packetBase = new byte[] {(byte) 0x80}; // High bit set indicates header
     packet.packet = 0;
     packet.bytes = 1;
 
     assertTrue(
         theoraDec.isHeader(packet), "Packet with high bit set should be recognized as header");
 
-    packet.packet_base = new byte[] {0x00}; // High bit clear indicates video frame
+    packet.packetBase = new byte[] {0x00}; // High bit clear indicates video frame
     assertFalse(
         theoraDec.isHeader(packet),
         "Packet with high bit clear should not be recognized as header");
@@ -78,9 +78,9 @@ public class TheoraDecTest {
   @Test
   public void testEdgeCaseTakeHeaderWithoutInitialization() {
     Packet packet = new Packet();
-    packet.packet_base = new byte[] {(byte) 0x80, 0x74, 0x68, 0x65, 0x6f, 0x72, 0x61};
+    packet.packetBase = new byte[] {(byte) 0x80, 0x74, 0x68, 0x65, 0x6f, 0x72, 0x61};
     packet.packet = 0;
-    packet.bytes = packet.packet_base.length;
+    packet.bytes = packet.packetBase.length;
 
     // Taking header without internal info structure setup should return an error code safely
     int result = theoraDec.takeHeader(packet);

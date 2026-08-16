@@ -46,7 +46,7 @@ public class TheoraDec extends Element implements OggPayload {
    */
   @Override
   public boolean isType(Packet op) {
-    return typeFind(op.packet_base, op.packet, op.bytes) > 0;
+    return typeFind(op.packetBase, op.packet, op.bytes) > 0;
   }
 
   @Override
@@ -57,7 +57,7 @@ public class TheoraDec extends Element implements OggPayload {
     if (ret < 0) {
       return ret;
     }
-    header = op.packet_base[op.packet];
+    header = op.packetBase[op.packet];
     if (header == -128) {
       haveBOS = true;
     } else if (header == -126) {
@@ -69,7 +69,7 @@ public class TheoraDec extends Element implements OggPayload {
 
   @Override
   public boolean isHeader(Packet op) {
-    return (op.packet_base[op.packet] & 0x80) == 0x80;
+    return (op.packetBase[op.packet] & 0x80) == 0x80;
   }
 
   @Override
@@ -159,12 +159,12 @@ public class TheoraDec extends Element implements OggPayload {
 
           Debug.log(Debug.DEBUG, parent.getName() + " <<< " + buf);
 
-          op.packet_base = buf.data;
+          op.packetBase = buf.data;
           op.packet = buf.offset;
           op.bytes = buf.length;
           op.b_o_s = (packet == 0 ? 1 : 0);
           op.e_o_s = 0;
-          op.packetno = packet;
+          op.packetNo = packet;
           timestamp = buf.timestamp;
 
           if (buf.isFlagSet(com.fluendo.jst.Buffer.FLAG_DISCONT)) {
@@ -217,7 +217,7 @@ public class TheoraDec extends Element implements OggPayload {
             }
 
             if (op.bytes > 0) {
-              if ((op.packet_base[op.packet] & 0x80) == 0x80) {
+              if ((op.packetBase[op.packet] & 0x80) == 0x80) {
                 Debug.log(Debug.INFO, "ignoring header");
                 return OK;
               }

@@ -75,7 +75,7 @@ public final class Block {
     Info vi = vd.vi;
 
     // First things first. Make sure decode is ready
-    opb.readInit(op.packet_base, op.packet, op.bytes);
+    opb.readInit(op.packetBase, op.packet, op.bytes);
 
     // Check the packet type
     if (opb.read(1) != 0) {
@@ -100,7 +100,7 @@ public final class Block {
 
     // More setup
     granulepos = op.granulepos;
-    sequence = op.packetno - 3; // First block is third packet
+    sequence = op.packetNo - 3; // First block is third packet
     eofflag = op.e_o_s;
 
     // Allocate pcm passback storage

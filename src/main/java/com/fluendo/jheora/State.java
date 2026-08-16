@@ -53,7 +53,7 @@ public final class State {
   }
 
   public boolean isKeyframe(Packet op) {
-    return (op.packet_base[op.packet] & 0x40) == 0;
+    return (op.packetBase[op.packet] & 0x40) == 0;
   }
 
   public int decodePacketin(Packet op) {
@@ -62,7 +62,7 @@ public final class State {
     pbi.DecoderErrorCode = 0;
 
     if (op.bytes > 0) {
-      pbi.opb.readInit(op.packet_base, op.packet, op.bytes);
+      pbi.opb.readInit(op.packetBase, op.packet, op.bytes);
 
       /* verify that this is a video frame */
       ret = pbi.opb.readB(1);

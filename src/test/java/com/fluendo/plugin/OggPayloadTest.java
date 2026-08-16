@@ -33,7 +33,7 @@ class OggPayloadTest {
 
     @Override
     public boolean isKeyFrame(Packet op) {
-      return op != null && op.packetno == 0;
+      return op != null && op.packetNo == 0;
     }
 
     @Override
@@ -105,7 +105,7 @@ class OggPayloadTest {
   void testFlags() {
     Packet packet = new Packet();
     packet.b_o_s = 1;
-    packet.packetno = 0;
+    packet.packetNo = 0;
 
     assertTrue(payload.isHeader(packet));
     assertTrue(payload.isKeyFrame(packet));

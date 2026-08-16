@@ -4,8 +4,8 @@
 * Written by: 2000 ymnk<ymnk@jcaft.com>
 *
 * Many thanks to
-*  Monty <monty@xiph.org> and
-*  The XIPHOPHORUS Company http://www.xiph.org/ .
+*   Monty <monty@xiph.org> and
+*   The XIPHOPHORUS Company http://www.xiph.org/ .
 * JOrbis has been based on their awesome works, Vorbis codec.
 *
 * This program is free software; you can redistribute it and/or
@@ -47,7 +47,7 @@ public class StreamState {
   int b_o_s; /* set after we've written the initial page of a logical bitstream */
   int serialno;
   int pageno;
-  long packetno; /* sequence number for decode */
+  long packetNo; /* sequence number for decode */
   long granulepos;
 
   public StreamState() {
@@ -125,7 +125,7 @@ public class StreamState {
     bodyExpand(op.bytes);
     lacingExpand(lacingVal);
 
-    System.arraycopy(op.packet_base, op.packet, bodyData, bodyFill, op.bytes);
+    System.arraycopy(op.packetBase, op.packet, bodyData, bodyFill, op.bytes);
     bodyFill += op.bytes;
 
     int j;
@@ -138,7 +138,7 @@ public class StreamState {
 
     lacingVals[lacingFill] |= 0x100;
     lacingFill += lacingVal;
-    packetno++;
+    packetNo++;
 
     if (op.e_o_s != 0) {
       e_o_s = 1;
@@ -155,14 +155,14 @@ public class StreamState {
 
     if ((lacingVals[ptr] & 0x400) != 0) {
       lacingReturned++;
-      packetno++;
+      packetNo++;
       return -1;
     }
 
     int size = lacingVals[ptr] & 0xff;
     int bytes = size;
 
-    op.packet_base = bodyData;
+    op.packetBase = bodyData;
     op.packet = bodyReturned;
     op.e_o_s = lacingVals[ptr] & 0x200;
     op.b_o_s = lacingVals[ptr] & 0x100;
@@ -176,23 +176,23 @@ public class StreamState {
       bytes += size;
     }
 
-    op.packetno = packetno;
+    op.packetNo = packetNo;
     op.granulepos = granuleVals[ptr];
     op.bytes = bytes;
 
     bodyReturned += bytes;
     lacingReturned = ptr + 1;
 
-    packetno++;
+    packetNo++;
     return 1;
   }
 
   public int pagein(Page og) {
-    byte[] headerBase = og.header_base;
+    byte[] headerBase = og.headerBase;
     int header = og.header;
-    byte[] bodyBase = og.body_base;
+    byte[] bodyBase = og.bodyBase;
     int body = og.body;
-    int bodysize = og.body_len;
+    int bodysize = og.bodyLen;
     int segptr = 0;
 
     int version = og.version();
@@ -368,12 +368,12 @@ public class StreamState {
       bytes += (header[i + 27] & 0xff);
     }
 
-    og.header_base = header;
+    og.headerBase = header;
     og.header = 0;
-    og.header_len = headerFill = vals + 27;
-    og.body_base = bodyData;
+    og.headerLen = headerFill = vals + 27;
+    og.bodyBase = bodyData;
     og.body = bodyReturned;
-    og.body_len = bytes;
+    og.bodyLen = bytes;
 
     lacingFill -= vals;
     System.arraycopy(lacingVals, vals, lacingVals, 0, lacingFill);
@@ -384,7 +384,7 @@ public class StreamState {
     return 1;
   }
 
-  public int pageout(Page og) {
+  public int pageOut(Page og) {
     if ((e_o_s != 0 && lacingFill != 0)
         || (bodyFill - bodyReturned > 4096)
         || (lacingFill >= 255)
@@ -411,7 +411,7 @@ public class StreamState {
     e_o_s = 0;
     b_o_s = 0;
     pageno = -1;
-    packetno = 0;
+    packetNo = 0;
     granulepos = 0;
     return 0;
   }

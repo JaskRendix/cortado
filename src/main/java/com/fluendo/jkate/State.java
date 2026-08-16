@@ -66,7 +66,7 @@ public class State {
 
     ev = null;
 
-    dec.opb.readInit(op.packet_base, op.packet, op.bytes);
+    dec.opb.readInit(op.packetBase, op.packet, op.bytes);
 
     /* get packet type */
     type = dec.opb.read(8);

@@ -53,7 +53,7 @@ class StreamStateTest {
   @Test
   void testPacketInSingleSegment() {
     Packet p = new Packet();
-    p.packet_base = new byte[] {1, 2, 3};
+    p.packetBase = new byte[] {1, 2, 3};
     p.packet = 0;
     p.bytes = 3;
     p.granulepos = 777;
@@ -62,14 +62,14 @@ class StreamStateTest {
     assertEquals(3, ss.bodyFill);
     assertEquals(1, ss.lacingFill);
     assertEquals(777, ss.granulepos);
-    assertEquals(1, ss.packetno);
+    assertEquals(1, ss.packetNo);
   }
 
   @Test
   void testPacketInMultiSegment() {
     Packet p = new Packet();
     byte[] data = new byte[600];
-    p.packet_base = data;
+    p.packetBase = data;
     p.packet = 0;
     p.bytes = 600;
     p.granulepos = 999;
@@ -83,7 +83,7 @@ class StreamStateTest {
   @Test
   void testPacketInSetsEOS() {
     Packet p = new Packet();
-    p.packet_base = new byte[] {1};
+    p.packetBase = new byte[] {1};
     p.packet = 0;
     p.bytes = 1;
     p.e_o_s = 1;
@@ -101,7 +101,7 @@ class StreamStateTest {
   void testPacketOutSingleSegment() {
     Packet p = new Packet();
     byte[] data = new byte[] {10, 20, 30};
-    p.packet_base = data;
+    p.packetBase = data;
     p.packet = 0;
     p.bytes = 3;
     p.granulepos = 555;
@@ -114,7 +114,7 @@ class StreamStateTest {
     // verification
     long gp = 555;
     for (int i = 6; i < 14; i++) {
-      og.header_base[og.header + i] = (byte) gp;
+      og.headerBase[og.header + i] = (byte) gp;
       gp >>>= 8;
     }
 
@@ -131,7 +131,7 @@ class StreamStateTest {
   void testPacketOutMultiSegment() {
     Packet p = new Packet();
     byte[] data = new byte[600];
-    p.packet_base = data;
+    p.packetBase = data;
     p.packet = 0;
     p.bytes = 600;
     p.granulepos = 1234;
@@ -144,7 +144,7 @@ class StreamStateTest {
     // verification
     long gp = 1234;
     for (int i = 6; i < 14; i++) {
-      og.header_base[og.header + i] = (byte) gp;
+      og.headerBase[og.header + i] = (byte) gp;
       gp >>>= 8;
     }
 
@@ -160,7 +160,7 @@ class StreamStateTest {
   @Test
   void testPacketOutEOSPropagation() {
     Packet p = new Packet();
-    p.packet_base = new byte[300];
+    p.packetBase = new byte[300];
     p.packet = 0;
     p.bytes = 300;
     p.e_o_s = 1;
@@ -168,7 +168,7 @@ class StreamStateTest {
     ss.packetin(p);
 
     Page og = new Page();
-    ss.pageout(og);
+    ss.pageOut(og);
 
     StreamState readerState = new StreamState(12345);
     readerState.pagein(og);
@@ -182,16 +182,16 @@ class StreamStateTest {
   @Test
   void testPageInRejectsWrongSerialno() {
     Page og = new Page();
-    og.header_base = new byte[27];
-    og.body_base = new byte[0];
+    og.headerBase = new byte[27];
+    og.bodyBase = new byte[0];
     og.header = 0;
     og.body = 0;
-    og.header_len = 27;
-    og.body_len = 0;
+    og.headerLen = 27;
+    og.bodyLen = 0;
 
-    og.header_base[4] = 0;
-    og.header_base[14] = 99;
-    og.header_base[26] = 0;
+    og.headerBase[4] = 0;
+    og.headerBase[14] = 99;
+    og.headerBase[26] = 0;
 
     assertEquals(-1, ss.pagein(og));
   }
@@ -199,26 +199,26 @@ class StreamStateTest {
   @Test
   void testPageInBasic() {
     Page og = new Page();
-    og.header_base = new byte[50];
-    og.body_base = new byte[] {1, 2, 3, 4};
+    og.headerBase = new byte[50];
+    og.bodyBase = new byte[] {1, 2, 3, 4};
     og.header = 0;
     og.body = 0;
-    og.header_len = 50;
-    og.body_len = 4;
+    og.headerLen = 50;
+    og.bodyLen = 4;
 
-    og.header_base[4] = 0;
-    og.header_base[5] = 0;
+    og.headerBase[4] = 0;
+    og.headerBase[5] = 0;
 
     // Write matching serialno (12345) little-endian into header bytes 14-17
     int ser = 12345;
-    og.header_base[14] = (byte) (ser & 0xff);
-    og.header_base[15] = (byte) ((ser >> 8) & 0xff);
-    og.header_base[16] = (byte) ((ser >> 16) & 0xff);
-    og.header_base[17] = (byte) ((ser >> 24) & 0xff);
+    og.headerBase[14] = (byte) (ser & 0xff);
+    og.headerBase[15] = (byte) ((ser >> 8) & 0xff);
+    og.headerBase[16] = (byte) ((ser >> 16) & 0xff);
+    og.headerBase[17] = (byte) ((ser >> 24) & 0xff);
 
-    og.header_base[18] = 0;
-    og.header_base[26] = 1;
-    og.header_base[27] = 4;
+    og.headerBase[18] = 0;
+    og.headerBase[26] = 1;
+    og.headerBase[27] = 4;
 
     assertEquals(0, ss.pagein(og));
     assertEquals(4, ss.bodyFill);
@@ -228,7 +228,7 @@ class StreamStateTest {
   @Test
   void testFlushProducesPage() {
     Packet p = new Packet();
-    p.packet_base = new byte[] {1, 2, 3};
+    p.packetBase = new byte[] {1, 2, 3};
     p.packet = 0;
     p.bytes = 3;
     p.granulepos = 999;
@@ -238,21 +238,21 @@ class StreamStateTest {
     int ret = ss.flush(og);
 
     assertEquals(1, ret);
-    assertEquals(3, og.body_len);
-    assertEquals(27 + 1, og.header_len);
+    assertEquals(3, og.bodyLen);
+    assertEquals(27 + 1, og.headerLen);
   }
 
   @Test
   void testPageOutTriggersFlush() {
     Packet p = new Packet();
-    p.packet_base = new byte[] {1, 2, 3};
+    p.packetBase = new byte[] {1, 2, 3};
     p.packet = 0;
     p.bytes = 3;
     p.granulepos = 999;
     ss.packetin(p);
 
     Page og = new Page();
-    int ret = ss.pageout(og);
+    int ret = ss.pageOut(og);
 
     assertEquals(1, ret);
   }
@@ -261,7 +261,7 @@ class StreamStateTest {
   void testResetClearsState() {
     ss.bodyFill = 100;
     ss.lacingFill = 50;
-    ss.packetno = 999;
+    ss.packetNo = 999;
     ss.granulepos = 777;
     ss.e_o_s = 1;
     ss.b_o_s = 1;
@@ -270,7 +270,7 @@ class StreamStateTest {
 
     assertEquals(0, ss.bodyFill);
     assertEquals(0, ss.lacingFill);
-    assertEquals(0, ss.packetno);
+    assertEquals(0, ss.packetNo);
     assertEquals(0, ss.granulepos);
     assertEquals(0, ss.e_o_s);
     assertEquals(0, ss.b_o_s);

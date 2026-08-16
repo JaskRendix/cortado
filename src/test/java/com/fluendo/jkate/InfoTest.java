@@ -50,10 +50,10 @@ class InfoTest {
 
     // Prepare mock buffer with valid header magic but b_o_s == 0
     byte[] packetData = new byte[] {(byte) 0x80, 'k', 'a', 't', 'e', 0, 0, 0, 0};
-    packet.packet_base = packetData;
+    packet.packetBase = packetData;
     packet.packet = 0;
     packet.bytes = packetData.length;
-    packet.packetno = 0;
+    packet.packetNo = 0;
     packet.b_o_s = 0; // Not beginning of stream
 
     int result = info.decodeHeader(comment, packet);
@@ -67,10 +67,10 @@ class InfoTest {
     Packet packet = new Packet();
 
     byte[] packetData = new byte[] {(byte) 0x80, 'j', 'a', 'v', 'a', 0, 0, 0, 0};
-    packet.packet_base = packetData;
+    packet.packetBase = packetData;
     packet.packet = 0;
     packet.bytes = packetData.length;
-    packet.packetno = 0;
+    packet.packetNo = 0;
     packet.b_o_s = 1;
 
     int result = info.decodeHeader(comment, packet);

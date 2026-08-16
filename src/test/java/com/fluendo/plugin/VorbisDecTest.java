@@ -46,14 +46,14 @@ public class VorbisDecTest {
   @Test
   public void testIsHeaderCheck() {
     Packet packet = new Packet();
-    packet.packet_base = new byte[] {0x01}; // Odd byte indicates header
+    packet.packetBase = new byte[] {0x01}; // Odd byte indicates header
     packet.packet = 0;
     packet.bytes = 1;
 
     assertTrue(
         vorbisDec.isHeader(packet), "Packet with odd header flag should be recognized as header");
 
-    packet.packet_base = new byte[] {0x00}; // Even byte indicates audio data
+    packet.packetBase = new byte[] {0x00}; // Even byte indicates audio data
     assertFalse(
         vorbisDec.isHeader(packet),
         "Packet with even header flag should not be recognized as header");
@@ -77,9 +77,9 @@ public class VorbisDecTest {
   @Test
   public void testEdgeCaseTakeHeaderWithoutInitialization() {
     Packet packet = new Packet();
-    packet.packet_base = new byte[] {0x01, 0x76, 0x6f, 0x72, 0x62, 0x69, 0x73};
+    packet.packetBase = new byte[] {0x01, 0x76, 0x6f, 0x72, 0x62, 0x69, 0x73};
     packet.packet = 0;
-    packet.bytes = packet.packet_base.length;
+    packet.bytes = packet.packetBase.length;
 
     // Taking header without internal info structure setup should return an error code safely
     // instead of crashing

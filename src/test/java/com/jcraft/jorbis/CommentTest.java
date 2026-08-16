@@ -150,7 +150,7 @@ class CommentTest {
     Packet p = new Packet();
     assertEquals(0, c.header_out(p));
 
-    assertNotNull(p.packet_base);
+    assertNotNull(p.packetBase);
     assertTrue(p.bytes > 0);
     assertEquals(0, p.b_o_s);
     assertEquals(0, p.e_o_s);

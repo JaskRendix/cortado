@@ -566,7 +566,7 @@ public class Info {
     long ret;
     Buffer opb = new Buffer();
 
-    opb.readInit(op.packet_base, op.packet, op.bytes);
+    opb.readInit(op.packetBase, op.packet, op.bytes);
 
     byte[] id = new byte[7];
     int typeflag = opb.read(8);
@@ -582,8 +582,8 @@ public class Info {
       return Result.KATE_E_NOT_KATE;
     }
 
-    if (op.packetno < num_headers) {
-      if (probe != op.packetno) return Result.KATE_E_BAD_PACKET;
+    if (op.packetNo < num_headers) {
+      if (probe != op.packetNo) return Result.KATE_E_BAD_PACKET;
     }
 
     /* reserved 0 byte */

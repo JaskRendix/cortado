@@ -41,21 +41,21 @@ public class VorbisDec extends Element implements OggPayload {
 
   @Override
   public boolean isType(Packet op) {
-    return typeFind(op.packet_base, op.packet, op.bytes) > 0;
+    return typeFind(op.packetBase, op.packet, op.bytes) > 0;
   }
 
   @Override
   public int takeHeader(Packet op) {
     int ret = vi.synthesisHeaderIn(vc, op);
     if (ret < 0) return ret;
-    byte header = op.packet_base[op.packet];
+    byte header = op.packetBase[op.packet];
     if (header == 0x05) return 1;
     return 0;
   }
 
   @Override
   public boolean isHeader(Packet op) {
-    return (op.packet_base[op.packet] & 0x01) == 0x01;
+    return (op.packetBase[op.packet] & 0x01) == 0x01;
   }
 
   @Override
@@ -85,7 +85,7 @@ public class VorbisDec extends Element implements OggPayload {
 
       buf = (com.fluendo.jst.Buffer) packets.get(i);
 
-      p.packet_base = buf.data;
+      p.packetBase = buf.data;
       p.packet = buf.offset;
       p.bytes = buf.length;
 
@@ -164,12 +164,12 @@ public class VorbisDec extends Element implements OggPayload {
           int result = OK;
           long timestamp;
 
-          op.packet_base = buf.data;
+          op.packetBase = buf.data;
           op.packet = buf.offset;
           op.bytes = buf.length;
           op.b_o_s = (packet == 0 ? 1 : 0);
           op.e_o_s = 0;
-          op.packetno = packet;
+          op.packetNo = packet;
 
           if (buf.isFlagSet(com.fluendo.jst.Buffer.FLAG_DISCONT)) {
             offset = -1;

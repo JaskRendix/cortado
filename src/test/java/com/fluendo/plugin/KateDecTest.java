@@ -50,11 +50,11 @@ class KateDecTest {
     @DisplayName("Should check packet header correctly based on first byte")
     void testIsHeader() {
       Packet packet = new Packet();
-      packet.packet_base = new byte[] {(byte) 0x80};
+      packet.packetBase = new byte[] {(byte) 0x80};
       packet.packet = 0;
       assertTrue(kateDec.isHeader(packet));
 
-      packet.packet_base = new byte[] {0x00};
+      packet.packetBase = new byte[] {0x00};
       assertFalse(kateDec.isHeader(packet));
     }
   }

@@ -29,13 +29,13 @@ public class BlockTest {
     when(info.getMapType()).thenReturn(new int[] {0});
   }
 
-  private Packet makePacket(byte[] data, long granule, long packetno, int eos) {
+  private Packet makePacket(byte[] data, long granule, long packetNo, int eos) {
     Packet p = new Packet();
-    p.packet_base = data;
+    p.packetBase = data;
     p.packet = 0;
     p.bytes = data.length;
     p.granulepos = granule;
-    p.packetno = packetno;
+    p.packetNo = packetNo;
     p.e_o_s = eos;
     return p;
   }

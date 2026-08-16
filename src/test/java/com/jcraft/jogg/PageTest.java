@@ -15,17 +15,17 @@ class PageTest {
 
   private byte[] header(int size) {
     byte[] h = new byte[size];
-    page.header_base = h;
+    page.headerBase = h;
     page.header = 0;
-    page.header_len = size;
+    page.headerLen = size;
     return h;
   }
 
   private byte[] body(int size) {
     byte[] b = new byte[size];
-    page.body_base = b;
+    page.bodyBase = b;
     page.body = 0;
-    page.body_len = size;
+    page.bodyLen = size;
     return b;
   }
 
@@ -147,9 +147,9 @@ class PageTest {
   @Test
   void testHeaderOffset() {
     byte[] h = new byte[40];
-    page.header_base = h;
+    page.headerBase = h;
     page.header = 10;
-    page.header_len = 27;
+    page.headerLen = 27;
     h[10 + 4] = 7;
     assertEquals(7, page.version());
   }
@@ -158,9 +158,9 @@ class PageTest {
   void testBodyOffset() {
     byte[] h = header(27);
     byte[] b = new byte[50];
-    page.body_base = b;
+    page.bodyBase = b;
     page.body = 20;
-    page.body_len = 5;
+    page.bodyLen = 5;
     for (int i = 0; i < 5; i++) b[20 + i] = (byte) (100 + i);
     page.checksum();
     int crc =

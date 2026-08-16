@@ -84,7 +84,7 @@ class DecodeExample {
       oy.wrote(bytes);
 
       // Get the first page.
-      if (oy.pageout(og) != 1) {
+      if (oy.pageOut(og) != 1) {
         // have we simply run out of data?  If so, we're done.
         if (bytes < 4096) break;
 
@@ -127,7 +127,7 @@ class DecodeExample {
       int i = 0;
       while (i < 2) {
         while (i < 2) {
-          int result = oy.pageout(og);
+          int result = oy.pageOut(og);
           if (result == 0) break; // Need more data
 
           if (result == 1) {
@@ -185,7 +185,7 @@ class DecodeExample {
       // The rest is just a straight decode loop until end of stream
       while (eos == 0) {
         while (eos == 0) {
-          int result = oy.pageout(og);
+          int result = oy.pageOut(og);
           if (result == 0) break; // need more data
           if (result == -1) { // missing or corrupt data at this page position
             System.err.println("Corrupt or missing data in bitstream; continuing...");

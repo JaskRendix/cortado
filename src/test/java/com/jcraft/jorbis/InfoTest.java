@@ -19,7 +19,7 @@ class InfoTest {
   private Packet makePacket(Buffer b) {
     Packet p = new Packet();
     byte[] raw = b.buffer(); // correct accessor
-    p.packet_base = raw;
+    p.packetBase = raw;
     p.packet = 0;
     p.bytes = raw.length;
     p.b_o_s = 1;

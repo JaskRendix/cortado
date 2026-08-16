@@ -4,8 +4,8 @@
 * Written by: 2000 ymnk<ymnk@jcaft.com>
 *
 * Many thanks to
-*  Monty <monty@xiph.org> and
-*  The XIPHOPHORUS Company http://www.xiph.org/ .
+*   Monty <monty@xiph.org> and
+*   The XIPHOPHORUS Company http://www.xiph.org/ .
 * JOrbis has been based on their awesome works, Vorbis codec.
 *
 * This program is free software; you can redistribute it and/or
@@ -33,8 +33,8 @@ public class SyncState {
   int returned;
 
   int unsynced;
-  int headerbytes;
-  int bodybytes;
+  int headerBytes;
+  int bodyBytes;
 
   public int clear() {
     data = null;
@@ -51,15 +51,15 @@ public class SyncState {
     }
 
     if (size > storage - fill) {
-      int newsize = size + fill + 4096;
+      int newSize = size + fill + 4096;
       if (data != null) {
-        byte[] foo = new byte[newsize];
+        byte[] foo = new byte[newSize];
         System.arraycopy(data, 0, foo, 0, data.length);
         data = foo;
       } else {
-        data = new byte[newsize];
+        data = new byte[newSize];
       }
-      storage = newsize;
+      storage = newSize;
     }
 
     return fill;
@@ -71,15 +71,15 @@ public class SyncState {
     return 0;
   }
 
-  private final Page pageseek = new Page();
+  private final Page pageSeekInstance = new Page();
   private final byte[] chksum = new byte[4];
 
-  public int pageseek(Page og) {
+  public int pageSeek(Page og) {
     int page = returned;
     int next;
     int bytes = fill - returned;
 
-    if (headerbytes == 0) {
+    if (headerBytes == 0) {
       int _headerbytes, i;
       if (bytes < 27) return 0;
 
@@ -87,8 +87,8 @@ public class SyncState {
           || data[page + 1] != 'g'
           || data[page + 2] != 'g'
           || data[page + 3] != 'S') {
-        headerbytes = 0;
-        bodybytes = 0;
+        headerBytes = 0;
+        bodyBytes = 0;
 
         next = 0;
         for (int ii = 0; ii < bytes - 1; ii++) {
@@ -106,12 +106,12 @@ public class SyncState {
       if (bytes < _headerbytes) return 0;
 
       for (i = 0; i < (data[page + 26] & 0xff); i++) {
-        bodybytes += (data[page + 27 + i] & 0xff);
+        bodyBytes += (data[page + 27 + i] & 0xff);
       }
-      headerbytes = _headerbytes;
+      headerBytes = _headerbytes;
     }
 
-    if (bodybytes + headerbytes > bytes) return 0;
+    if (bodyBytes + headerBytes > bytes) return 0;
 
     synchronized (chksum) {
       System.arraycopy(data, page + 22, chksum, 0, 4);
@@ -120,14 +120,14 @@ public class SyncState {
       data[page + 24] = 0;
       data[page + 25] = 0;
 
-      Page log = pageseek;
-      log.header_base = data;
+      Page log = pageSeekInstance;
+      log.headerBase = data;
       log.header = page;
-      log.header_len = headerbytes;
+      log.headerLen = headerBytes;
 
-      log.body_base = data;
-      log.body = page + headerbytes;
-      log.body_len = bodybytes;
+      log.bodyBase = data;
+      log.body = page + headerBytes;
+      log.bodyLen = bodyBytes;
       log.checksum();
 
       if (chksum[0] != data[page + 22]
@@ -136,8 +136,8 @@ public class SyncState {
           || chksum[3] != data[page + 25]) {
         System.arraycopy(chksum, 0, data, page + 22, 4);
 
-        headerbytes = 0;
-        bodybytes = 0;
+        headerBytes = 0;
+        bodyBytes = 0;
         next = 0;
         for (int ii = 0; ii < bytes - 1; ii++) {
           if (data[page + 1 + ii] == 'O') {
@@ -154,24 +154,24 @@ public class SyncState {
     page = returned;
 
     if (og != null) {
-      og.header_base = data;
+      og.headerBase = data;
       og.header = page;
-      og.header_len = headerbytes;
-      og.body_base = data;
-      og.body = page + headerbytes;
-      og.body_len = bodybytes;
+      og.headerLen = headerBytes;
+      og.bodyBase = data;
+      og.body = page + headerBytes;
+      og.bodyLen = bodyBytes;
     }
 
     unsynced = 0;
-    returned += (bytes = headerbytes + bodybytes);
-    headerbytes = 0;
-    bodybytes = 0;
+    returned += (bytes = headerBytes + bodyBytes);
+    headerBytes = 0;
+    bodyBytes = 0;
     return bytes;
   }
 
-  public int pageout(Page og) {
+  public int pageOut(Page og) {
     while (true) {
-      int ret = pageseek(og);
+      int ret = pageSeek(og);
       if (ret > 0) {
         return 1;
       }
@@ -190,8 +190,8 @@ public class SyncState {
     fill = 0;
     returned = 0;
     unsynced = 0;
-    headerbytes = 0;
-    bodybytes = 0;
+    headerBytes = 0;
+    bodyBytes = 0;
     return 0;
   }
 

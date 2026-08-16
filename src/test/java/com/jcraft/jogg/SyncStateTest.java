@@ -56,7 +56,7 @@ class SyncStateTest {
     s.wrote(10);
 
     Page p = new Page();
-    assertEquals(0, s.pageseek(p));
+    assertEquals(0, s.pageSeek(p));
   }
 
   @Test
@@ -74,7 +74,7 @@ class SyncStateTest {
     s.wrote(30);
 
     Page p = new Page();
-    int ret = s.pageseek(p);
+    int ret = s.pageSeek(p);
 
     assertTrue(ret < 0);
     assertTrue(s.returned > 0);
@@ -98,7 +98,7 @@ class SyncStateTest {
     s.wrote(27);
 
     Page p = new Page();
-    assertEquals(0, s.pageseek(p));
+    assertEquals(0, s.pageSeek(p));
   }
 
   @Test
@@ -123,7 +123,7 @@ class SyncStateTest {
     s.wrote(50);
 
     Page p = new Page();
-    int ret = s.pageseek(p);
+    int ret = s.pageSeek(p);
 
     assertTrue(ret < 0);
     assertTrue(s.returned > 0);
@@ -152,15 +152,15 @@ class SyncStateTest {
     s.wrote(48);
 
     Page p = new Page();
-    p.header_base = s.data;
+    p.headerBase = s.data;
     p.header = 0;
-    p.header_len = 28;
-    p.body_base = s.data;
+    p.headerLen = 28;
+    p.bodyBase = s.data;
     p.body = 28;
-    p.body_len = 20;
+    p.bodyLen = 20;
     p.checksum();
 
-    int ret = s.pageseek(p);
+    int ret = s.pageSeek(p);
 
     assertEquals(48, ret);
   }
@@ -188,15 +188,15 @@ class SyncStateTest {
     s.wrote(48);
 
     Page p = new Page();
-    p.header_base = s.data;
+    p.headerBase = s.data;
     p.header = 0;
-    p.header_len = 28;
-    p.body_base = s.data;
+    p.headerLen = 28;
+    p.bodyBase = s.data;
     p.body = 28;
-    p.body_len = 20;
+    p.bodyLen = 20;
     p.checksum();
 
-    assertEquals(1, s.pageout(p));
+    assertEquals(1, s.pageOut(p));
   }
 
   @Test
@@ -214,7 +214,7 @@ class SyncStateTest {
     s.wrote(30);
 
     Page p = new Page();
-    assertEquals(-1, s.pageout(p));
+    assertEquals(-1, s.pageOut(p));
   }
 
   @Test
@@ -224,15 +224,15 @@ class SyncStateTest {
     s.wrote(10);
     s.returned = 5;
     s.unsynced = 1;
-    s.headerbytes = 3;
-    s.bodybytes = 7;
+    s.headerBytes = 3;
+    s.bodyBytes = 7;
 
     s.reset();
 
     assertEquals(0, s.fill);
     assertEquals(0, s.returned);
     assertEquals(0, s.unsynced);
-    assertEquals(0, s.headerbytes);
-    assertEquals(0, s.bodybytes);
+    assertEquals(0, s.headerBytes);
+    assertEquals(0, s.bodyBytes);
   }
 }

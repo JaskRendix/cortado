@@ -4,8 +4,8 @@
 * Written by: 2000 ymnk<ymnk@jcaft.com>
 *
 * Many thanks to
-*  Monty <monty@xiph.org> and
-*  The XIPHOPHORUS Company http://www.xiph.org/ .
+*   Monty <monty@xiph.org> and
+*   The XIPHOPHORUS Company http://www.xiph.org/ .
 * JOrbis has been based on their awesome works, Vorbis codec.
 *
 * This program is free software; you can redistribute it and/or
@@ -26,7 +26,7 @@
 package com.jcraft.jogg;
 
 public class Packet {
-  public byte[] packet_base;
+  public byte[] packetBase;
   public int packet;
   public int bytes;
   public int b_o_s;
@@ -34,7 +34,7 @@ public class Packet {
 
   public long granulepos;
 
-  public long packetno; // sequence number for decode; the framing
+  public long packetNo; // sequence number for decode; the framing
   // knows where there's a hole in the data,
   // but we need coupling so that the codec
   // (which is in a separate abstraction

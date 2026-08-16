@@ -41,7 +41,7 @@ public class KateDec extends Element implements OggPayload {
   private Comment kc;
   private State k;
   private Packet op;
-  private int packetno;
+  private int packetNo;
 
   private long basetime = 0;
   private long lastTs;
@@ -53,7 +53,7 @@ public class KateDec extends Element implements OggPayload {
    */
   @Override
   public boolean isType(Packet op) {
-    return typeFind(op.packet_base, op.packet, op.bytes) > 0;
+    return typeFind(op.packetBase, op.packet, op.bytes) > 0;
   }
 
   @Override
@@ -83,7 +83,7 @@ public class KateDec extends Element implements OggPayload {
 
   @Override
   public boolean isHeader(Packet op) {
-    return (op.packet_base[op.packet] & 0x80) == 0x80;
+    return (op.packetBase[op.packet] & 0x80) == 0x80;
   }
 
   @Override
@@ -179,17 +179,17 @@ public class KateDec extends Element implements OggPayload {
 
           Debug.log(Debug.DEBUG, parent.getName() + " <<< " + buf);
 
-          op.packet_base = buf.data;
+          op.packetBase = buf.data;
           op.packet = buf.offset;
           op.bytes = buf.length;
-          op.b_o_s = (packetno == 0 ? 1 : 0);
+          op.b_o_s = (packetNo == 0 ? 1 : 0);
           op.e_o_s = 0;
-          op.packetno = packetno;
+          op.packetNo = packetNo;
           timestamp = buf.timestamp;
 
           Debug.log(
               Debug.DEBUG,
-              "Kate chainFunc with packetno " + packetno + ", haveDecoder " + haveDecoder);
+              "Kate chainFunc with packetNo " + packetNo + ", haveDecoder " + haveDecoder);
 
           if (!haveDecoder) {
             result = takeHeader(op);
@@ -202,10 +202,10 @@ public class KateDec extends Element implements OggPayload {
               caps = new Caps("application/x-kate-event");
             }
             buf.free();
-            packetno++;
+            packetNo++;
             return OK;
           } else {
-            if ((op.packet_base[op.packet] & 0x80) == 0x80) {
+            if ((op.packetBase[op.packet] & 0x80) == 0x80) {
               Debug.log(Debug.DEBUG, "ignoring header");
               buf.free();
               return OK;
@@ -252,7 +252,7 @@ public class KateDec extends Element implements OggPayload {
               result = ERROR;
             }
           }
-          packetno++;
+          packetNo++;
 
           return result;
         }
@@ -282,7 +282,7 @@ public class KateDec extends Element implements OggPayload {
     switch (transition) {
       case STOP_PAUSE:
         lastTs = -1;
-        packetno = 0;
+        packetNo = 0;
         break;
       default:
         break;

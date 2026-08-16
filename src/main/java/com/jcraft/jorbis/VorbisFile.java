@@ -139,7 +139,7 @@ public class VorbisFile {
     while (true) {
       int more;
       if (boundary > 0 && offset >= boundary) return OV_FALSE;
-      more = oy.pageseek(page);
+      more = oy.pageSeek(page);
       if (more < 0) {
         offset -= more;
       } else {
@@ -209,7 +209,7 @@ public class VorbisFile {
         endsearched = bisect;
         if (ret >= 0) next = ret;
       } else {
-        searched = ret + page.header_len + page.body_len;
+        searched = ret + page.headerLen + page.bodyLen;
       }
     }
     seek_helper(next);
@@ -512,7 +512,7 @@ public class VorbisFile {
 
       // bitrate tracking; add the header's bytes here, the body bytes
       // are done by packet above
-      bittrack += og.header_len * 8;
+      bittrack += og.headerLen * 8;
 
       // has our decoding just traversed a bitstream boundary?
       if (decode_ready) {

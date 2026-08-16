@@ -168,7 +168,7 @@ public class DurationScanner {
     System.arraycopy(buffer, 0, oy.data, offset, bufbytes);
     oy.wrote(bufbytes);
 
-    while (oy.pageout(og) == 1) {
+    while (oy.pageOut(og) == 1) {
       Integer serialno = og.serialno();
       StreamInfo info = streaminfo.get(serialno);
       if (info == null) {

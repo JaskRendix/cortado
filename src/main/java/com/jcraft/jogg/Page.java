@@ -26,6 +26,7 @@
 package com.jcraft.jogg;
 
 public class Page {
+
   private static final int[] CRC_LOOKUP = new int[256];
 
   static {
@@ -46,67 +47,67 @@ public class Page {
     return r;
   }
 
-  public byte[] header_base;
+  public byte[] headerBase;
   public int header;
-  public int header_len;
-  public byte[] body_base;
+  public int headerLen;
+  public byte[] bodyBase;
   public int body;
-  public int body_len;
+  public int bodyLen;
 
   int version() {
-    return header_base[header + 4] & 0xff;
+    return headerBase[header + 4] & 0xff;
   }
 
   int continued() {
-    return header_base[header + 5] & 0x01;
+    return headerBase[header + 5] & 0x01;
   }
 
   public int bos() {
-    return header_base[header + 5] & 0x02;
+    return headerBase[header + 5] & 0x02;
   }
 
   public int eos() {
-    return header_base[header + 5] & 0x04;
+    return headerBase[header + 5] & 0x04;
   }
 
   public long granulepos() {
-    long foo = header_base[header + 13] & 0xff;
-    foo = (foo << 8) | (header_base[header + 12] & 0xff);
-    foo = (foo << 8) | (header_base[header + 11] & 0xff);
-    foo = (foo << 8) | (header_base[header + 10] & 0xff);
-    foo = (foo << 8) | (header_base[header + 9] & 0xff);
-    foo = (foo << 8) | (header_base[header + 8] & 0xff);
-    foo = (foo << 8) | (header_base[header + 7] & 0xff);
-    foo = (foo << 8) | (header_base[header + 6] & 0xff);
+    long foo = headerBase[header + 13] & 0xff;
+    foo = (foo << 8) | (headerBase[header + 12] & 0xff);
+    foo = (foo << 8) | (headerBase[header + 11] & 0xff);
+    foo = (foo << 8) | (headerBase[header + 10] & 0xff);
+    foo = (foo << 8) | (headerBase[header + 9] & 0xff);
+    foo = (foo << 8) | (headerBase[header + 8] & 0xff);
+    foo = (foo << 8) | (headerBase[header + 7] & 0xff);
+    foo = (foo << 8) | (headerBase[header + 6] & 0xff);
     return foo;
   }
 
   public int serialno() {
-    return (header_base[header + 14] & 0xff)
-        | ((header_base[header + 15] & 0xff) << 8)
-        | ((header_base[header + 16] & 0xff) << 16)
-        | ((header_base[header + 17] & 0xff) << 24);
+    return (headerBase[header + 14] & 0xff)
+        | ((headerBase[header + 15] & 0xff) << 8)
+        | ((headerBase[header + 16] & 0xff) << 16)
+        | ((headerBase[header + 17] & 0xff) << 24);
   }
 
   int pageno() {
-    return (header_base[header + 18] & 0xff)
-        | ((header_base[header + 19] & 0xff) << 8)
-        | ((header_base[header + 20] & 0xff) << 16)
-        | ((header_base[header + 21] & 0xff) << 24);
+    return (headerBase[header + 18] & 0xff)
+        | ((headerBase[header + 19] & 0xff) << 8)
+        | ((headerBase[header + 20] & 0xff) << 16)
+        | ((headerBase[header + 21] & 0xff) << 24);
   }
 
   void checksum() {
     int crcReg = 0;
-    for (int i = 0; i < header_len; i++) {
+    for (int i = 0; i < headerLen; i++) {
       crcReg =
-          (crcReg << 8) ^ CRC_LOOKUP[((crcReg >>> 24) & 0xff) ^ (header_base[header + i] & 0xff)];
+          (crcReg << 8) ^ CRC_LOOKUP[((crcReg >>> 24) & 0xff) ^ (headerBase[header + i] & 0xff)];
     }
-    for (int i = 0; i < body_len; i++) {
-      crcReg = (crcReg << 8) ^ CRC_LOOKUP[((crcReg >>> 24) & 0xff) ^ (body_base[body + i] & 0xff)];
+    for (int i = 0; i < bodyLen; i++) {
+      crcReg = (crcReg << 8) ^ CRC_LOOKUP[((crcReg >>> 24) & 0xff) ^ (bodyBase[body + i] & 0xff)];
     }
-    header_base[header + 22] = (byte) crcReg;
-    header_base[header + 23] = (byte) (crcReg >>> 8);
-    header_base[header + 24] = (byte) (crcReg >>> 16);
-    header_base[header + 25] = (byte) (crcReg >>> 24);
+    headerBase[header + 22] = (byte) crcReg;
+    headerBase[header + 23] = (byte) (crcReg >>> 8);
+    headerBase[header + 24] = (byte) (crcReg >>> 16);
+    headerBase[header + 25] = (byte) (crcReg >>> 24);
   }
 }

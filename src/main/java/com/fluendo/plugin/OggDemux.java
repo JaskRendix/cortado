@@ -141,7 +141,7 @@ public class OggDemux extends Element {
 
     private com.fluendo.jst.Buffer bufferFromPacket(Packet op) {
       com.fluendo.jst.Buffer data = com.fluendo.jst.Buffer.create();
-      data.copyData(op.packet_base, op.packet, op.bytes);
+      data.copyData(op.packetBase, op.packet, op.bytes);
       data.time_offset = op.granulepos;
       if (payload != null) data.timestamp = payload.granuleToTime(op.granulepos);
       else data.timestamp = -1;
@@ -166,13 +166,13 @@ public class OggDemux extends Element {
           }
         }
       }
-      if (MemUtils.startsWith(op.packet_base, op.packet, op.bytes, fishead_signature)) {
+      if (MemUtils.startsWith(op.packetBase, op.packet, op.bytes, fishead_signature)) {
         type = TYPE_SKELETON;
         Debug.log(Debug.INFO, "ignoring skeleton stream " + serialno);
         postMessage(Message.newWarning(this, "ignoring skeleton stream " + serialno));
         return;
       }
-      if (MemUtils.startsWith(op.packet_base, op.packet, op.bytes, cmml_signature)) {
+      if (MemUtils.startsWith(op.packetBase, op.packet, op.bytes, cmml_signature)) {
         type = TYPE_CMML;
         Debug.log(Debug.INFO, "ignoring CMML stream " + serialno);
         postMessage(Message.newWarning(this, "ignoring CMML stream " + serialno));
@@ -408,10 +408,10 @@ public class OggDemux extends Element {
           System.arraycopy(buf.data, buf.offset, oy.data, index, buf.length);
           oy.wrote(buf.length);
           while (flowRet == OK) {
-            res = oy.pageout(og);
+            res = oy.pageOut(og);
             if (res == 0) break;
             if (res == -1) {
-              Debug.log(Debug.WARNING, "ogg: pageout gave " + res);
+              Debug.log(Debug.WARNING, "ogg: pageOut gave " + res);
               if (chain != null) {
                 chain.markDiscont();
               }
