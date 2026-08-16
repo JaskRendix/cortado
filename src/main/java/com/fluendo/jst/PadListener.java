@@ -20,9 +20,9 @@ package com.fluendo.jst;
 
 @FunctionalInterface
 public interface PadListener {
-    void padAdded(Pad pad);
+  void padAdded(Pad pad);
 
-    default void padRemoved(Pad pad) {}
+  default void padRemoved(Pad pad) {}
 
-    default void noMorePads() {}
+  default void noMorePads() {}
 }

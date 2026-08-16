@@ -20,5 +20,5 @@ package com.fluendo.jst;
 
 @FunctionalInterface
 public interface BusHandler {
-    void handleMessage(Message message);
+  void handleMessage(Message message);
 }

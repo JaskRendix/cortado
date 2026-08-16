@@ -19,8 +19,8 @@
 package com.fluendo.jst;
 
 public interface BusSyncHandler {
-    int DROP = 0;
-    int PASS = 1;
+  int DROP = 0;
+  int PASS = 1;
 
-    int handleSyncMessage(Message message);
+  int handleSyncMessage(Message message);
 }

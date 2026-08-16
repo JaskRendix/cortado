@@ -18,200 +18,203 @@
 
 package com.fluendo.plugin;
 
+import com.fluendo.jst.*;
+import com.fluendo.utils.*;
 import java.awt.*;
 import java.awt.image.*;
-import com.fluendo.utils.*;
-import com.fluendo.jst.*;
 
 public class VideoSink extends Sink {
-    private Component component;
-    private boolean keepAspect;
-    private boolean ignoreAspect;
-    private boolean scale;
-    private Frame frame;
+  private Component component;
+  private boolean keepAspect;
+  private boolean ignoreAspect;
+  private boolean scale;
+  private Frame frame;
 
-    private int width, height;
-    private int aspectX, aspectY;
-    private Rectangle bounds;
+  private int width, height;
+  private int aspectX, aspectY;
+  private Rectangle bounds;
 
-    public VideoSink() {
-        keepAspect = true;
-        scale = true;
-        bounds = null;
+  public VideoSink() {
+    keepAspect = true;
+    scale = true;
+    bounds = null;
+  }
+
+  @Override
+  protected boolean setCapsFunc(Caps caps) {
+    String mime = caps.getMime();
+    if (!mime.equals("video/raw")) return false;
+
+    width = caps.getFieldInt("width", -1);
+    height = caps.getFieldInt("height", -1);
+
+    if (width == -1 || height == -1) return false;
+
+    aspectX = caps.getFieldInt("aspect_x", 1);
+    aspectY = caps.getFieldInt("aspect_y", 1);
+
+    if (!ignoreAspect) {
+      Debug.log(
+          Debug.DEBUG,
+          this + " dimension: " + width + "x" + height + ", aspect: " + aspectX + "/" + aspectY);
+
+      if (aspectX < 0 || aspectY < 0) {
+        Debug.log(Debug.WARNING, "Illegal negative aspect ratio detected; defaulting to 1:1.");
+      } else if (aspectX == 0 || aspectY == 0) {
+        Debug.log(Debug.DEBUG, "Undefined aspect ratio; defaulting to 1:1.");
+      } else if (aspectY > aspectX) {
+        height = height * aspectY / aspectX;
+      } else {
+        width = width * aspectX / aspectY;
+      }
+      Debug.log(Debug.DEBUG, this + " scaled source: " + width + "x" + height);
     }
 
-    @Override
-    protected boolean setCapsFunc(Caps caps) {
-        String mime = caps.getMime();
-        if (!mime.equals("video/raw"))
-            return false;
+    component.setVisible(true);
 
-        width = caps.getFieldInt("width", -1);
-        height = caps.getFieldInt("height", -1);
+    return true;
+  }
 
-        if (width == -1 || height == -1)
-            return false;
+  @Override
+  protected int preroll(Buffer buf) {
+    return render(buf);
+  }
 
-        aspectX = caps.getFieldInt("aspect_x", 1);
-        aspectY = caps.getFieldInt("aspect_y", 1);
+  @Override
+  protected int render(Buffer buf) {
+    Image image;
+    int x, y, w, h;
 
-        if (!ignoreAspect) {
-            Debug.log(Debug.DEBUG, this + " dimension: " + width + "x" + height + ", aspect: " + aspectX + "/" + aspectY);
+    if (!buf.duplicate) {
+      Debug.log(Debug.DEBUG, this.getName() + " starting buffer " + buf);
 
-            if (aspectX < 0 || aspectY < 0) {
-                Debug.log(Debug.WARNING, "Illegal negative aspect ratio detected; defaulting to 1:1.");
-            } else if (aspectX == 0 || aspectY == 0) {
-                Debug.log(Debug.DEBUG, "Undefined aspect ratio; defaulting to 1:1.");
-            } else if (aspectY > aspectX) {
-                height = height * aspectY / aspectX;
-            } else {
-                width = width * aspectX / aspectY;
-            }
-            Debug.log(Debug.DEBUG, this + " scaled source: " + width + "x" + height);
-        }
+      if (buf.object instanceof ImageProducer) {
+        image = component.createImage((ImageProducer) buf.object);
+      } else if (buf.object instanceof Image) {
+        image = (Image) buf.object;
+      } else {
+        System.out.println(this + ": unknown buffer received " + buf);
+        return Pad.ERROR;
+      }
 
-        component.setVisible(true);
+      if (!component.isVisible()) return Pad.NOT_NEGOTIATED;
 
-        return true;
-    }
+      Graphics graphics = component.getGraphics();
 
-    @Override
-    protected int preroll(Buffer buf) {
-        return render(buf);
-    }
-
-    @Override
-    protected int render(Buffer buf) {
-        Image image;
-        int x, y, w, h;
-
-        if (!buf.duplicate) {
-            Debug.log(Debug.DEBUG, this.getName() + " starting buffer " + buf);
-
-            if (buf.object instanceof ImageProducer) {
-                image = component.createImage((ImageProducer) buf.object);
-            } else if (buf.object instanceof Image) {
-                image = (Image) buf.object;
-            } else {
-                System.out.println(this + ": unknown buffer received " + buf);
-                return Pad.ERROR;
-            }
-
-            if (!component.isVisible())
-                return Pad.NOT_NEGOTIATED;
-
-            Graphics graphics = component.getGraphics();
-
-            if (graphics == null) {
-                return Pad.OK;
-            }
-
-            if (keepAspect) {
-                double src_ratio, dst_ratio;
-
-                if (bounds == null) {
-                    bounds = new Rectangle(component.getSize());
-                }
-                src_ratio = (double) width / height;
-                dst_ratio = (double) bounds.width / bounds.height;
-
-                if (src_ratio > dst_ratio) {
-                    w = bounds.width;
-                    h = (int) (bounds.width / src_ratio);
-                    x = bounds.x;
-                    y = bounds.y + (bounds.height - h) / 2;
-                } else if (src_ratio < dst_ratio) {
-                    w = (int) (bounds.height * src_ratio);
-                    h = bounds.height;
-                    x = bounds.x + (bounds.width - w) / 2;
-                    y = bounds.y;
-                } else {
-                    x = bounds.x;
-                    y = bounds.y;
-                    w = bounds.width;
-                    h = bounds.height;
-                }
-            } else if (!scale) {
-                w = Math.min(width, bounds.width);
-                h = Math.min(height, bounds.height);
-                x = bounds.x + (bounds.width - w) / 2;
-                y = bounds.y + (bounds.height - h) / 2;
-            } else {
-                /* draw in available area */
-                w = bounds.width;
-                h = bounds.height;
-                x = 0;
-                y = 0;
-            }
-            graphics.drawImage(image, x, y, w, h, null);
-            Debug.log(Debug.DEBUG, this.getName() + " done with buffer " + buf);
-        }
+      if (graphics == null) {
         return Pad.OK;
-    }
+      }
 
-    @Override
-    public String getFactoryName() {
-        return "videosink";
-    }
+      if (keepAspect) {
+        double src_ratio, dst_ratio;
 
-    /*
-     * component:     A java.awt.Component where the video frames will be sent
-     * keep-aspect:   String, if "true", the aspect ratio of the input video will be maintained
-     * scale:         String, if "true", and keep-aspect is not true, the video 
-     *                will be scaled to fit the bounding rectangle
-     * 
-     * bounds:        A java.awt.Rectangle giving the output bounding rectangle. 
-     *                This must always be set after component, because setting 
-     *                component resets the bounding rectangle to the full extent
-     *                of the component.
-     */
-    @Override
-    public boolean setProperty(String name, java.lang.Object value) {
-        if (name.equals("component")) {
-            component = (Component) value;
-        } else if (name.equals("keep-aspect")) {
-            keepAspect = String.valueOf(value).equals("true");
-        } else if (name.equals("ignore-aspect")) {
-            ignoreAspect = String.valueOf(value).equals("true");
-        } else if (name.equals("scale")) {
-            scale = String.valueOf(value).equals("true");
-        } else if (name.equals("bounds")) {
-            bounds = (Rectangle) value;
-            if (bounds != null) {
-                Debug.info("Video bounding rectangle: x=" +
-                    bounds.x + ", y=" +
-                    bounds.y + ", w=" +
-                    bounds.width + ", h=" +
-                    bounds.height);
-            } else {
-                Debug.info("Video bounding rectangle cleared");
-            }
+        if (bounds == null) {
+          bounds = new Rectangle(component.getSize());
+        }
+        src_ratio = (double) width / height;
+        dst_ratio = (double) bounds.width / bounds.height;
+
+        if (src_ratio > dst_ratio) {
+          w = bounds.width;
+          h = (int) (bounds.width / src_ratio);
+          x = bounds.x;
+          y = bounds.y + (bounds.height - h) / 2;
+        } else if (src_ratio < dst_ratio) {
+          w = (int) (bounds.height * src_ratio);
+          h = bounds.height;
+          x = bounds.x + (bounds.width - w) / 2;
+          y = bounds.y;
         } else {
-            return super.setProperty(name, value);
+          x = bounds.x;
+          y = bounds.y;
+          w = bounds.width;
+          h = bounds.height;
         }
+      } else if (!scale) {
+        w = Math.min(width, bounds.width);
+        h = Math.min(height, bounds.height);
+        x = bounds.x + (bounds.width - w) / 2;
+        y = bounds.y + (bounds.height - h) / 2;
+      } else {
+        /* draw in available area */
+        w = bounds.width;
+        h = bounds.height;
+        x = 0;
+        y = 0;
+      }
+      graphics.drawImage(image, x, y, w, h, null);
+      Debug.log(Debug.DEBUG, this.getName() + " done with buffer " + buf);
+    }
+    return Pad.OK;
+  }
 
-        return true;
+  @Override
+  public String getFactoryName() {
+    return "videosink";
+  }
+
+  /*
+   * component:     A java.awt.Component where the video frames will be sent
+   * keep-aspect:   String, if "true", the aspect ratio of the input video will be maintained
+   * scale:         String, if "true", and keep-aspect is not true, the video
+   *                will be scaled to fit the bounding rectangle
+   *
+   * bounds:        A java.awt.Rectangle giving the output bounding rectangle.
+   *                This must always be set after component, because setting
+   *                component resets the bounding rectangle to the full extent
+   *                of the component.
+   */
+  @Override
+  public boolean setProperty(String name, java.lang.Object value) {
+    if (name.equals("component")) {
+      component = (Component) value;
+    } else if (name.equals("keep-aspect")) {
+      keepAspect = String.valueOf(value).equals("true");
+    } else if (name.equals("ignore-aspect")) {
+      ignoreAspect = String.valueOf(value).equals("true");
+    } else if (name.equals("scale")) {
+      scale = String.valueOf(value).equals("true");
+    } else if (name.equals("bounds")) {
+      bounds = (Rectangle) value;
+      if (bounds != null) {
+        Debug.info(
+            "Video bounding rectangle: x="
+                + bounds.x
+                + ", y="
+                + bounds.y
+                + ", w="
+                + bounds.width
+                + ", h="
+                + bounds.height);
+      } else {
+        Debug.info("Video bounding rectangle cleared");
+      }
+    } else {
+      return super.setProperty(name, value);
     }
 
-    @Override
-    public java.lang.Object getProperty(String name) {
-        if (name.equals("component")) {
-            return component;
-        } else if (name.equals("keep-aspect")) {
-            return (keepAspect ? "true" : "false");
-        } else if (name.equals("bounds")) {
-            return bounds;
-        } else {
-            return super.getProperty(name);
-        }
-    }
+    return true;
+  }
 
-    @Override
-    protected int changeState(int transition) {
-        if (currentState == STOP && pendingState == PAUSE && component == null) {
-            frame = new Frame();
-            component = (Component) frame;
-        }
-        return super.changeState(transition);
+  @Override
+  public java.lang.Object getProperty(String name) {
+    if (name.equals("component")) {
+      return component;
+    } else if (name.equals("keep-aspect")) {
+      return (keepAspect ? "true" : "false");
+    } else if (name.equals("bounds")) {
+      return bounds;
+    } else {
+      return super.getProperty(name);
     }
+  }
+
+  @Override
+  protected int changeState(int transition) {
+    if (currentState == STOP && pendingState == PAUSE && component == null) {
+      frame = new Frame();
+      component = (Component) frame;
+    }
+    return super.changeState(transition);
+  }
 }

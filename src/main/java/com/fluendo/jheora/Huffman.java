@@ -1,22 +1,22 @@
 /* Jheora
  * Copyright (C) 2004 Fluendo S.L.
- *  
+ *
  * Written by: 2004 Wim Taymans <wim@fluendo.com>
- *   
- * Many thanks to 
+ *
+ * Many thanks to
  *   The Xiph.Org Foundation http://www.xiph.org/
  * Jheora was based on their Theora reference decoder.
- *   
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
  * the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Library General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Library General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -29,220 +29,226 @@ import java.util.Arrays;
 
 public final class Huffman {
 
-    public static final int NUM_HUFF_TABLES = 80;
-    public static final int DC_HUFF_OFFSET = 0;
-    public static final int AC_HUFF_OFFSET = 16;
-    public static final int AC_TABLE_2_THRESH = 5;
-    public static final int AC_TABLE_3_THRESH = 14;
-    public static final int AC_TABLE_4_THRESH = 27;
+  public static final int NUM_HUFF_TABLES = 80;
+  public static final int DC_HUFF_OFFSET = 0;
+  public static final int AC_HUFF_OFFSET = 16;
+  public static final int AC_TABLE_2_THRESH = 5;
+  public static final int AC_TABLE_3_THRESH = 14;
+  public static final int AC_TABLE_4_THRESH = 27;
 
-    public static final int DC_HUFF_CHOICES = 16;
-    public static final int DC_HUFF_CHOICE_BITS = 4;
+  public static final int DC_HUFF_CHOICES = 16;
+  public static final int DC_HUFF_CHOICE_BITS = 4;
 
-    public static final int AC_HUFF_CHOICES = 16;
-    public static final int AC_HUFF_CHOICE_BITS = 4;
+  public static final int AC_HUFF_CHOICES = 16;
+  public static final int AC_HUFF_CHOICE_BITS = 4;
 
-    /* Constants associated with entropy tokenisation. */
-    public static final int MAX_SINGLE_TOKEN_VALUE = 6;
-    public static final int DCT_VAL_CAT2_MIN = 3;
-    public static final int DCT_VAL_CAT3_MIN = 7;
-    public static final int DCT_VAL_CAT4_MIN = 9;
-    public static final int DCT_VAL_CAT5_MIN = 13;
-    public static final int DCT_VAL_CAT6_MIN = 21;
-    public static final int DCT_VAL_CAT7_MIN = 37;
-    public static final int DCT_VAL_CAT8_MIN = 69;
+  /* Constants associated with entropy tokenisation. */
+  public static final int MAX_SINGLE_TOKEN_VALUE = 6;
+  public static final int DCT_VAL_CAT2_MIN = 3;
+  public static final int DCT_VAL_CAT3_MIN = 7;
+  public static final int DCT_VAL_CAT4_MIN = 9;
+  public static final int DCT_VAL_CAT5_MIN = 13;
+  public static final int DCT_VAL_CAT6_MIN = 21;
+  public static final int DCT_VAL_CAT7_MIN = 37;
+  public static final int DCT_VAL_CAT8_MIN = 69;
 
-    public static final int DCT_EOB_TOKEN = 0;
-    public static final int DCT_EOB_PAIR_TOKEN = 1;
-    public static final int DCT_EOB_TRIPLE_TOKEN = 2;
-    public static final int DCT_REPEAT_RUN_TOKEN = 3;
-    public static final int DCT_REPEAT_RUN2_TOKEN = 4;
-    public static final int DCT_REPEAT_RUN3_TOKEN = 5;
-    public static final int DCT_REPEAT_RUN4_TOKEN = 6;
+  public static final int DCT_EOB_TOKEN = 0;
+  public static final int DCT_EOB_PAIR_TOKEN = 1;
+  public static final int DCT_EOB_TRIPLE_TOKEN = 2;
+  public static final int DCT_REPEAT_RUN_TOKEN = 3;
+  public static final int DCT_REPEAT_RUN2_TOKEN = 4;
+  public static final int DCT_REPEAT_RUN3_TOKEN = 5;
+  public static final int DCT_REPEAT_RUN4_TOKEN = 6;
 
-    public static final int DCT_SHORT_ZRL_TOKEN = 7;
-    public static final int DCT_ZRL_TOKEN = 8;
+  public static final int DCT_SHORT_ZRL_TOKEN = 7;
+  public static final int DCT_ZRL_TOKEN = 8;
 
-    public static final int ONE_TOKEN = 9;        /* Special tokens for -1,1,-2,2 */
-    public static final int MINUS_ONE_TOKEN = 10;
-    public static final int TWO_TOKEN = 11;
-    public static final int MINUS_TWO_TOKEN = 12;
+  public static final int ONE_TOKEN = 9; /* Special tokens for -1,1,-2,2 */
+  public static final int MINUS_ONE_TOKEN = 10;
+  public static final int TWO_TOKEN = 11;
+  public static final int MINUS_TWO_TOKEN = 12;
 
-    public static final int LOW_VAL_TOKENS = (MINUS_TWO_TOKEN + 1);
-    public static final int DCT_VAL_CATEGORY3 = (LOW_VAL_TOKENS + 4);
-    public static final int DCT_VAL_CATEGORY4 = (DCT_VAL_CATEGORY3 + 1);
-    public static final int DCT_VAL_CATEGORY5 = (DCT_VAL_CATEGORY4 + 1);
-    public static final int DCT_VAL_CATEGORY6 = (DCT_VAL_CATEGORY5 + 1);
-    public static final int DCT_VAL_CATEGORY7 = (DCT_VAL_CATEGORY6 + 1);
-    public static final int DCT_VAL_CATEGORY8 = (DCT_VAL_CATEGORY7 + 1);
+  public static final int LOW_VAL_TOKENS = (MINUS_TWO_TOKEN + 1);
+  public static final int DCT_VAL_CATEGORY3 = (LOW_VAL_TOKENS + 4);
+  public static final int DCT_VAL_CATEGORY4 = (DCT_VAL_CATEGORY3 + 1);
+  public static final int DCT_VAL_CATEGORY5 = (DCT_VAL_CATEGORY4 + 1);
+  public static final int DCT_VAL_CATEGORY6 = (DCT_VAL_CATEGORY5 + 1);
+  public static final int DCT_VAL_CATEGORY7 = (DCT_VAL_CATEGORY6 + 1);
+  public static final int DCT_VAL_CATEGORY8 = (DCT_VAL_CATEGORY7 + 1);
 
-    public static final int DCT_RUN_CATEGORY1 = (DCT_VAL_CATEGORY8 + 1);
-    public static final int DCT_RUN_CATEGORY1B = (DCT_RUN_CATEGORY1 + 5);
-    public static final int DCT_RUN_CATEGORY1C = (DCT_RUN_CATEGORY1B + 1);
-    public static final int DCT_RUN_CATEGORY2 = (DCT_RUN_CATEGORY1C + 1);
+  public static final int DCT_RUN_CATEGORY1 = (DCT_VAL_CATEGORY8 + 1);
+  public static final int DCT_RUN_CATEGORY1B = (DCT_RUN_CATEGORY1 + 5);
+  public static final int DCT_RUN_CATEGORY1C = (DCT_RUN_CATEGORY1B + 1);
+  public static final int DCT_RUN_CATEGORY2 = (DCT_RUN_CATEGORY1C + 1);
 
-    /* 32 */
-    public static final int MAX_ENTROPY_TOKENS = (DCT_RUN_CATEGORY2 + 2);
+  /* 32 */
+  public static final int MAX_ENTROPY_TOKENS = (DCT_RUN_CATEGORY2 + 2);
 
-    private Huffman() {
-        // Utility class; prevent instantiation
+  private Huffman() {
+    // Utility class; prevent instantiation
+  }
+
+  private static void createHuffmanList(HuffEntry[] huffRoot, int hIndex, short[] freqList) {
+    HuffEntry entryPtr;
+    HuffEntry searchPtr;
+
+    /* Create a HUFF entry for token zero. */
+    huffRoot[hIndex] = new HuffEntry();
+    huffRoot[hIndex].previous = null;
+    huffRoot[hIndex].next = null;
+    huffRoot[hIndex].child[0] = null;
+    huffRoot[hIndex].child[1] = null;
+    huffRoot[hIndex].value = 0;
+    huffRoot[hIndex].frequency = freqList[0];
+
+    if (huffRoot[hIndex].frequency == 0) {
+      huffRoot[hIndex].frequency = 1;
     }
 
-    private static void createHuffmanList(HuffEntry[] huffRoot, int hIndex, short[] freqList) {
-        HuffEntry entryPtr;
-        HuffEntry searchPtr;
+    /* Now add entries for all the other possible tokens. */
+    for (int i = 1; i < MAX_ENTROPY_TOKENS; i++) {
+      entryPtr = new HuffEntry();
+      entryPtr.value = i;
+      entryPtr.frequency = freqList[i];
+      entryPtr.child[0] = null;
+      entryPtr.child[1] = null;
 
-        /* Create a HUFF entry for token zero. */
-        huffRoot[hIndex] = new HuffEntry();
-        huffRoot[hIndex].previous = null;
-        huffRoot[hIndex].next = null;
-        huffRoot[hIndex].child[0] = null;
-        huffRoot[hIndex].child[1] = null;
-        huffRoot[hIndex].value = 0;
-        huffRoot[hIndex].frequency = freqList[0];
+      /* Force min value of 1. This prevents the tree getting too deep. */
+      if (entryPtr.frequency == 0) {
+        entryPtr.frequency = 1;
+      }
 
-        if (huffRoot[hIndex].frequency == 0) {
-            huffRoot[hIndex].frequency = 1;
+      if (entryPtr.frequency <= huffRoot[hIndex].frequency) {
+        entryPtr.next = huffRoot[hIndex];
+        huffRoot[hIndex].previous = entryPtr;
+        entryPtr.previous = null;
+        huffRoot[hIndex] = entryPtr;
+      } else {
+        searchPtr = huffRoot[hIndex];
+        while ((searchPtr.next != null) && (searchPtr.frequency < entryPtr.frequency)) {
+          searchPtr = searchPtr.next;
         }
 
-        /* Now add entries for all the other possible tokens. */
-        for (int i = 1; i < MAX_ENTROPY_TOKENS; i++) {
-            entryPtr = new HuffEntry();
-            entryPtr.value = i;
-            entryPtr.frequency = freqList[i];
-            entryPtr.child[0] = null;
-            entryPtr.child[1] = null;
-
-            /* Force min value of 1. This prevents the tree getting too deep. */
-            if (entryPtr.frequency == 0) {
-                entryPtr.frequency = 1;
-            }
-
-            if (entryPtr.frequency <= huffRoot[hIndex].frequency) {
-                entryPtr.next = huffRoot[hIndex];
-                huffRoot[hIndex].previous = entryPtr;
-                entryPtr.previous = null;
-                huffRoot[hIndex] = entryPtr;
-            } else {
-                searchPtr = huffRoot[hIndex];
-                while ((searchPtr.next != null) && (searchPtr.frequency < entryPtr.frequency)) {
-                    searchPtr = searchPtr.next;
-                }
-
-                if (searchPtr.frequency < entryPtr.frequency) {
-                    entryPtr.next = null;
-                    entryPtr.previous = searchPtr;
-                    searchPtr.next = entryPtr;
-                } else {
-                    entryPtr.next = searchPtr;
-                    entryPtr.previous = searchPtr.previous;
-                    searchPtr.previous.next = entryPtr;
-                    searchPtr.previous = entryPtr;
-                }
-            }
-        }
-    }
-
-    private static void createCodeArray(HuffEntry huffRoot,
-                                        int[] huffCodeArray,
-                                        byte[] huffCodeLengthArray,
-                                        int codeValue,
-                                        byte codeLength) {
-        /* If we are at a leaf then fill in a code array entry. */
-        if ((huffRoot.child[0] == null) && (huffRoot.child[1] == null)) {
-            huffCodeArray[huffRoot.value] = codeValue;
-            huffCodeLengthArray[huffRoot.value] = codeLength;
+        if (searchPtr.frequency < entryPtr.frequency) {
+          entryPtr.next = null;
+          entryPtr.previous = searchPtr;
+          searchPtr.next = entryPtr;
         } else {
-            /* Recursive calls to scan down the tree. */
-            codeLength++;
-            createCodeArray(huffRoot.child[0], huffCodeArray, huffCodeLengthArray,
-                    ((codeValue << 1)), codeLength);
-            createCodeArray(huffRoot.child[1], huffCodeArray, huffCodeLengthArray,
-                    ((codeValue << 1) + 1), codeLength);
+          entryPtr.next = searchPtr;
+          entryPtr.previous = searchPtr.previous;
+          searchPtr.previous.next = entryPtr;
+          searchPtr.previous = entryPtr;
         }
+      }
     }
+  }
 
-    public static void buildHuffmanTree(HuffEntry[] huffRoot,
-                                        int[] huffCodeArray,
-                                        byte[] huffCodeLengthArray,
-                                        int hIndex,
-                                        short[] freqList) {
-        HuffEntry entryPtr;
-        HuffEntry searchPtr;
+  private static void createCodeArray(
+      HuffEntry huffRoot,
+      int[] huffCodeArray,
+      byte[] huffCodeLengthArray,
+      int codeValue,
+      byte codeLength) {
+    /* If we are at a leaf then fill in a code array entry. */
+    if ((huffRoot.child[0] == null) && (huffRoot.child[1] == null)) {
+      huffCodeArray[huffRoot.value] = codeValue;
+      huffCodeLengthArray[huffRoot.value] = codeLength;
+    } else {
+      /* Recursive calls to scan down the tree. */
+      codeLength++;
+      createCodeArray(
+          huffRoot.child[0], huffCodeArray, huffCodeLengthArray, ((codeValue << 1)), codeLength);
+      createCodeArray(
+          huffRoot.child[1],
+          huffCodeArray,
+          huffCodeLengthArray,
+          ((codeValue << 1) + 1),
+          codeLength);
+    }
+  }
 
-        /* First create a sorted linked list representing the frequencies of each token. */
-        createHuffmanList(huffRoot, hIndex, freqList);
+  public static void buildHuffmanTree(
+      HuffEntry[] huffRoot,
+      int[] huffCodeArray,
+      byte[] huffCodeLengthArray,
+      int hIndex,
+      short[] freqList) {
+    HuffEntry entryPtr;
+    HuffEntry searchPtr;
 
-        /* Now build the tree from the list. */
+    /* First create a sorted linked list representing the frequencies of each token. */
+    createHuffmanList(huffRoot, hIndex, freqList);
 
-        /* While there are at least two items left in the list. */
-        while (huffRoot[hIndex].next != null) {
-            /* Create the new node as the parent of the first two in the list. */
-            entryPtr = new HuffEntry();
-            entryPtr.value = -1;
-            entryPtr.frequency = huffRoot[hIndex].frequency + huffRoot[hIndex].next.frequency;
-            entryPtr.child[0] = huffRoot[hIndex];
-            entryPtr.child[1] = huffRoot[hIndex].next;
+    /* Now build the tree from the list. */
 
-            /* If there are still more items in the list then insert the new node into the list. */
-            if (entryPtr.child[1].next != null) {
-                /* Set up the provisional 'new root' */
-                huffRoot[hIndex] = entryPtr.child[1].next;
-                huffRoot[hIndex].previous = null;
+    /* While there are at least two items left in the list. */
+    while (huffRoot[hIndex].next != null) {
+      /* Create the new node as the parent of the first two in the list. */
+      entryPtr = new HuffEntry();
+      entryPtr.value = -1;
+      entryPtr.frequency = huffRoot[hIndex].frequency + huffRoot[hIndex].next.frequency;
+      entryPtr.child[0] = huffRoot[hIndex];
+      entryPtr.child[1] = huffRoot[hIndex].next;
 
-                /* Now scan through the remaining list to insert the new entry at the appropriate point. */
-                if (entryPtr.frequency <= huffRoot[hIndex].frequency) {
-                    entryPtr.next = huffRoot[hIndex];
-                    huffRoot[hIndex].previous = entryPtr;
-                    entryPtr.previous = null;
-                    huffRoot[hIndex] = entryPtr;
-                } else {
-                    searchPtr = huffRoot[hIndex];
-                    while ((searchPtr.next != null) && (searchPtr.frequency < entryPtr.frequency)) {
-                        searchPtr = searchPtr.next;
-                    }
+      /* If there are still more items in the list then insert the new node into the list. */
+      if (entryPtr.child[1].next != null) {
+        /* Set up the provisional 'new root' */
+        huffRoot[hIndex] = entryPtr.child[1].next;
+        huffRoot[hIndex].previous = null;
 
-                    if (searchPtr.frequency < entryPtr.frequency) {
-                        entryPtr.next = null;
-                        entryPtr.previous = searchPtr;
-                        searchPtr.next = entryPtr;
-                    } else {
-                        entryPtr.next = searchPtr;
-                        entryPtr.previous = searchPtr.previous;
-                        searchPtr.previous.next = entryPtr;
-                        searchPtr.previous = entryPtr;
-                    }
-                }
-            } else {
-                /* Build has finished. */
-                entryPtr.next = null;
-                entryPtr.previous = null;
-                huffRoot[hIndex] = entryPtr;
-            }
+        /* Now scan through the remaining list to insert the new entry at the appropriate point. */
+        if (entryPtr.frequency <= huffRoot[hIndex].frequency) {
+          entryPtr.next = huffRoot[hIndex];
+          huffRoot[hIndex].previous = entryPtr;
+          entryPtr.previous = null;
+          huffRoot[hIndex] = entryPtr;
+        } else {
+          searchPtr = huffRoot[hIndex];
+          while ((searchPtr.next != null) && (searchPtr.frequency < entryPtr.frequency)) {
+            searchPtr = searchPtr.next;
+          }
 
-            /* Delete the next/previous properties of the children. */
-            entryPtr.child[0].next = null;
-            entryPtr.child[0].previous = null;
-            entryPtr.child[1].next = null;
-            entryPtr.child[1].previous = null;
+          if (searchPtr.frequency < entryPtr.frequency) {
+            entryPtr.next = null;
+            entryPtr.previous = searchPtr;
+            searchPtr.next = entryPtr;
+          } else {
+            entryPtr.next = searchPtr;
+            entryPtr.previous = searchPtr.previous;
+            searchPtr.previous.next = entryPtr;
+            searchPtr.previous = entryPtr;
+          }
         }
+      } else {
+        /* Build has finished. */
+        entryPtr.next = null;
+        entryPtr.previous = null;
+        huffRoot[hIndex] = entryPtr;
+      }
 
-        /* Now build a code array from the tree. */
-        createCodeArray(huffRoot[hIndex], huffCodeArray, huffCodeLengthArray, 0, (byte) 0);
+      /* Delete the next/previous properties of the children. */
+      entryPtr.child[0].next = null;
+      entryPtr.child[0].previous = null;
+      entryPtr.child[1].next = null;
+      entryPtr.child[1].previous = null;
     }
 
-    public static int readHuffmanTrees(HuffEntry[] huffRoot, Buffer opb) {
-        for (int i = 0; i < NUM_HUFF_TABLES; i++) {
-            huffRoot[i] = new HuffEntry();
-            int ret = huffRoot[i].read(0, opb);
-            if (ret != 0) {
-                return ret;
-            }
-        }
-        return 0;
-    }
+    /* Now build a code array from the tree. */
+    createCodeArray(huffRoot[hIndex], huffCodeArray, huffCodeLengthArray, 0, (byte) 0);
+  }
 
-    public static void clearHuffmanTrees(HuffEntry[] huffRoot) {
-        Arrays.fill(huffRoot, 0, NUM_HUFF_TABLES, null);
+  public static int readHuffmanTrees(HuffEntry[] huffRoot, Buffer opb) {
+    for (int i = 0; i < NUM_HUFF_TABLES; i++) {
+      huffRoot[i] = new HuffEntry();
+      int ret = huffRoot[i].read(0, opb);
+      if (ret != 0) {
+        return ret;
+      }
     }
+    return 0;
+  }
+
+  public static void clearHuffmanTrees(HuffEntry[] huffRoot) {
+    Arrays.fill(huffRoot, 0, NUM_HUFF_TABLES, null);
+  }
 }

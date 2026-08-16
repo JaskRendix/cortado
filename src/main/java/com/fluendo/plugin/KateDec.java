@@ -19,329 +19,327 @@
 
 package com.fluendo.plugin;
 
-import java.util.*;
-import com.jcraft.jogg.*;
 import com.fluendo.jkate.*;
 import com.fluendo.jst.*;
 import com.fluendo.utils.*;
+import com.jcraft.jogg.*;
+import java.util.*;
 
 /**
- * Katedec is a decoder element for the Kate stream format.
- * See http://wiki.xiph.org/index.php/OggKate for more information.
- * Kate streams may be multiplexed in Ogg.
- * The Katedec element accepts Kate packets (presumably demultiplexed by an
- * Ogg demuxer element) on its sink, and generates Kate events on its source.
- * Kate events are Kate specific structures, which may then be interpreted
- * by a renderer.
+ * Katedec is a decoder element for the Kate stream format. See
+ * http://wiki.xiph.org/index.php/OggKate for more information. Kate streams may be multiplexed in
+ * Ogg. The Katedec element accepts Kate packets (presumably demultiplexed by an Ogg demuxer
+ * element) on its sink, and generates Kate events on its source. Kate events are Kate specific
+ * structures, which may then be interpreted by a renderer.
  */
 public class KateDec extends Element implements OggPayload {
 
-    /* Kate magic: 0x80 (BOS header) followed by "kate\0\0\0" */
-    private static final byte[] signature = { -128, 0x6b, 0x61, 0x74, 0x65, 0x00, 0x00, 0x00 };
+  /* Kate magic: 0x80 (BOS header) followed by "kate\0\0\0" */
+  private static final byte[] signature = {-128, 0x6b, 0x61, 0x74, 0x65, 0x00, 0x00, 0x00};
 
-    private Info ki;
-    private Comment kc;
-    private State k;
-    private Packet op;
-    private int packetno;
+  private Info ki;
+  private Comment kc;
+  private State k;
+  private Packet op;
+  private int packetno;
 
-    private long basetime = 0;
-    private long lastTs;
-    private boolean haveBOS = false;
-    private boolean haveDecoder = false;
+  private long basetime = 0;
+  private long lastTs;
+  private boolean haveBOS = false;
+  private boolean haveDecoder = false;
 
-    /* 
-     * OggPayload interface
-     */
-    @Override
-    public boolean isType(Packet op) {
-        return typeFind(op.packet_base, op.packet, op.bytes) > 0;
+  /*
+   * OggPayload interface
+   */
+  @Override
+  public boolean isType(Packet op) {
+    return typeFind(op.packet_base, op.packet, op.bytes) > 0;
+  }
+
+  @Override
+  public boolean isKeyFrame(Packet op) {
+    return true;
+  }
+
+  /** A discontinuous codec will not cause the pipeline to wait for data if starving */
+  @Override
+  public boolean isDiscontinuous() {
+    return true;
+  }
+
+  @Override
+  public int takeHeader(Packet op) {
+    int ret = ki.decodeHeader(kc, op);
+    if (ret >= 0) {
+      haveBOS = true;
     }
-
-    @Override
-    public boolean isKeyFrame(Packet op) {
-        return true;
+    if (ret > 0) {
+      k.decodeInit(ki);
+      Debug.debug("Kate decoder ready");
+      haveDecoder = true;
     }
+    return ret;
+  }
 
-    /**
-     * A discontinuous codec will not cause the pipeline to wait for data if starving
-     */
-    @Override
-    public boolean isDiscontinuous() {
-        return true;
+  @Override
+  public boolean isHeader(Packet op) {
+    return (op.packet_base[op.packet] & 0x80) == 0x80;
+  }
+
+  @Override
+  public long getFirstTs(List<com.fluendo.jst.Buffer> packets) {
+    int len = packets.size();
+    int i;
+    com.fluendo.jst.Buffer data = null;
+
+    /* first find buffer with valid offset */
+    for (i = 0; i < len; i++) {
+      data = (com.fluendo.jst.Buffer) packets.get(i);
+
+      if (data.time_offset != -1) break;
     }
+    if (i == packets.size()) return -1;
 
-    @Override
-    public int takeHeader(Packet op) {
-        int ret = ki.decodeHeader(kc, op);
-        if (ret >= 0) {
-            haveBOS = true;
-        }
-        if (ret > 0) {
-            k.decodeInit(ki);
-            Debug.debug("Kate decoder ready");
-            haveDecoder = true;
-        }
-        return ret;
-    }
+    long time = granuleToTime(data.time_offset);
 
-    @Override
-    public boolean isHeader(Packet op) {
-        return (op.packet_base[op.packet] & 0x80) == 0x80;
-    }
+    data = (com.fluendo.jst.Buffer) packets.get(0);
+    data.timestamp =
+        time - (long) ((i + 1) * (Clock.SECOND * ki.gps_denominator / ki.gps_numerator));
 
-    @Override
-    public long getFirstTs(List<com.fluendo.jst.Buffer> packets) {
-        int len = packets.size();
-        int i;
-        com.fluendo.jst.Buffer data = null;
+    return time;
+  }
 
-        /* first find buffer with valid offset */
-        for (i = 0; i < len; i++) {
-            data = (com.fluendo.jst.Buffer) packets.get(i);
+  /** Converts a granule position to its time equivalent */
+  public long granuleToTime(long gp) {
+    long res;
 
-            if (data.time_offset != -1)
-                break;
-        }
-        if (i == packets.size())
-            return -1;
+    if (gp < 0 || !haveDecoder) return -1;
 
-        long time = granuleToTime(data.time_offset);
+    res = (long) (k.granuleTime(gp) * Clock.SECOND);
 
-        data = (com.fluendo.jst.Buffer) packets.get(0);
-        data.timestamp = time - (long) ((i + 1) * (Clock.SECOND * ki.gps_denominator / ki.gps_numerator));
+    return res;
+  }
 
-        return time;
-    }
+  /** Converts a granule position to its duration equivalent */
+  public long granuleToDuration(long gp) {
+    long res;
 
-    /**
-     * Converts a granule position to its time equivalent
-     */
-    public long granuleToTime(long gp) {
-        long res;
+    if (gp < 0 || !haveDecoder) return -1;
 
-        if (gp < 0 || !haveDecoder)
-            return -1;
+    res = (long) (k.granuleDuration(gp) * Clock.SECOND);
 
-        res = (long) (k.granuleTime(gp) * Clock.SECOND);
+    return res;
+  }
 
-        return res;
-    }
-
-    /**
-     * Converts a granule position to its duration equivalent
-     */
-    public long granuleToDuration(long gp) {
-        long res;
-
-        if (gp < 0 || !haveDecoder)
-            return -1;
-
-        res = (long) (k.granuleDuration(gp) * Clock.SECOND);
-
-        return res;
-    }
-
-    private final Pad srcPad = new Pad(Pad.SRC, "src") {
+  private final Pad srcPad =
+      new Pad(Pad.SRC, "src") {
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
-            return sinkPad.pushEvent(event);
+          return sinkPad.pushEvent(event);
         }
-    };
+      };
 
-    private final Pad sinkPad = new Pad(Pad.SINK, "sink") {
+  private final Pad sinkPad =
+      new Pad(Pad.SINK, "sink") {
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
-            boolean result;
+          boolean result;
 
-            switch (event.getType()) {
-                case FLUSH_START:
-                    result = srcPad.pushEvent(event);
-                    synchronized (streamLock) {
-                        Debug.log(Debug.DEBUG, "synced " + this);
-                    }
-                    break;
-                case FLUSH_STOP:
-                    result = srcPad.pushEvent(event);
-                    break;
-                case EOS:
-                    Debug.log(Debug.INFO, "got EOS " + this);
-                    result = srcPad.pushEvent(event);
-                    break;
-                case NEWSEGMENT:
-                    basetime = event.parseNewsegmentStart();
-                    Debug.info("new segment: base time " + basetime);
-                    result = srcPad.pushEvent(event);
-                    break;
-                default:
-                    result = srcPad.pushEvent(event);
-                    break;
-            }
-            return result;
+          switch (event.getType()) {
+            case FLUSH_START:
+              result = srcPad.pushEvent(event);
+              synchronized (streamLock) {
+                Debug.log(Debug.DEBUG, "synced " + this);
+              }
+              break;
+            case FLUSH_STOP:
+              result = srcPad.pushEvent(event);
+              break;
+            case EOS:
+              Debug.log(Debug.INFO, "got EOS " + this);
+              result = srcPad.pushEvent(event);
+              break;
+            case NEWSEGMENT:
+              basetime = event.parseNewsegmentStart();
+              Debug.info("new segment: base time " + basetime);
+              result = srcPad.pushEvent(event);
+              break;
+            default:
+              result = srcPad.pushEvent(event);
+              break;
+          }
+          return result;
         }
 
-        /**
-         * receives Kate packets, and generates Kate events
-         */
+        /** receives Kate packets, and generates Kate events */
         @Override
         protected int chainFunc(com.fluendo.jst.Buffer buf) {
-            int result;
-            long timestamp;
+          int result;
+          long timestamp;
 
-            Debug.log(Debug.DEBUG, parent.getName() + " <<< " + buf);
+          Debug.log(Debug.DEBUG, parent.getName() + " <<< " + buf);
 
-            op.packet_base = buf.data;
-            op.packet = buf.offset;
-            op.bytes = buf.length;
-            op.b_o_s = (packetno == 0 ? 1 : 0);
-            op.e_o_s = 0;
-            op.packetno = packetno;
-            timestamp = buf.timestamp;
+          op.packet_base = buf.data;
+          op.packet = buf.offset;
+          op.bytes = buf.length;
+          op.b_o_s = (packetno == 0 ? 1 : 0);
+          op.e_o_s = 0;
+          op.packetno = packetno;
+          timestamp = buf.timestamp;
 
-            Debug.log(Debug.DEBUG, "Kate chainFunc with packetno " + packetno + ", haveDecoder " + haveDecoder);
+          Debug.log(
+              Debug.DEBUG,
+              "Kate chainFunc with packetno " + packetno + ", haveDecoder " + haveDecoder);
 
-            if (!haveDecoder) {
-                result = takeHeader(op);
-                if (result < 0) {
-                    buf.free();
-                    Debug.log(Debug.ERROR, "does not contain Kate data.");
-                    return ERROR;
-                } else if (result > 0) {
-                    Debug.log(Debug.DEBUG, "Kate initialized for decoding");
-                    caps = new Caps("application/x-kate-event");
-                }
-                buf.free();
-                packetno++;
-                return OK;
-            } else {
-                if ((op.packet_base[op.packet] & 0x80) == 0x80) {
-                    Debug.log(Debug.DEBUG, "ignoring header");
-                    buf.free();
-                    return OK;
-                }
-
-                if (timestamp != -1) {
-                    lastTs = timestamp;
-                }
-
-                try {
-                    result = k.decodePacketin(op);
-                    if (result < 0) {
-                        buf.free();
-                        Debug.log(Debug.ERROR, "Error Decoding Kate.");
-                        postMessage(Message.newError(this, "Error decoding Kate"));
-                        return ERROR;
-                    }
-                    com.fluendo.jkate.Event ev = k.decodeEventOut();
-                    if (ev != null) {
-                        buf.object = ev;
-                        buf.caps = caps;
-                        buf.timestamp = granuleToDuration(ev.start);
-                        buf.timestampEnd = buf.timestamp + granuleToDuration(ev.duration);
-                        Debug.log(Debug.DEBUG, parent.getName() + " >>> " + buf);
-                        Debug.debug("Got Kate text: " + new String(ev.text) + " from " + buf.timestamp + " to " + buf.timestampEnd + ", basetime " + basetime);
-                        result = srcPad.push(buf);
-                        Debug.log(Debug.DEBUG, "push returned " + result);
-                    } else {
-                        Debug.debug("Got no event");
-                        buf.free();
-                        result = OK;
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    postMessage(Message.newError(this, e.getMessage()));
-                    result = ERROR;
-                }
+          if (!haveDecoder) {
+            result = takeHeader(op);
+            if (result < 0) {
+              buf.free();
+              Debug.log(Debug.ERROR, "does not contain Kate data.");
+              return ERROR;
+            } else if (result > 0) {
+              Debug.log(Debug.DEBUG, "Kate initialized for decoding");
+              caps = new Caps("application/x-kate-event");
             }
+            buf.free();
             packetno++;
+            return OK;
+          } else {
+            if ((op.packet_base[op.packet] & 0x80) == 0x80) {
+              Debug.log(Debug.DEBUG, "ignoring header");
+              buf.free();
+              return OK;
+            }
 
-            return result;
+            if (timestamp != -1) {
+              lastTs = timestamp;
+            }
+
+            try {
+              result = k.decodePacketin(op);
+              if (result < 0) {
+                buf.free();
+                Debug.log(Debug.ERROR, "Error Decoding Kate.");
+                postMessage(Message.newError(this, "Error decoding Kate"));
+                return ERROR;
+              }
+              com.fluendo.jkate.Event ev = k.decodeEventOut();
+              if (ev != null) {
+                buf.object = ev;
+                buf.caps = caps;
+                buf.timestamp = granuleToDuration(ev.start);
+                buf.timestampEnd = buf.timestamp + granuleToDuration(ev.duration);
+                Debug.log(Debug.DEBUG, parent.getName() + " >>> " + buf);
+                Debug.debug(
+                    "Got Kate text: "
+                        + new String(ev.text)
+                        + " from "
+                        + buf.timestamp
+                        + " to "
+                        + buf.timestampEnd
+                        + ", basetime "
+                        + basetime);
+                result = srcPad.push(buf);
+                Debug.log(Debug.DEBUG, "push returned " + result);
+              } else {
+                Debug.debug("Got no event");
+                buf.free();
+                result = OK;
+              }
+            } catch (Exception e) {
+              e.printStackTrace();
+              postMessage(Message.newError(this, e.getMessage()));
+              result = ERROR;
+            }
+          }
+          packetno++;
+
+          return result;
         }
 
         @Override
         protected boolean activateFunc(int mode) {
-            return true;
+          return true;
         }
-    };
+      };
 
-    public KateDec() {
-        super();
+  public KateDec() {
+    super();
 
-        ki = new Info();
-        kc = new Comment();
-        k = new State();
-        op = new Packet();
+    ki = new Info();
+    kc = new Comment();
+    k = new State();
+    op = new Packet();
 
-        addPad(srcPad);
-        addPad(sinkPad);
+    addPad(srcPad);
+    addPad(sinkPad);
+  }
+
+  @Override
+  protected int changeState(int transition) {
+    int res;
+
+    switch (transition) {
+      case STOP_PAUSE:
+        lastTs = -1;
+        packetno = 0;
+        break;
+      default:
+        break;
     }
 
-    @Override
-    protected int changeState(int transition) {
-        int res;
+    res = super.changeState(transition);
 
-        switch (transition) {
-            case STOP_PAUSE:
-                lastTs = -1;
-                packetno = 0;
-                break;
-            default:
-                break;
-        }
-
-        res = super.changeState(transition);
-
-        switch (transition) {
-            case PAUSE_STOP:
-                ki.clear();
-                kc.clear();
-                k.clear();
-                break;
-            default:
-                break;
-        }
-
-        return res;
+    switch (transition) {
+      case PAUSE_STOP:
+        ki.clear();
+        kc.clear();
+        k.clear();
+        break;
+      default:
+        break;
     }
 
-    @Override
-    public java.lang.Object getProperty(String name) {
-        if (Objects.equals(name, "language")) {
-            return ki.language;
-        } else if (Objects.equals(name, "category")) {
-            return ki.category;
-        } else {
-            return super.getProperty(name);
-        }
-    }
+    return res;
+  }
 
-    @Override
-    public String getFactoryName() {
-        return "katedec";
+  @Override
+  public java.lang.Object getProperty(String name) {
+    if (Objects.equals(name, "language")) {
+      return ki.language;
+    } else if (Objects.equals(name, "category")) {
+      return ki.category;
+    } else {
+      return super.getProperty(name);
     }
+  }
 
-    @Override
-    public String getMime() {
-        return "application/x-kate";
-    }
+  @Override
+  public String getFactoryName() {
+    return "katedec";
+  }
 
-    @Override
-    public String getMime(Packet op) {
-        Info ki = new Info();
-        Comment kc = new Comment();
-        if (!isType(op)) return null;
-        int ret = ki.decodeHeader(kc, op);
-        if (ret < 0) return null;
-        String mime = "application/x-kate";
-        if (ki.language != null && !ki.language.equals("")) mime += ";language=" + ki.language;
-        if (ki.category != null && !ki.category.equals("")) mime += ";category=" + ki.category;
-        return mime;
-    }
+  @Override
+  public String getMime() {
+    return "application/x-kate";
+  }
 
-    @Override
-    public int typeFind(byte[] data, int offset, int length) {
-        if (MemUtils.startsWith(data, offset, length, signature))
-            return 10;
-        return -1;
-    }
+  @Override
+  public String getMime(Packet op) {
+    Info ki = new Info();
+    Comment kc = new Comment();
+    if (!isType(op)) return null;
+    int ret = ki.decodeHeader(kc, op);
+    if (ret < 0) return null;
+    String mime = "application/x-kate";
+    if (ki.language != null && !ki.language.equals("")) mime += ";language=" + ki.language;
+    if (ki.category != null && !ki.category.equals("")) mime += ";category=" + ki.category;
+    return mime;
+  }
+
+  @Override
+  public int typeFind(byte[] data, int offset, int length) {
+    if (MemUtils.startsWith(data, offset, length, signature)) return 10;
+    return -1;
+  }
 }

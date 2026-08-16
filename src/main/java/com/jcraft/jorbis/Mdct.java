@@ -1,27 +1,27 @@
 /* JOrbis
- * Copyright (C) 2000 ymnk, JCraft,Inc.
- * 
- * Written by: 2000 ymnk<ymnk@jcaft.com>
- *  
- * Many thanks to 
- *  Monty <monty@xiph.org> and 
- *  The XIPHOPHORUS Company http://www.xiph.org/ .
- * JOrbis has been based on their awesome works, Vorbis codec.
- *  
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Library General Public License
- * as published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
-   
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Library General Public License for more details.
- * 
- * You should have received a copy of the GNU Library General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
+* Copyright (C) 2000 ymnk, JCraft,Inc.
+*
+* Written by: 2000 ymnk<ymnk@jcaft.com>
+*
+* Many thanks to
+*  Monty <monty@xiph.org> and
+*  The XIPHOPHORUS Company http://www.xiph.org/ .
+* JOrbis has been based on their awesome works, Vorbis codec.
+*
+* This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU Library General Public License
+* as published by the Free Software Foundation; either version 2 of
+* the License, or (at your option) any later version.
+
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU Library General Public License for more details.
+*
+* You should have received a copy of the GNU Library General Public
+* License along with this program; if not, write to the Free Software
+* Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
 
 package com.jcraft.jorbis;
 
@@ -38,8 +38,7 @@ public class Mdct {
   private float[] xBuffer = new float[1024];
   private float[] wBuffer = new float[1024];
 
-  public Mdct() {
-  }
+  public Mdct() {}
 
   public void init(int n) {
     this.bitrev = new int[n / 4];
@@ -82,11 +81,9 @@ public class Mdct {
     scale = 4.f / n;
   }
 
-  public void clear() {
-  }
+  public void clear() {}
 
-  public void forward(float[] in, float[] out) {
-  }
+  public void forward(float[] in, float[] out) {}
 
   public synchronized void backward(float[] in, float[] out) {
     if (xBuffer.length < n / 2) {
@@ -160,7 +157,7 @@ public class Mdct {
     int w2 = n4;
     int A = n2;
 
-    for (int i = 0; i < n4;) {
+    for (int i = 0; i < n4; ) {
       float x0 = x[xA] - x[xB];
       float x1;
       w[w2 + i] = x[xA++] + x[xB++];

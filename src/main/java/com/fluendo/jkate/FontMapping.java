@@ -7,12 +7,12 @@
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
  * the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Library General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Library General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -22,44 +22,39 @@ package com.fluendo.jkate;
 
 import java.util.Arrays;
 
-/**
- * A set of ranges defining a mapping from code points to bitmaps.
- */
+/** A set of ranges defining a mapping from code points to bitmaps. */
 public class FontMapping {
-    public FontRange[] ranges;
+  public FontRange[] ranges;
 
-    public FontMapping() {
-    }
+  public FontMapping() {}
 
-    public FontMapping(FontRange[] ranges) {
-        this.ranges = ranges;
-    }
+  public FontMapping(FontRange[] ranges) {
+    this.ranges = ranges;
+  }
 
-    public FontRange[] getRanges() {
-        return ranges;
-    }
+  public FontRange[] getRanges() {
+    return ranges;
+  }
 
-    public void setRanges(FontRange[] ranges) {
-        this.ranges = ranges;
-    }
+  public void setRanges(FontRange[] ranges) {
+    this.ranges = ranges;
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        FontMapping that = (FontMapping) o;
-        return Arrays.equals(ranges, that.ranges);
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    FontMapping that = (FontMapping) o;
+    return Arrays.equals(ranges, that.ranges);
+  }
 
-    @Override
-    public int hashCode() {
-        return Arrays.hashCode(ranges);
-    }
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(ranges);
+  }
 
-    @Override
-    public String toString() {
-        return "FontMapping{" +
-                "ranges=" + Arrays.toString(ranges) +
-                '}';
-    }
+  @Override
+  public String toString() {
+    return "FontMapping{" + "ranges=" + Arrays.toString(ranges) + '}';
+  }
 }

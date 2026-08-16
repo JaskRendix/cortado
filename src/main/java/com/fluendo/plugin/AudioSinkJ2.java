@@ -23,188 +23,201 @@ import com.fluendo.utils.*;
 import javax.sound.sampled.*;
 
 public class AudioSinkJ2 extends AudioSink {
-    public static final int SEGSIZE = 2048;
+  public static final int SEGSIZE = 2048;
 
-    private SourceDataLine line = null;
-    private int channels;
-    private long samplesWritten;
+  private SourceDataLine line = null;
+  private int channels;
+  private long samplesWritten;
 
-    @Override
-    protected RingBuffer createRingBuffer() {
-        return new RingBuffer();
+  @Override
+  protected RingBuffer createRingBuffer() {
+    return new RingBuffer();
+  }
+
+  @Override
+  protected boolean open(RingBuffer ring) {
+    channels = ring.channels;
+    line = openLine(ring.channels, ring.rate);
+    if (line == null) {
+      postMessage(Message.newError(this, "Could not open audio device."));
+      return false;
     }
 
-    @Override
-    protected boolean open(RingBuffer ring) {
-        channels = ring.channels;
-        line = openLine(ring.channels, ring.rate);
-        if (line == null) {
-            postMessage(Message.newError(this, "Could not open audio device."));
-            return false;
-        }
+    Debug.log(Debug.INFO, "line info: available: " + line.available());
+    Debug.log(Debug.INFO, "line info: buffer: " + line.getBufferSize());
+    Debug.log(Debug.INFO, "line info: framePosition: " + line.getFramePosition());
 
-        Debug.log(Debug.INFO, "line info: available: " + line.available());
-        Debug.log(Debug.INFO, "line info: buffer: " + line.getBufferSize());
-        Debug.log(Debug.INFO, "line info: framePosition: " + line.getFramePosition());
-
-        ring.segSize = SEGSIZE * channels * 2;
-        ring.segTotal = line.getBufferSize() / ring.segSize;
-        while (ring.segTotal < 4) {
-            ring.segSize >>= 1;
-            ring.segTotal = line.getBufferSize() / ring.segSize;
-        }
-
-        ring.emptySeg = new byte[ring.segSize];
-        samplesWritten = 0;
-
-        line.start();
-
-        return true;
+    ring.segSize = SEGSIZE * channels * 2;
+    ring.segTotal = line.getBufferSize() / ring.segSize;
+    while (ring.segTotal < 4) {
+      ring.segSize >>= 1;
+      ring.segTotal = line.getBufferSize() / ring.segSize;
     }
 
-    protected SourceDataLine openLine(int channels, int rate) {
-        AudioFormat format = new AudioFormat(rate, 16, channels, true, true);
-        DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
-        SourceDataLine targetLine = null;
+    ring.emptySeg = new byte[ring.segSize];
+    samplesWritten = 0;
 
-        try {
-            Mixer.Info[] mixers = AudioSystem.getMixerInfo();
+    line.start();
 
-            /* On linux, the default implementation gives terribly inaccurate results
-             * from line.available(), so we can't keep sync. Modern JVMs have an ALSA
-             * implementation that doesn't suck, so use that if available. */
-            for (Mixer.Info mixerInfo : mixers) {
-                Debug.log(Debug.INFO, "mixer description: " + 
-                        mixerInfo.getDescription() + ", vendor: " + 
-                        mixerInfo.getVendor());
-                
-                String desc = mixerInfo.getDescription();
-                String vendor = mixerInfo.getVendor();
-                if (desc.indexOf("ALSA") >= 0 || vendor.indexOf("ALSA") >= 0) {
-                    /* Unfortunately, the alsa devices include useless ones that we have
-                     * no sane way of filtering out! Hence this insanity. */
-                    if (desc.indexOf("IEC958") >= 0)
-                        continue;
+    return true;
+  }
 
-                    try {
-                        Line.Info[] lines = AudioSystem.getMixer(mixerInfo).getSourceLineInfo(info);
+  protected SourceDataLine openLine(int channels, int rate) {
+    AudioFormat format = new AudioFormat(rate, 16, channels, true, true);
+    DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+    SourceDataLine targetLine = null;
 
-                        for (Line.Info lineInfo : lines) {
-                            Debug.log(Debug.INFO, "Mixer supports line: " + lineInfo.toString());
-                            AudioFormat[] formats = ((DataLine.Info) lineInfo).getFormats();
-                            for (AudioFormat fmt : formats)
-                                Debug.log(Debug.INFO, "Format: " + fmt.toString());
-                        }
-                        Debug.log(Debug.INFO, "Attempting to get a line from ALSA mixer");
-                        targetLine = (SourceDataLine) AudioSystem.getMixer(mixerInfo).getLine(info);
-                        /* Got one. Excellent. Try it. */
-                        targetLine.open(format);
-                        break;
-                    } catch (Exception e) {
-                        if (targetLine != null) {
-                            targetLine.close();
-                            targetLine = null;
-                        }
-                        Debug.log(Debug.INFO, "mixer: " + mixerInfo.getDescription() + " failed: " + e);
-                    }
-                }
+    try {
+      Mixer.Info[] mixers = AudioSystem.getMixerInfo();
+
+      /* On linux, the default implementation gives terribly inaccurate results
+       * from line.available(), so we can't keep sync. Modern JVMs have an ALSA
+       * implementation that doesn't suck, so use that if available. */
+      for (Mixer.Info mixerInfo : mixers) {
+        Debug.log(
+            Debug.INFO,
+            "mixer description: "
+                + mixerInfo.getDescription()
+                + ", vendor: "
+                + mixerInfo.getVendor());
+
+        String desc = mixerInfo.getDescription();
+        String vendor = mixerInfo.getVendor();
+        if (desc.indexOf("ALSA") >= 0 || vendor.indexOf("ALSA") >= 0) {
+          /* Unfortunately, the alsa devices include useless ones that we have
+           * no sane way of filtering out! Hence this insanity. */
+          if (desc.indexOf("IEC958") >= 0) continue;
+
+          try {
+            Line.Info[] lines = AudioSystem.getMixer(mixerInfo).getSourceLineInfo(info);
+
+            for (Line.Info lineInfo : lines) {
+              Debug.log(Debug.INFO, "Mixer supports line: " + lineInfo.toString());
+              AudioFormat[] formats = ((DataLine.Info) lineInfo).getFormats();
+              for (AudioFormat fmt : formats) Debug.log(Debug.INFO, "Format: " + fmt.toString());
             }
-
-            /* If that failed, use the default line. */
-            if (targetLine == null) {
-                targetLine = (SourceDataLine) AudioSystem.getLine(info);
-                targetLine.open(format);
-            }
-        } catch (LineUnavailableException | IllegalArgumentException e) {
-            Debug.error(e.toString());
-            return null;
-        }
-
-        return targetLine;
-    }
-
-    @Override
-    public boolean test() {
-        SourceDataLine testLine = openLine(2, 44000);
-        if (testLine == null) {
-            return false;
-        }
-        testLine.close();
-        return true;
-    }
-
-    @Override
-    protected boolean close(RingBuffer ring) {
-        if (line != null) {
-            line.stop();
-            line.close();
-        }
-        return true;
-    }
-
-    @Override
-    protected int write(byte[] data, int offset, int length) {
-        int written = 0;
-        
-        if (offset < 0 || offset >= data.length || offset + length > data.length || length <= 0) {
-            Debug.debug("Invalid audio write offset=" + offset + ", length=" + length + ", data.length=" + data.length);
-            return length;
-        }
-
-        // Need to avoid blocking due to lock contention in line.getFramePosition() in Java 6.
-        while (true) {
-            int available = line.available();
-            if (length > available) {
-                if (available > 0) {
-                    Debug.debug("Doing partial audio write of " + available + " bytes");
-                    written += line.write(data, offset, available);
-                    offset += available;
-                    length -= available;
-                }
-                if (length > 0) {
-                    try {
-                        // Sleep for a quarter of the buffer time before we fill it up again
-                        AudioFormat format = line.getFormat();
-                        long sleepTime = (long) (line.getBufferSize() * 1000 
-                                / format.getSampleRate() / format.getSampleSizeInBits() * 8 / (2 * channels));
-                        Debug.debug("Sleeping for " + sleepTime + "ms");
-                        Thread.sleep(sleepTime);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                    continue;
-                }
-            } else {
-                Debug.debug("Doing complete audio write of " + length + " bytes");
-                written += line.write(data, offset, length);
-            }
+            Debug.log(Debug.INFO, "Attempting to get a line from ALSA mixer");
+            targetLine = (SourceDataLine) AudioSystem.getMixer(mixerInfo).getLine(info);
+            /* Got one. Excellent. Try it. */
+            targetLine.open(format);
             break;
+          } catch (Exception e) {
+            if (targetLine != null) {
+              targetLine.close();
+              targetLine = null;
+            }
+            Debug.log(Debug.INFO, "mixer: " + mixerInfo.getDescription() + " failed: " + e);
+          }
         }
-        samplesWritten += written / (2 * channels);
-        return written;
+      }
+
+      /* If that failed, use the default line. */
+      if (targetLine == null) {
+        targetLine = (SourceDataLine) AudioSystem.getLine(info);
+        targetLine.open(format);
+      }
+    } catch (LineUnavailableException | IllegalArgumentException e) {
+      Debug.error(e.toString());
+      return null;
     }
 
-    @Override
-    protected long delay() {
-        int frame; 
-        long delay;
+    return targetLine;
+  }
 
-        frame = line.getFramePosition();
-        delay = samplesWritten - frame;
-        return delay;
+  @Override
+  public boolean test() {
+    SourceDataLine testLine = openLine(2, 44000);
+    if (testLine == null) {
+      return false;
+    }
+    testLine.close();
+    return true;
+  }
+
+  @Override
+  protected boolean close(RingBuffer ring) {
+    if (line != null) {
+      line.stop();
+      line.close();
+    }
+    return true;
+  }
+
+  @Override
+  protected int write(byte[] data, int offset, int length) {
+    int written = 0;
+
+    if (offset < 0 || offset >= data.length || offset + length > data.length || length <= 0) {
+      Debug.debug(
+          "Invalid audio write offset="
+              + offset
+              + ", length="
+              + length
+              + ", data.length="
+              + data.length);
+      return length;
     }
 
-    @Override
-    protected void reset() {
-        Debug.log(Debug.DEBUG, "reset audio: " + line);
-        line.flush();
-        samplesWritten = line.getFramePosition();
-        Debug.log(Debug.DEBUG, "samples written: " + samplesWritten);
+    // Need to avoid blocking due to lock contention in line.getFramePosition() in Java 6.
+    while (true) {
+      int available = line.available();
+      if (length > available) {
+        if (available > 0) {
+          Debug.debug("Doing partial audio write of " + available + " bytes");
+          written += line.write(data, offset, available);
+          offset += available;
+          length -= available;
+        }
+        if (length > 0) {
+          try {
+            // Sleep for a quarter of the buffer time before we fill it up again
+            AudioFormat format = line.getFormat();
+            long sleepTime =
+                (long)
+                    (line.getBufferSize()
+                        * 1000
+                        / format.getSampleRate()
+                        / format.getSampleSizeInBits()
+                        * 8
+                        / (2 * channels));
+            Debug.debug("Sleeping for " + sleepTime + "ms");
+            Thread.sleep(sleepTime);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            break;
+          }
+          continue;
+        }
+      } else {
+        Debug.debug("Doing complete audio write of " + length + " bytes");
+        written += line.write(data, offset, length);
+      }
+      break;
     }
+    samplesWritten += written / (2 * channels);
+    return written;
+  }
 
-    @Override
-    public String getFactoryName() {
-        return "audiosinkj2";
-    }
+  @Override
+  protected long delay() {
+    int frame;
+    long delay;
+
+    frame = line.getFramePosition();
+    delay = samplesWritten - frame;
+    return delay;
+  }
+
+  @Override
+  protected void reset() {
+    Debug.log(Debug.DEBUG, "reset audio: " + line);
+    line.flush();
+    samplesWritten = line.getFramePosition();
+    Debug.log(Debug.DEBUG, "samples written: " + samplesWritten);
+  }
+
+  @Override
+  public String getFactoryName() {
+    return "audiosinkj2";
+  }
 }

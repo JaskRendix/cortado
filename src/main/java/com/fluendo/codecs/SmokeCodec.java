@@ -48,18 +48,9 @@ public class SmokeCodec {
   private BufferedImage reference;
   private CodecHeader header;
 
-  /**
-   * Immutable record representing the header metadata (Java 14+).
-   */
+  /** Immutable record representing the header metadata (Java 14+). */
   public record CodecHeader(
-      int type,
-      int width,
-      int height,
-      int fpsNum,
-      int fpsDenom,
-      int flags,
-      int size,
-      int blocks) {
+      int type, int width, int height, int fpsNum, int fpsDenom, int flags, int size, int blocks) {
     public boolean isKeyframe() {
       return (flags & KEYFRAME) != 0;
     }
@@ -69,9 +60,7 @@ public class SmokeCodec {
     // Decoupled from AWT Component and MediaTracker
   }
 
-  /**
-   * Parses the header using java.nio.ByteBuffer.
-   */
+  /** Parses the header using java.nio.ByteBuffer. */
   public CodecHeader parseHeader(byte[] in, int offset, int length) {
     if (in == null || length - offset < OFFS_PICT) {
       return null;
@@ -92,23 +81,17 @@ public class SmokeCodec {
     return this.header;
   }
 
-  /**
-   * Helper method to directly get flags matching the modern header structure.
-   */
+  /** Helper method to directly get flags matching the modern header structure. */
   public int getFlags() {
     return this.header != null ? this.header.flags() : 0;
   }
 
-  /**
-   * Returns the current active header.
-   */
+  /** Returns the current active header. */
   public CodecHeader getHeader() {
     return this.header;
   }
 
-  /**
-   * Decodes the frame into a BufferedImage using modern Java I/O.
-   */
+  /** Decodes the frame into a BufferedImage using modern Java I/O. */
   public BufferedImage decode(byte[] in, int offset, int length) {
     var currentHeader = parseHeader(in, offset, length);
     if (currentHeader == null) {
@@ -144,7 +127,9 @@ public class SmokeCodec {
         int blockPtr = 0;
         int blockOffset = offset + IDX_BLOCKS;
 
-        var newRef = new BufferedImage(currentHeader.width(), currentHeader.height(), BufferedImage.TYPE_INT_RGB);
+        var newRef =
+            new BufferedImage(
+                currentHeader.width(), currentHeader.height(), BufferedImage.TYPE_INT_RGB);
         Graphics2D refGfx = newRef.createGraphics();
         refGfx.drawImage(reference, 0, 0, null);
 
@@ -167,10 +152,7 @@ public class SmokeCodec {
             int x = (blockPos % div) * 16;
             int y = (blockPos / div) * 16;
 
-            refGfx.drawImage(src,
-                x, y, x + 16, y + 16,
-                j, i, j + 16, i + 16,
-                null);
+            refGfx.drawImage(src, x, y, x + 16, y + 16, j, i, j + 16, i + 16, null);
 
             blockPtr++;
             if (blockPtr >= currentHeader.blocks()) {

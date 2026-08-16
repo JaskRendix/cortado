@@ -1,249 +1,252 @@
 package com.fluendo.plugin;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fluendo.jst.Buffer;
 import com.fluendo.jst.Caps;
 import com.fluendo.jst.Pad;
-import org.junit.jupiter.api.*;
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.MemoryImageSource;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.*;
 
 class VideoSinkTest {
 
-    private VideoSink sink;
-    private TestComponent component;
+  private VideoSink sink;
+  private TestComponent component;
 
-    /** Offscreen deterministic component */
-    private static class TestComponent extends Component {
-        BufferedImage canvas = new BufferedImage(800, 600, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = canvas.createGraphics();
+  /** Offscreen deterministic component */
+  private static class TestComponent extends Component {
+    BufferedImage canvas = new BufferedImage(800, 600, BufferedImage.TYPE_INT_ARGB);
+    Graphics2D g = canvas.createGraphics();
 
-        @Override
-        public Graphics getGraphics() {
-            return g;
-        }
-
-        @Override
-        public Dimension getSize() {
-            return new Dimension(canvas.getWidth(), canvas.getHeight());
-        }
+    @Override
+    public Graphics getGraphics() {
+      return g;
     }
 
-    private int getPrivateInt(Object obj, String fieldName) throws Exception {
-        var f = obj.getClass().getDeclaredField(fieldName);
-        f.setAccessible(true);
-        return f.getInt(obj);
+    @Override
+    public Dimension getSize() {
+      return new Dimension(canvas.getWidth(), canvas.getHeight());
     }
+  }
 
-    @BeforeEach
-    void setup() {
-        sink = new VideoSink();
-        component = new TestComponent();
-        sink.setProperty("component", component);
-    }
+  private int getPrivateInt(Object obj, String fieldName) throws Exception {
+    var f = obj.getClass().getDeclaredField(fieldName);
+    f.setAccessible(true);
+    return f.getInt(obj);
+  }
 
-    @Test
-    void factoryName() {
-        assertEquals("videosink", sink.getFactoryName());
-    }
+  @BeforeEach
+  void setup() {
+    sink = new VideoSink();
+    component = new TestComponent();
+    sink.setProperty("component", component);
+  }
 
-    @Test
-    void aspectRatio_widerThanBounds_letterboxed() {
-        sink.setProperty("keep-aspect", "true");
+  @Test
+  void factoryName() {
+    assertEquals("videosink", sink.getFactoryName());
+  }
 
-        Caps caps = new Caps("video/raw");
-        caps.setFieldInt("width", 800);
-        caps.setFieldInt("height", 200);
-        caps.setFieldInt("aspect_x", 1);
-        caps.setFieldInt("aspect_y", 1);
+  @Test
+  void aspectRatio_widerThanBounds_letterboxed() {
+    sink.setProperty("keep-aspect", "true");
 
-        assertTrue(sink.setCapsFunc(caps));
+    Caps caps = new Caps("video/raw");
+    caps.setFieldInt("width", 800);
+    caps.setFieldInt("height", 200);
+    caps.setFieldInt("aspect_x", 1);
+    caps.setFieldInt("aspect_y", 1);
 
-        Buffer buf = new Buffer();
-        buf.object = new MemoryImageSource(800, 200, new int[800 * 200], 0, 800);
+    assertTrue(sink.setCapsFunc(caps));
 
-        sink.render(buf);
+    Buffer buf = new Buffer();
+    buf.object = new MemoryImageSource(800, 200, new int[800 * 200], 0, 800);
 
-        int expectedHeight = (int) (200 * (800.0 / 800.0));
-        int verticalPadding = (600 - expectedHeight) / 2;
+    sink.render(buf);
 
-        assertTrue(verticalPadding > 0);
-    }
+    int expectedHeight = (int) (200 * (800.0 / 800.0));
+    int verticalPadding = (600 - expectedHeight) / 2;
 
-    @Test
-    void aspectRatio_tallerThanBounds_pillarboxed() {
-        sink.setProperty("keep-aspect", "true");
+    assertTrue(verticalPadding > 0);
+  }
 
-        Caps caps = new Caps("video/raw");
-        caps.setFieldInt("width", 200);
-        caps.setFieldInt("height", 800);
-        caps.setFieldInt("aspect_x", 1);
-        caps.setFieldInt("aspect_y", 1);
+  @Test
+  void aspectRatio_tallerThanBounds_pillarboxed() {
+    sink.setProperty("keep-aspect", "true");
 
-        assertTrue(sink.setCapsFunc(caps));
+    Caps caps = new Caps("video/raw");
+    caps.setFieldInt("width", 200);
+    caps.setFieldInt("height", 800);
+    caps.setFieldInt("aspect_x", 1);
+    caps.setFieldInt("aspect_y", 1);
 
-        Buffer buf = new Buffer();
-        buf.object = new MemoryImageSource(200, 800, new int[200 * 800], 0, 200);
+    assertTrue(sink.setCapsFunc(caps));
 
-        sink.render(buf);
+    Buffer buf = new Buffer();
+    buf.object = new MemoryImageSource(200, 800, new int[200 * 800], 0, 200);
 
-        int expectedWidth = (int) (200 * (600.0 / 800.0));
-        int horizontalPadding = (800 - expectedWidth) / 2;
+    sink.render(buf);
 
-        assertTrue(horizontalPadding > 0);
-    }
+    int expectedWidth = (int) (200 * (600.0 / 800.0));
+    int horizontalPadding = (800 - expectedWidth) / 2;
 
-    @Test
-    void aspectRatio_ignoreAspect() throws Exception {
-        sink.setProperty("ignore-aspect", "true");
+    assertTrue(horizontalPadding > 0);
+  }
 
-        Caps caps = new Caps("video/raw");
-        caps.setFieldInt("width", 320);
-        caps.setFieldInt("height", 240);
-        caps.setFieldInt("aspect_x", 100);
-        caps.setFieldInt("aspect_y", 1);
+  @Test
+  void aspectRatio_ignoreAspect() throws Exception {
+    sink.setProperty("ignore-aspect", "true");
 
-        assertTrue(sink.setCapsFunc(caps));
+    Caps caps = new Caps("video/raw");
+    caps.setFieldInt("width", 320);
+    caps.setFieldInt("height", 240);
+    caps.setFieldInt("aspect_x", 100);
+    caps.setFieldInt("aspect_y", 1);
 
-        assertEquals(320, getPrivateInt(sink, "width"));
-        assertEquals(240, getPrivateInt(sink, "height"));
-    }
+    assertTrue(sink.setCapsFunc(caps));
 
-    @Test
-    void bounds_respected() {
-        Rectangle r = new Rectangle(10, 10, 300, 200);
-        sink.setProperty("bounds", r);
+    assertEquals(320, getPrivateInt(sink, "width"));
+    assertEquals(240, getPrivateInt(sink, "height"));
+  }
 
-        Caps caps = new Caps("video/raw");
-        caps.setFieldInt("width", 100);
-        caps.setFieldInt("height", 100);
-        caps.setFieldInt("aspect_x", 1);
-        caps.setFieldInt("aspect_y", 1);
-        sink.setCapsFunc(caps);
+  @Test
+  void bounds_respected() {
+    Rectangle r = new Rectangle(10, 10, 300, 200);
+    sink.setProperty("bounds", r);
 
-        Buffer buf = new Buffer();
-        buf.object = new MemoryImageSource(100, 100, new int[100 * 100], 0, 100);
+    Caps caps = new Caps("video/raw");
+    caps.setFieldInt("width", 100);
+    caps.setFieldInt("height", 100);
+    caps.setFieldInt("aspect_x", 1);
+    caps.setFieldInt("aspect_y", 1);
+    sink.setCapsFunc(caps);
 
-        sink.render(buf);
+    Buffer buf = new Buffer();
+    buf.object = new MemoryImageSource(100, 100, new int[100 * 100], 0, 100);
 
-        assertEquals(r, sink.getProperty("bounds"));
-    }
+    sink.render(buf);
 
-    @Test
-    void bounds_autoSetOnFirstRender() {
-        sink.setProperty("bounds", null);
+    assertEquals(r, sink.getProperty("bounds"));
+  }
 
-        Caps caps = new Caps("video/raw");
-        caps.setFieldInt("width", 100);
-        caps.setFieldInt("height", 100);
-        sink.setCapsFunc(caps);
+  @Test
+  void bounds_autoSetOnFirstRender() {
+    sink.setProperty("bounds", null);
 
-        Buffer buf = new Buffer();
-        buf.object = new MemoryImageSource(100, 100, new int[100 * 100], 0, 100);
+    Caps caps = new Caps("video/raw");
+    caps.setFieldInt("width", 100);
+    caps.setFieldInt("height", 100);
+    sink.setCapsFunc(caps);
 
-        sink.render(buf);
+    Buffer buf = new Buffer();
+    buf.object = new MemoryImageSource(100, 100, new int[100 * 100], 0, 100);
 
-        assertNotNull(sink.getProperty("bounds"));
-    }
+    sink.render(buf);
 
-    @Test
-    void duplicateBuffer_skipsRendering() {
-        Caps caps = new Caps("video/raw");
-        caps.setFieldInt("width", 100);
-        caps.setFieldInt("height", 100);
-        sink.setCapsFunc(caps);
+    assertNotNull(sink.getProperty("bounds"));
+  }
 
-        Buffer buf = new Buffer();
-        buf.duplicate = true;
-        buf.object = new MemoryImageSource(100, 100, new int[100 * 100], 0, 100);
+  @Test
+  void duplicateBuffer_skipsRendering() {
+    Caps caps = new Caps("video/raw");
+    caps.setFieldInt("width", 100);
+    caps.setFieldInt("height", 100);
+    sink.setCapsFunc(caps);
 
-        assertEquals(Pad.OK, sink.render(buf));
-    }
+    Buffer buf = new Buffer();
+    buf.duplicate = true;
+    buf.object = new MemoryImageSource(100, 100, new int[100 * 100], 0, 100);
 
-    @Test
-    void graphicsNull_safe() {
-        Component nullGraphicsComponent = new Component() {
-            @Override
-            public Graphics getGraphics() {
-                return null;
-            }
+    assertEquals(Pad.OK, sink.render(buf));
+  }
+
+  @Test
+  void graphicsNull_safe() {
+    Component nullGraphicsComponent =
+        new Component() {
+          @Override
+          public Graphics getGraphics() {
+            return null;
+          }
         };
 
-        sink.setProperty("component", nullGraphicsComponent);
+    sink.setProperty("component", nullGraphicsComponent);
 
-        Caps caps = new Caps("video/raw");
-        caps.setFieldInt("width", 100);
-        caps.setFieldInt("height", 100);
-        sink.setCapsFunc(caps);
+    Caps caps = new Caps("video/raw");
+    caps.setFieldInt("width", 100);
+    caps.setFieldInt("height", 100);
+    sink.setCapsFunc(caps);
 
-        Buffer buf = new Buffer();
-        buf.object = new MemoryImageSource(100, 100, new int[100 * 100], 0, 100);
+    Buffer buf = new Buffer();
+    buf.object = new MemoryImageSource(100, 100, new int[100 * 100], 0, 100);
 
-        assertEquals(Pad.OK, sink.render(buf));
+    assertEquals(Pad.OK, sink.render(buf));
+  }
+
+  private static class TestableSink extends VideoSink {
+    public void setStates(int current, int pending) {
+      this.currentState = current;
+      this.pendingState = pending;
     }
+  }
 
-    private static class TestableSink extends VideoSink {
-        public void setStates(int current, int pending) {
-            this.currentState = current;
-            this.pendingState = pending;
-        }
-    }
+  @Test
+  void stateTransition_createsFrameWhenComponentNull() {
+    TestableSink s = new TestableSink();
+    s.setStates(VideoSink.STOP, VideoSink.PAUSE);
 
-    @Test
-    void stateTransition_createsFrameWhenComponentNull() {
-        TestableSink s = new TestableSink();
-        s.setStates(VideoSink.STOP, VideoSink.PAUSE);
+    s.changeState(VideoSink.STOP_PAUSE);
 
-        s.changeState(VideoSink.STOP_PAUSE);
+    assertNotNull(s.getProperty("component"));
+  }
 
-        assertNotNull(s.getProperty("component"));
-    }
+  @Test
+  void stateTransition_noFrameWhenComponentPresent() {
+    TestableSink s = new TestableSink();
+    s.setProperty("component", new Button());
+    s.setStates(VideoSink.STOP, VideoSink.PAUSE);
 
-    @Test
-    void stateTransition_noFrameWhenComponentPresent() {
-        TestableSink s = new TestableSink();
-        s.setProperty("component", new Button());
-        s.setStates(VideoSink.STOP, VideoSink.PAUSE);
+    s.changeState(VideoSink.STOP_PAUSE);
 
-        s.changeState(VideoSink.STOP_PAUSE);
+    assertEquals(Button.class, s.getProperty("component").getClass());
+  }
 
-        assertEquals(Button.class, s.getProperty("component").getClass());
-    }
+  @Test
+  void unknownBufferObject_returnsError() {
+    Caps caps = new Caps("video/raw");
+    caps.setFieldInt("width", 100);
+    caps.setFieldInt("height", 100);
+    sink.setCapsFunc(caps);
 
-    @Test
-    void unknownBufferObject_returnsError() {
-        Caps caps = new Caps("video/raw");
-        caps.setFieldInt("width", 100);
-        caps.setFieldInt("height", 100);
-        sink.setCapsFunc(caps);
+    Buffer buf = new Buffer();
+    buf.object = "InvalidPayloadObject"; // Neither Image nor ImageProducer
 
-        Buffer buf = new Buffer();
-        buf.object = "InvalidPayloadObject"; // Neither Image nor ImageProducer
+    assertEquals(Pad.ERROR, sink.render(buf));
+  }
 
-        assertEquals(Pad.ERROR, sink.render(buf));
-    }
+  @Test
+  void testVideoResourceRendering() throws Exception {
+    java.io.InputStream stream = getClass().getResourceAsStream("/media/test-video-only.ogv");
+    assertNotNull(stream, "Test resource /media/test-video-only.ogv must be present");
 
-    @Test
-    void testVideoResourceRendering() throws Exception {
-        java.io.InputStream stream = getClass().getResourceAsStream("/media/test-video-only.ogv");
-        assertNotNull(stream, "Test resource /media/test-video-only.ogv must be present");
-        
-        byte[] data = stream.readAllBytes();
-        stream.close();
-        assertTrue(data.length > 0, "Video asset should contain data");
+    byte[] data = stream.readAllBytes();
+    stream.close();
+    assertTrue(data.length > 0, "Video asset should contain data");
 
-        // Verify configuration setup using standard video capabilities
-        Caps caps = new Caps("video/raw");
-        caps.setFieldInt("width", 320);
-        caps.setFieldInt("height", 240);
-        assertTrue(sink.setCapsFunc(caps), "VideoSink should accept raw video caps");
+    // Verify configuration setup using standard video capabilities
+    Caps caps = new Caps("video/raw");
+    caps.setFieldInt("width", 320);
+    caps.setFieldInt("height", 240);
+    assertTrue(sink.setCapsFunc(caps), "VideoSink should accept raw video caps");
 
-        Buffer buf = new Buffer();
-        buf.object = new java.awt.image.MemoryImageSource(320, 240, new int[320 * 240], 0, 320);
-        
-        assertEquals(Pad.OK, sink.render(buf), "VideoSink should successfully render frames derived from media streams");
-    }
+    Buffer buf = new Buffer();
+    buf.object = new java.awt.image.MemoryImageSource(320, 240, new int[320 * 240], 0, 320);
+
+    assertEquals(
+        Pad.OK,
+        sink.render(buf),
+        "VideoSink should successfully render frames derived from media streams");
+  }
 }

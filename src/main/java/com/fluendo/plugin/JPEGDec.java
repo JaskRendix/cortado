@@ -18,154 +18,156 @@
 
 package com.fluendo.plugin;
 
-import java.awt.*;
 import com.fluendo.jst.*;
 import com.fluendo.utils.*;
+import java.awt.*;
 
 public class JPEGDec extends Element {
-    private Toolkit toolkit;
-    private Component component;
-    private MediaTracker mediaTracker;
-    private int width, height;
+  private Toolkit toolkit;
+  private Component component;
+  private MediaTracker mediaTracker;
+  private int width, height;
 
-    private final Pad srcpad = new Pad(Pad.SRC, "src") {
+  private final Pad srcpad =
+      new Pad(Pad.SRC, "src") {
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
-            return sinkpad.pushEvent(event);
+          return sinkpad.pushEvent(event);
         }
-    };
+      };
 
-    private final Pad sinkpad = new Pad(Pad.SINK, "sink") {
+  private final Pad sinkpad =
+      new Pad(Pad.SINK, "sink") {
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
-            boolean result;
+          boolean result;
 
-            switch (event.getType()) {
-                case FLUSH_START:
-                    result = srcpad.pushEvent(event);
-                    synchronized (streamLock) {
-                        Debug.log(Debug.INFO, "synced " + this);
-                    }
-                    break;
-                case FLUSH_STOP:
-                    result = srcpad.pushEvent(event);
-                    break;
-                case EOS:
-                case NEWSEGMENT:
-                default:
-                    result = srcpad.pushEvent(event);
-                    break;
-            }
-            return result;
+          switch (event.getType()) {
+            case FLUSH_START:
+              result = srcpad.pushEvent(event);
+              synchronized (streamLock) {
+                Debug.log(Debug.INFO, "synced " + this);
+              }
+              break;
+            case FLUSH_STOP:
+              result = srcpad.pushEvent(event);
+              break;
+            case EOS:
+            case NEWSEGMENT:
+            default:
+              result = srcpad.pushEvent(event);
+              break;
+          }
+          return result;
         }
 
         @Override
         protected int chainFunc(com.fluendo.jst.Buffer buf) {
-            int ret;
-            Image img = null;
+          int ret;
+          Image img = null;
 
-            img = toolkit.createImage(buf.data, buf.offset, buf.length);
-            if (img != null) {
-                int imgWidth, imgHeight;
+          img = toolkit.createImage(buf.data, buf.offset, buf.length);
+          if (img != null) {
+            int imgWidth, imgHeight;
 
-                try {
-                    mediaTracker.addImage(img, 0);
-                    mediaTracker.waitForID(0);
-                    mediaTracker.removeImage(img, 0);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return Pad.ERROR;
-                }
-
-                imgWidth = img.getWidth(null);
-                imgHeight = img.getHeight(null);
-
-                if (imgWidth != width || imgHeight != height) {
-                    width = imgWidth;
-                    height = imgHeight;
-
-                    Debug.log(Debug.INFO, "jpeg frame: " + width + "," + height);
-
-                    caps = new Caps("video/raw");
-                    caps.setFieldInt("width", width);
-                    caps.setFieldInt("height", height);
-                    caps.setFieldInt("aspect_x", 1);
-                    caps.setFieldInt("aspect_y", 1);
-                }
-                buf.object = img;
-                buf.caps = caps;
-
-                ret = srcpad.push(buf);
-            } else {
-                System.out.println("could not decode jpeg image");
-                Debug.log(Debug.WARNING, "could not decode jpeg image, continuing");
-                buf.free();
-                ret = OK;
+            try {
+              mediaTracker.addImage(img, 0);
+              mediaTracker.waitForID(0);
+              mediaTracker.removeImage(img, 0);
+            } catch (Exception e) {
+              e.printStackTrace();
+              return Pad.ERROR;
             }
-            return ret;
+
+            imgWidth = img.getWidth(null);
+            imgHeight = img.getHeight(null);
+
+            if (imgWidth != width || imgHeight != height) {
+              width = imgWidth;
+              height = imgHeight;
+
+              Debug.log(Debug.INFO, "jpeg frame: " + width + "," + height);
+
+              caps = new Caps("video/raw");
+              caps.setFieldInt("width", width);
+              caps.setFieldInt("height", height);
+              caps.setFieldInt("aspect_x", 1);
+              caps.setFieldInt("aspect_y", 1);
+            }
+            buf.object = img;
+            buf.caps = caps;
+
+            ret = srcpad.push(buf);
+          } else {
+            System.out.println("could not decode jpeg image");
+            Debug.log(Debug.WARNING, "could not decode jpeg image, continuing");
+            buf.free();
+            ret = OK;
+          }
+          return ret;
         }
-    };
+      };
 
-    public JPEGDec() {
-        super();
+  public JPEGDec() {
+    super();
 
-        toolkit = Toolkit.getDefaultToolkit();
+    toolkit = Toolkit.getDefaultToolkit();
 
-        addPad(srcpad);
-        addPad(sinkpad);
+    addPad(srcpad);
+    addPad(sinkpad);
+  }
+
+  @Override
+  protected int changeState(int transition) {
+    int res;
+
+    switch (transition) {
+      case STOP_PAUSE:
+        width = -1;
+        height = -1;
+        break;
+      default:
+        break;
     }
 
-    @Override
-    protected int changeState(int transition) {
-        int res;
+    res = super.changeState(transition);
 
-        switch (transition) {
-            case STOP_PAUSE:
-                width = -1;
-                height = -1;
-                break;
-            default:
-                break;
-        }
+    return res;
+  }
 
-        res = super.changeState(transition);
-
-        return res;
+  @Override
+  public boolean setProperty(String name, java.lang.Object value) {
+    if (name.equals("component")) {
+      component = (Component) value;
+      toolkit = component.getToolkit();
+      mediaTracker = new MediaTracker(component);
+    } else {
+      return false;
     }
 
-    @Override
-    public boolean setProperty(String name, java.lang.Object value) {
-        if (name.equals("component")) {
-            component = (Component) value;
-            toolkit = component.getToolkit();
-            mediaTracker = new MediaTracker(component);
-        } else {
-            return false;
-        }
+    return true;
+  }
 
-        return true;
+  @Override
+  public java.lang.Object getProperty(String name) {
+    if (name.equals("component")) {
+      return component;
     }
+    return super.getProperty(name);
+  }
 
-    @Override
-    public java.lang.Object getProperty(String name) {
-        if (name.equals("component")) {
-            return component;
-        }
-        return super.getProperty(name);
-    }
+  @Override
+  public String getFactoryName() {
+    return "jpegdec";
+  }
 
-    @Override
-    public String getFactoryName() {
-        return "jpegdec";
-    }
+  @Override
+  public String getMime() {
+    return "image/jpeg";
+  }
 
-    @Override
-    public String getMime() {
-        return "image/jpeg";
-    }
-
-    @Override
-    public int typeFind(byte[] data, int offset, int length) {
-        return -1;
-    }
+  @Override
+  public int typeFind(byte[] data, int offset, int length) {
+    return -1;
+  }
 }

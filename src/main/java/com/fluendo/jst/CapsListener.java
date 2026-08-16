@@ -20,5 +20,5 @@ package com.fluendo.jst;
 
 @FunctionalInterface
 public interface CapsListener {
-    void capsChanged(Caps caps);
+  void capsChanged(Caps caps);
 }

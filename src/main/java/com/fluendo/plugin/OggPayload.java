@@ -18,55 +18,41 @@
 
 package com.fluendo.plugin;
 
-import java.util.List;
-import com.jcraft.jogg.Packet;
 import com.fluendo.jst.Buffer;
+import com.jcraft.jogg.Packet;
+import java.util.List;
 
 public interface OggPayload {
-    /**
-     * Check if the packet contains the signature of the payload.
-     */
-    boolean isType(Packet op);
+  /** Check if the packet contains the signature of the payload. */
+  boolean isType(Packet op);
 
-    /**
-     * Initialize the payload with a header packet.
-     * Returns < 0 for error, 0 if OK, 1 if OK and ready for decoding data.
-     */
-    int takeHeader(Packet op);
+  /**
+   * Initialize the payload with a header packet. Returns < 0 for error, 0 if OK, 1 if OK and ready
+   * for decoding data.
+   */
+  int takeHeader(Packet op);
 
-    /**
-     * Check if the packet contains a header packet.
-     */
-    boolean isHeader(Packet op);
+  /** Check if the packet contains a header packet. */
+  boolean isHeader(Packet op);
 
-    /**
-     * Check if the packet contains a keyframe.
-     */
-    boolean isKeyFrame(Packet op);
+  /** Check if the packet contains a keyframe. */
+  boolean isKeyFrame(Packet op);
 
-    /**
-     * Get the first timestamp of the list of buffers.
-     */
-    long getFirstTs(List<Buffer> packets);
+  /** Get the first timestamp of the list of buffers. */
+  long getFirstTs(List<Buffer> packets);
 
-    /**
-     * Convert the granule pos to a timestamp.
-     */
-    long granuleToTime(long gp);
+  /** Convert the granule pos to a timestamp. */
+  long granuleToTime(long gp);
 
-    /**
-     * Get mime type.
-     */
-    String getMime();
+  /** Get mime type. */
+  String getMime();
 
-    /**
-     * Get mime type from the given packet.
-     */
-    String getMime(Packet op);
+  /** Get mime type from the given packet. */
+  String getMime(Packet op);
 
-    /**
-     * Check if the stream is discontinuous (eg, no need to wait
-     * for data on this stream before playing).
-     */
-    boolean isDiscontinuous();
+  /**
+   * Check if the stream is discontinuous (eg, no need to wait for data on this stream before
+   * playing).
+   */
+  boolean isDiscontinuous();
 }

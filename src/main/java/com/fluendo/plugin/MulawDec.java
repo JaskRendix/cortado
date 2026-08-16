@@ -22,82 +22,84 @@ import com.fluendo.jst.*;
 import com.fluendo.utils.*;
 
 public class MulawDec extends Element {
-    private int rate, channels;
+  private int rate, channels;
 
-    private final Pad srcPad = new Pad(Pad.SRC, "src") {
+  private final Pad srcPad =
+      new Pad(Pad.SRC, "src") {
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
-            return sinkPad.pushEvent(event);
+          return sinkPad.pushEvent(event);
         }
-    };
+      };
 
-    private final Pad sinkPad = new Pad(Pad.SINK, "sink") {
+  private final Pad sinkPad =
+      new Pad(Pad.SINK, "sink") {
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
-            boolean result;
+          boolean result;
 
-            switch (event.getType()) {
-                case FLUSH_START:
-                    result = srcPad.pushEvent(event);
-                    synchronized (streamLock) {
-                        Debug.log(Debug.INFO, "synced " + this);
-                    }
-                    break;
-                case FLUSH_STOP:
-                    result = srcPad.pushEvent(event);
-                    break;
-                case EOS:
-                case NEWSEGMENT:
-                default:
-                    result = srcPad.pushEvent(event);
-                    break;
-            }
-            return result;
+          switch (event.getType()) {
+            case FLUSH_START:
+              result = srcPad.pushEvent(event);
+              synchronized (streamLock) {
+                Debug.log(Debug.INFO, "synced " + this);
+              }
+              break;
+            case FLUSH_STOP:
+              result = srcPad.pushEvent(event);
+              break;
+            case EOS:
+            case NEWSEGMENT:
+            default:
+              result = srcPad.pushEvent(event);
+              break;
+          }
+          return result;
         }
 
         @Override
         protected int chainFunc(com.fluendo.jst.Buffer buf) {
-            int ret;
+          int ret;
 
-            if (caps == null) {
-                Debug.log(Debug.INFO, "mulaw: rate: " + rate);
-                Debug.log(Debug.INFO, "mulaw: channels: " + channels);
+          if (caps == null) {
+            Debug.log(Debug.INFO, "mulaw: rate: " + rate);
+            Debug.log(Debug.INFO, "mulaw: channels: " + channels);
 
-                caps = new Caps("audio/x-mulaw");
-                caps.setFieldInt("rate", rate);
-                caps.setFieldInt("channels", channels);
-            }
+            caps = new Caps("audio/x-mulaw");
+            caps.setFieldInt("rate", rate);
+            caps.setFieldInt("channels", channels);
+          }
 
-            buf.caps = caps;
+          buf.caps = caps;
 
-            ret = srcPad.push(buf);
+          ret = srcPad.push(buf);
 
-            return ret;
+          return ret;
         }
-    };
+      };
 
-    public MulawDec() {
-        super();
+  public MulawDec() {
+    super();
 
-        rate = 8000;
-        channels = 1;
+    rate = 8000;
+    channels = 1;
 
-        addPad(srcPad);
-        addPad(sinkPad);
-    }
+    addPad(srcPad);
+    addPad(sinkPad);
+  }
 
-    @Override
-    public String getFactoryName() {
-        return "mulawdec";
-    }
+  @Override
+  public String getFactoryName() {
+    return "mulawdec";
+  }
 
-    @Override
-    public String getMime() {
-        return "audio/x-mulaw";
-    }
+  @Override
+  public String getMime() {
+    return "audio/x-mulaw";
+  }
 
-    @Override
-    public int typeFind(byte[] data, int offset, int length) {
-        return -1;
-    }
+  @Override
+  public int typeFind(byte[] data, int offset, int length) {
+    return -1;
+  }
 }

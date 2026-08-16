@@ -22,25 +22,25 @@ import com.fluendo.jst.*;
 import com.fluendo.utils.*;
 
 public class FakeSink extends Sink {
-    @Override
-    protected int preroll(Buffer buf) {
-        System.out.println("received preroll buffer " + buf);
-        return Pad.OK;
-    }
+  @Override
+  protected int preroll(Buffer buf) {
+    System.out.println("received preroll buffer " + buf);
+    return Pad.OK;
+  }
 
-    @Override
-    protected int render(Buffer buf) {
-        System.out.println("received buffer " + buf);
-        if (buf.object != null) {
-            System.out.println("object " + buf.object);
-        } else {
-            MemUtils.dump(buf.data, 0, buf.length);
-        }
-        return Pad.OK;
+  @Override
+  protected int render(Buffer buf) {
+    System.out.println("received buffer " + buf);
+    if (buf.object != null) {
+      System.out.println("object " + buf.object);
+    } else {
+      MemUtils.dump(buf.data, 0, buf.length);
     }
+    return Pad.OK;
+  }
 
-    @Override
-    public String getFactoryName() {
-        return "fakesink";
-    }
+  @Override
+  public String getFactoryName() {
+    return "fakesink";
+  }
 }

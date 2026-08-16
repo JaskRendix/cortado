@@ -22,14 +22,14 @@ import java.util.Base64;
 
 public final class Base64Converter {
 
-    private Base64Converter() {
-        // Utility class; prevent instantiation
-    }
+  private Base64Converter() {
+    // Utility class; prevent instantiation
+  }
 
-    public static String encode(byte[] octetString) {
-        if (octetString == null || octetString.length == 0) {
-            return "";
-        }
-        return Base64.getEncoder().encodeToString(octetString);
+  public static String encode(byte[] octetString) {
+    if (octetString == null || octetString.length == 0) {
+      return "";
     }
+    return Base64.getEncoder().encodeToString(octetString);
+  }
 }

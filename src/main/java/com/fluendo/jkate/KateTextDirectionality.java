@@ -7,12 +7,12 @@
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
  * the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Library General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Library General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -21,20 +21,18 @@
 package com.fluendo.jkate;
 
 public enum KateTextDirectionality {
-    KATE_L2R_T2B,
-    KATE_R2L_T2B,
-    KATE_T2B_R2L,
-    KATE_T2B_L2R;
+  KATE_L2R_T2B,
+  KATE_R2L_T2B,
+  KATE_T2B_R2L,
+  KATE_T2B_L2R;
 
-    private static final KateTextDirectionality[] VALUES = values();
+  private static final KateTextDirectionality[] VALUES = values();
 
-    /**
-     * Create a KateTextDirectionality object from an integer index.
-     */
-    public static KateTextDirectionality createTextDirectionality(int idx) throws KateException {
-        if (idx < 0 || idx >= VALUES.length) {
-            throw new KateException("Text directionality " + idx + " out of bounds");
-        }
-        return VALUES[idx];
+  /** Create a KateTextDirectionality object from an integer index. */
+  public static KateTextDirectionality createTextDirectionality(int idx) throws KateException {
+    if (idx < 0 || idx >= VALUES.length) {
+      throw new KateException("Text directionality " + idx + " out of bounds");
     }
+    return VALUES[idx];
+  }
 }

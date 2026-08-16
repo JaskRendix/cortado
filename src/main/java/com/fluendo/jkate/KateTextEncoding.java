@@ -7,12 +7,12 @@
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
  * the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Library General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Library General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -21,17 +21,15 @@
 package com.fluendo.jkate;
 
 public enum KateTextEncoding {
-    KATE_UTF8;
+  KATE_UTF8;
 
-    private static final KateTextEncoding[] VALUES = values();
+  private static final KateTextEncoding[] VALUES = values();
 
-    /**
-     * Create a KateTextEncoding object from an integer index.
-     */
-    public static KateTextEncoding createTextEncoding(int idx) throws KateException {
-        if (idx < 0 || idx >= VALUES.length) {
-            throw new KateException("Text encoding " + idx + " out of bounds");
-        }
-        return VALUES[idx];
+  /** Create a KateTextEncoding object from an integer index. */
+  public static KateTextEncoding createTextEncoding(int idx) throws KateException {
+    if (idx < 0 || idx >= VALUES.length) {
+      throw new KateException("Text encoding " + idx + " out of bounds");
     }
+    return VALUES[idx];
+  }
 }

@@ -69,13 +69,27 @@ public class Message {
   public String toString() {
     return switch (type) {
       case EOS -> "[Message]: " + src + " type: EOS";
-      case BUFFERING -> "[Message]: " + src + " type: BUFFERING, busy:" + boolVal + ", percent:" + intVal;
-      case STATE_CHANGED -> "[Message]: " + src + " type: STATE_CHANGED, old: " + Element.getStateName(old) +
-          ", next: " + Element.getStateName(next) +
-          ", pending: " + Element.getStateName(pending);
+      case BUFFERING ->
+          "[Message]: " + src + " type: BUFFERING, busy:" + boolVal + ", percent:" + intVal;
+      case STATE_CHANGED ->
+          "[Message]: "
+              + src
+              + " type: STATE_CHANGED, old: "
+              + Element.getStateName(old)
+              + ", next: "
+              + Element.getStateName(next)
+              + ", pending: "
+              + Element.getStateName(pending);
       case STATE_DIRTY -> "[Message]: " + src + " type: STATE_DIRTY";
-      case STREAM_STATUS -> "[Message]: " + src + " type: STREAM_STATUS, " + (boolVal ? "start" : "stop") +
-          ", reason: " + Pad.getFlowName(intVal) + ", " + stringVal;
+      case STREAM_STATUS ->
+          "[Message]: "
+              + src
+              + " type: STREAM_STATUS, "
+              + (boolVal ? "start" : "stop")
+              + ", reason: "
+              + Pad.getFlowName(intVal)
+              + ", "
+              + stringVal;
       case ERROR -> "[Message]: " + src + " type: ERROR, " + stringVal;
       default -> "[Message]: " + src + " type: " + type;
     };
@@ -116,7 +130,8 @@ public class Message {
     return intVal;
   }
 
-  public static Message newStateChanged(com.fluendo.jst.Object src, int old, int next, int pending) {
+  public static Message newStateChanged(
+      com.fluendo.jst.Object src, int old, int next, int pending) {
     Message msg = new Message(src, STATE_CHANGED);
     msg.old = old;
     msg.next = next;
@@ -140,7 +155,8 @@ public class Message {
     return new Message(src, STATE_DIRTY);
   }
 
-  public static Message newStreamStatus(com.fluendo.jst.Object src, boolean start, int reason, String aString) {
+  public static Message newStreamStatus(
+      com.fluendo.jst.Object src, boolean start, int reason, String aString) {
     Message msg = new Message(src, STREAM_STATUS);
     msg.stringVal = aString;
     msg.boolVal = start;

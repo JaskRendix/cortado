@@ -37,7 +37,8 @@ public class SystemClock extends Clock {
     res = new WaitStatus(res.status(), now - entryt);
 
     if (res.jitter() < 0) {
-      Debug.log(Debug.DEBUG, "Waiting from " + now + " until " + entryt + " (" + (-res.jitter()) + "us)");
+      Debug.log(
+          Debug.DEBUG, "Waiting from " + now + " until " + entryt + " (" + (-res.jitter()) + "us)");
       long millis;
       int nanos;
 

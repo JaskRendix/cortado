@@ -18,112 +18,111 @@
 
 package com.fluendo.plugin;
 
-import java.nio.charset.StandardCharsets;
-import java.util.*;
 import com.fluendo.jst.*;
 import com.fluendo.utils.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class MultipartDemux extends Element {
-    private static final String MIME = "multipart/x-mixed-replace";
-    private static final String DEFAULT_BOUNDARY = "--ThisRandomString";
+  private static final String MIME = "multipart/x-mixed-replace";
+  private static final String DEFAULT_BOUNDARY = "--ThisRandomString";
 
-    private final List<MultipartStream> streams;
+  private final List<MultipartStream> streams;
 
-    private byte[] accum;
-    private int accumSize;
-    private int accumPos;
-    private int dataEnd;
+  private byte[] accum;
+  private int accumSize;
+  private int accumPos;
+  private int dataEnd;
 
-    private static final int STATE_FIND_BOUNDARY = 1;
-    private static final int STATE_PARSE_HEADERS = 2;
-    private static final int STATE_FIND_DATA_END = 3;
+  private static final int STATE_FIND_BOUNDARY = 1;
+  private static final int STATE_PARSE_HEADERS = 2;
+  private static final int STATE_FIND_DATA_END = 3;
 
-    private int state = STATE_FIND_BOUNDARY;
-    private String boundaryString = DEFAULT_BOUNDARY;
-    private byte[] boundary = boundaryString.getBytes(StandardCharsets.UTF_8);
-    private int boundaryLen = boundary.length;
+  private int state = STATE_FIND_BOUNDARY;
+  private String boundaryString = DEFAULT_BOUNDARY;
+  private byte[] boundary = boundaryString.getBytes(StandardCharsets.UTF_8);
+  private int boundaryLen = boundary.length;
 
-    private static final byte[] headerEnd = "\n".getBytes(StandardCharsets.UTF_8);
-    private static final int headerEndLen = headerEnd.length;
+  private static final byte[] headerEnd = "\n".getBytes(StandardCharsets.UTF_8);
+  private static final int headerEndLen = headerEnd.length;
 
-    private static final String contentType = "content-type: ";
-    private static final int contentTypeLen = contentType.length();
+  private static final String contentType = "content-type: ";
+  private static final int contentTypeLen = contentType.length();
 
-    private MultipartStream currentStream = null;
+  private MultipartStream currentStream = null;
 
-    class MultipartStream extends Pad {
-        private final String mimeType;
+  class MultipartStream extends Pad {
+    private final String mimeType;
 
-        public MultipartStream(String mime) {
-            super(Pad.SRC, "src_" + mime);
-            mimeType = mime;
-            caps = new Caps(mime);
-        }
-
-        @Override
-        protected boolean eventFunc(com.fluendo.jst.Event event) {
-            return sinkpad.pushEvent(event);
-        }
+    public MultipartStream(String mime) {
+      super(Pad.SRC, "src_" + mime);
+      mimeType = mime;
+      caps = new Caps(mime);
     }
 
-    private final Pad sinkpad = new Pad(Pad.SINK, "sink") {
+    @Override
+    protected boolean eventFunc(com.fluendo.jst.Event event) {
+      return sinkpad.pushEvent(event);
+    }
+  }
+
+  private final Pad sinkpad =
+      new Pad(Pad.SINK, "sink") {
 
         @Override
         protected boolean setCapsFunc(Caps caps) {
-            String mime = caps.getMime();
-            String capsBoundary;
+          String mime = caps.getMime();
+          String capsBoundary;
 
-            if (!mime.equals(MIME)) {
-                postMessage(Message.newError(this, "expected \"" + MIME
-                        + "\", got \"" + mime + "\""));
-                return false;
-            }
+          if (!mime.equals(MIME)) {
+            postMessage(Message.newError(this, "expected \"" + MIME + "\", got \"" + mime + "\""));
+            return false;
+          }
 
-            capsBoundary = caps.getFieldString("boundary", DEFAULT_BOUNDARY);
+          capsBoundary = caps.getFieldString("boundary", DEFAULT_BOUNDARY);
 
-            Debug.log(Debug.INFO, this + " boundary string: \"" + capsBoundary
-                    + "\"");
+          Debug.log(Debug.INFO, this + " boundary string: \"" + capsBoundary + "\"");
 
-            boundaryString = capsBoundary + "\n";
-            boundary = boundaryString.getBytes(StandardCharsets.UTF_8);
-            boundaryLen = boundary.length;
+          boundaryString = capsBoundary + "\n";
+          boundary = boundaryString.getBytes(StandardCharsets.UTF_8);
+          boundaryLen = boundary.length;
 
-            return true;
+          return true;
         }
 
         private MultipartStream findStream(String mime) {
-            for (MultipartStream stream : streams) {
-                if (stream.mimeType.equals(mime)) {
-                    return stream;
-                }
+          for (MultipartStream stream : streams) {
+            if (stream.mimeType.equals(mime)) {
+              return stream;
             }
-            return null;
+          }
+          return null;
         }
 
         private boolean forwardEvent(com.fluendo.jst.Event event) {
-            for (MultipartStream stream : streams) {
-                stream.pushEvent(event);
-            }
-            return true;
+          for (MultipartStream stream : streams) {
+            stream.pushEvent(event);
+          }
+          return true;
         }
 
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
-            switch (event.getType()) {
-                case FLUSH_START -> {
-                    forwardEvent(event);
-                    synchronized (streamLock) {
-                        Debug.log(Debug.INFO, "synced " + this);
-                    }
-                }
-                case NEWSEGMENT, FLUSH_STOP, EOS -> {
-                    synchronized (streamLock) {
-                        forwardEvent(event);
-                    }
-                }
-                default -> forwardEvent(event);
+          switch (event.getType()) {
+            case FLUSH_START -> {
+              forwardEvent(event);
+              synchronized (streamLock) {
+                Debug.log(Debug.INFO, "synced " + this);
+              }
             }
-            return true;
+            case NEWSEGMENT, FLUSH_STOP, EOS -> {
+              synchronized (streamLock) {
+                forwardEvent(event);
+              }
+            }
+            default -> forwardEvent(event);
+          }
+          return true;
         }
 
         /*
@@ -131,23 +130,23 @@ public class MultipartDemux extends Element {
          * buffer, we can flush out any skipped bytes
          */
         private void accumulateBuffer(com.fluendo.jst.Buffer buf) {
-            int lastPos = accumSize + accumPos;
+          int lastPos = accumSize + accumPos;
 
-            /* make room */
-            if (accum.length < lastPos + buf.length) {
-                byte[] newAcum = new byte[accum.length + buf.length];
-                System.arraycopy(accum, accumPos, newAcum, 0, accumSize);
-                accum = newAcum;
-                accumPos = 0;
-                lastPos = accumSize;
-            }
-            System.arraycopy(buf.data, buf.offset, accum, lastPos, buf.length);
-            accumSize += buf.length;
+          /* make room */
+          if (accum.length < lastPos + buf.length) {
+            byte[] newAcum = new byte[accum.length + buf.length];
+            System.arraycopy(accum, accumPos, newAcum, 0, accumSize);
+            accum = newAcum;
+            accumPos = 0;
+            lastPos = accumSize;
+          }
+          System.arraycopy(buf.data, buf.offset, accum, lastPos, buf.length);
+          accumSize += buf.length;
         }
 
         private void flushBytes(int bytes) {
-            accumPos += bytes;
-            accumSize -= bytes;
+          accumPos += bytes;
+          accumSize -= bytes;
         }
 
         /*
@@ -156,26 +155,26 @@ public class MultipartDemux extends Element {
          * bytes were not found.
          */
         private int findBytes(int startPos, byte[] bytes, int bytesLen) {
-            int scanPos = startPos;
-            int pos = 0;
-            int size = accumSize;
+          int scanPos = startPos;
+          int pos = 0;
+          int size = accumSize;
 
-            while (size > bytesLen) {
-                if (accum[scanPos] == bytes[pos]) {
-                    pos++;
-                    if (pos == bytesLen) {
-                        return startPos;
-                    }
-                } else {
-                    scanPos -= pos;
-                    size += pos;
-                    startPos = scanPos + 1;
-                    pos = 0;
-                }
-                scanPos++;
-                size--;
+          while (size > bytesLen) {
+            if (accum[scanPos] == bytes[pos]) {
+              pos++;
+              if (pos == bytesLen) {
+                return startPos;
+              }
+            } else {
+              scanPos -= pos;
+              size += pos;
+              startPos = scanPos + 1;
+              pos = 0;
             }
-            return -1;
+            scanPos++;
+            size--;
+          }
+          return -1;
         }
 
         /*
@@ -184,11 +183,11 @@ public class MultipartDemux extends Element {
          * pointing to the byte in the buffer.
          */
         private boolean findBoundary() {
-            int pos = findBytes(accumPos, boundary, boundaryLen);
-            if (pos != -1) {
-                flushBytes(pos - accumPos);
-            }
-            return pos != -1;
+          int pos = findBytes(accumPos, boundary, boundaryLen);
+          if (pos != -1) {
+            flushBytes(pos - accumPos);
+          }
+          return pos != -1;
         }
 
         /*
@@ -196,123 +195,119 @@ public class MultipartDemux extends Element {
          * Content-Type: header in lastContentType
          */
         private boolean parseHeaders() {
-            int headerStart = accumPos;
-            int prevHdr;
+          int headerStart = accumPos;
+          int prevHdr;
 
-            while (true) {
-                prevHdr = headerStart;
+          while (true) {
+            prevHdr = headerStart;
 
-                int pos = findBytes(headerStart, headerEnd, headerEndLen);
-                if (pos == -1)
-                    return false;
+            int pos = findBytes(headerStart, headerEnd, headerEndLen);
+            if (pos == -1) return false;
 
-                if (pos == prevHdr) {
-                    /* all headers parsed */
-                    flushBytes(pos + 1 - accumPos);
-                    return true;
-                }
-                String header = new String(accum, headerStart, pos
-                        - headerStart, StandardCharsets.UTF_8);
-                header = header.toLowerCase();
-
-                if (header.startsWith(contentType)) {
-                    String mime = header.substring(contentTypeLen).trim();
-
-                    currentStream = findStream(mime);
-                    if (currentStream == null) {
-                        currentStream = new MultipartStream(mime);
-                        streams.add(currentStream);
-                        addPad(currentStream);
-                    }
-                }
-
-                /* go to next header */
-                headerStart = pos + 1;
+            if (pos == prevHdr) {
+              /* all headers parsed */
+              flushBytes(pos + 1 - accumPos);
+              return true;
             }
+            String header =
+                new String(accum, headerStart, pos - headerStart, StandardCharsets.UTF_8);
+            header = header.toLowerCase();
+
+            if (header.startsWith(contentType)) {
+              String mime = header.substring(contentTypeLen).trim();
+
+              currentStream = findStream(mime);
+              if (currentStream == null) {
+                currentStream = new MultipartStream(mime);
+                streams.add(currentStream);
+                addPad(currentStream);
+              }
+            }
+
+            /* go to next header */
+            headerStart = pos + 1;
+          }
         }
 
         private boolean findDataEnd() {
-            int pos = findBytes(accumPos, boundary, boundaryLen);
-            if (pos != -1) {
-                dataEnd = pos - 1;
-            }
-            return pos != -1;
+          int pos = findBytes(accumPos, boundary, boundaryLen);
+          if (pos != -1) {
+            dataEnd = pos - 1;
+          }
+          return pos != -1;
         }
 
         @Override
         protected int chainFunc(com.fluendo.jst.Buffer buf) {
-            int flowRet = OK;
+          int flowRet = OK;
 
-            accumulateBuffer(buf);
-            buf.free();
+          accumulateBuffer(buf);
+          buf.free();
 
-            switch (state) {
-                case STATE_FIND_BOUNDARY -> {
-                    if (!findBoundary())
-                        break;
-                    /* skip boundary */
-                    flushBytes(boundary.length);
-                    state = STATE_PARSE_HEADERS;
-                    /* fallthrough */
-                }
-                case STATE_PARSE_HEADERS -> {
-                    if (!parseHeaders())
-                        break;
-                    state = STATE_FIND_DATA_END;
-                    /* fallthrough */
-                }
-                case STATE_FIND_DATA_END -> {
-                    if (!findDataEnd())
-                        break;
-
-                    com.fluendo.jst.Buffer data = com.fluendo.jst.Buffer.create();
-                    int dataSize = dataEnd - accumPos;
-
-                    data.copyData(accum, accumPos, dataSize);
-                    data.time_offset = -1;
-                    data.timestamp = -1;
-
-                    /* skip data */
-                    flushBytes(dataSize);
-
-                    /* and push */
-                    flowRet = currentStream.push(data);
-                    state = STATE_FIND_BOUNDARY;
-                    break;
-                }
-                default -> {
-                    flowRet = ERROR;
-                    break;
-                }
+          switch (state) {
+            case STATE_FIND_BOUNDARY -> {
+              if (!findBoundary()) break;
+              /* skip boundary */
+              flushBytes(boundary.length);
+              state = STATE_PARSE_HEADERS;
+              /* fallthrough */
             }
-            return flowRet;
+            case STATE_PARSE_HEADERS -> {
+              if (!parseHeaders()) break;
+              state = STATE_FIND_DATA_END;
+              /* fallthrough */
+            }
+            case STATE_FIND_DATA_END -> {
+              if (!findDataEnd()) break;
+
+              com.fluendo.jst.Buffer data = com.fluendo.jst.Buffer.create();
+              int dataSize = dataEnd - accumPos;
+
+              data.copyData(accum, accumPos, dataSize);
+              data.time_offset = -1;
+              data.timestamp = -1;
+
+              /* skip data */
+              flushBytes(dataSize);
+
+              /* and push */
+              flowRet = currentStream.push(data);
+              state = STATE_FIND_BOUNDARY;
+              break;
+            }
+            default -> {
+              flowRet = ERROR;
+              break;
+            }
+          }
+          return flowRet;
         }
-    };
+      };
 
-    @Override
-    public String getFactoryName() {
-        return "multipartdemux";
-    }
+  @Override
+  public String getFactoryName() {
+    return "multipartdemux";
+  }
 
-    @Override
-    public String getMime() {
-        return MIME;
-    }
+  @Override
+  public String getMime() {
+    return MIME;
+  }
 
-    @Override
-    public int typeFind(byte[] data, int offset, int length) {
-        return -1;
-    }
+  @Override
+  public int typeFind(byte[] data, int offset, int length) {
+    return -1;
+  }
 
-    public MultipartDemux() {
-        super();
+  public MultipartDemux() {
+    super();
 
-        accum = new byte[8192];
-        accumSize = 0;
-        accumPos = 0;
+    accum = new byte[8192];
+    accumSize = 0;
+    accumPos = 0;
 
-        streams = new ArrayList<>();
+    streams = new ArrayList<>();
 
-        addPad(sinkpad);
-    }
+    addPad(sinkpad);
+  }
 }

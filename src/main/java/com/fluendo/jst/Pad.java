@@ -18,9 +18,9 @@
 
 package com.fluendo.jst;
 
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.List;
 import com.fluendo.utils.Debug;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Pad extends com.fluendo.jst.Object implements Runnable {
   /* pad directions */
@@ -100,14 +100,11 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
     String parentName;
     String thisName;
 
-    if (parent != null)
-      parentName = parent.getName();
-    else
-      parentName = "";
+    if (parent != null) parentName = parent.getName();
+    else parentName = "";
 
     thisName = getName();
-    if (thisName == null)
-      thisName = "";
+    if (thisName == null) thisName = "";
 
     return "Pad: " + parentName + ":" + thisName;
   }
@@ -129,20 +126,16 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
   public synchronized boolean link(Pad newPeer) {
 
     /* already was connected */
-    if (peer != null)
-      return false;
+    if (peer != null) return false;
 
     /* wrong direction */
-    if (direction != SRC)
-      return false;
+    if (direction != SRC) return false;
 
     synchronized (newPeer) {
-      if (newPeer.direction != SINK)
-        return false;
+      if (newPeer.direction != SINK) return false;
 
       /* peer was connected */
-      if (newPeer.peer != null)
-        return false;
+      if (newPeer.peer != null) return false;
 
       peer = newPeer;
       peer.peer = this;
@@ -151,8 +144,7 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
   }
 
   public synchronized void unlink() {
-    if (peer == null)
-      return;
+    if (peer == null) return;
 
     if (direction == SRC) {
       peer.unlink();
@@ -227,13 +219,11 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
   public boolean setCaps(Caps caps) {
     boolean res = true;
 
-    if (caps != null)
-      res = setCapsFunc(caps);
+    if (caps != null) res = setCapsFunc(caps);
 
     if (res) {
       this.caps = caps;
-      if (caps != null)
-        doCapsListeners(caps);
+      if (caps != null) doCapsListeners(caps);
     }
     return res;
   }
@@ -241,8 +231,7 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
   private final int chain(Buffer buffer) {
     synchronized (streamLock) {
       synchronized (this) {
-        if (flushing)
-          return WRONG_STATE;
+        if (flushing) return WRONG_STATE;
 
         if (buffer.caps != null && buffer.caps != caps) {
           if (!setCaps(buffer.caps)) {
@@ -268,8 +257,7 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
   }
 
   public final boolean pushEvent(Event event) {
-    if (peer == null)
-      return false;
+    if (peer == null) return false;
 
     return peer.sendEvent(event);
   }
@@ -291,14 +279,12 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
 
     Debug.debug(this + " activate mode = " + (newMode == MODE_NONE ? "none" : "push"));
 
-    if (mode == newMode)
-      return true;
+    if (mode == newMode) return true;
 
     if (newMode == MODE_NONE) {
       setFlushing(true);
     }
-    if ((res = activateFunc(newMode)) == false)
-      return false;
+    if ((res = activateFunc(newMode)) == false) return false;
 
     if (newMode != MODE_NONE) {
       setFlushing(false);
@@ -312,8 +298,7 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
     return res;
   }
 
-  protected void taskFunc() {
-  }
+  protected void taskFunc() {}
 
   public void run() {
     synchronized (streamLock) {
@@ -325,8 +310,7 @@ public class Pad extends com.fluendo.jst.Object implements Runnable {
           } catch (InterruptedException ie) {
           }
         }
-        if (taskState == T_STOP)
-          break;
+        if (taskState == T_STOP) break;
 
         try {
           taskFunc();

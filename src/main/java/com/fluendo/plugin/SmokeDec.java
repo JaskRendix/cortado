@@ -19,128 +19,130 @@
 
 package com.fluendo.plugin;
 
+import com.fluendo.codecs.SmokeCodec;
+import com.fluendo.jst.Caps;
+import com.fluendo.jst.Element;
+import com.fluendo.jst.Pad;
 import java.awt.Component;
 import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
-import com.fluendo.codecs.SmokeCodec;
-import com.fluendo.jst.Element;
-import com.fluendo.jst.Pad;
-import com.fluendo.jst.Caps;
 
 public class SmokeDec extends Element {
-    private static final Logger LOGGER = Logger.getLogger(SmokeDec.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(SmokeDec.class.getName());
 
-    private Component component;
-    private SmokeCodec smoke;
-    private int width;
-    private int height;
+  private Component component;
+  private SmokeCodec smoke;
+  private int width;
+  private int height;
 
-    private final Pad srcPad = new Pad(Pad.SRC, "src") {
+  private final Pad srcPad =
+      new Pad(Pad.SRC, "src") {
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
-            return sinkPad.pushEvent(event);
+          return sinkPad.pushEvent(event);
         }
-    };
+      };
 
-    private final Pad sinkPad = new Pad(Pad.SINK, "sink") {
+  private final Pad sinkPad =
+      new Pad(Pad.SINK, "sink") {
         @Override
         protected boolean eventFunc(com.fluendo.jst.Event event) {
-            boolean result;
+          boolean result;
 
-            switch (event.getType()) {
-                case FLUSH_START:
-                    result = srcPad.pushEvent(event);
-                    synchronized (streamLock) {
-                        LOGGER.info("synced " + this);
-                    }
-                    break;
-                case FLUSH_STOP:
-                case EOS:
-                case NEWSEGMENT:
-                default:
-                    result = srcPad.pushEvent(event);
-                    break;
-            }
-            return result;
+          switch (event.getType()) {
+            case FLUSH_START:
+              result = srcPad.pushEvent(event);
+              synchronized (streamLock) {
+                LOGGER.info("synced " + this);
+              }
+              break;
+            case FLUSH_STOP:
+            case EOS:
+            case NEWSEGMENT:
+            default:
+              result = srcPad.pushEvent(event);
+              break;
+          }
+          return result;
         }
 
         @Override
         protected int chainFunc(com.fluendo.jst.Buffer buf) {
-            int ret;
+          int ret;
 
-            BufferedImage img = smoke.decode(buf.data, buf.offset, buf.length);
+          BufferedImage img = smoke.decode(buf.data, buf.offset, buf.length);
 
-            if (img != null) {
-                int imgW = img.getWidth();
-                int imgH = img.getHeight();
+          if (img != null) {
+            int imgW = img.getWidth();
+            int imgH = img.getHeight();
 
-                if (imgW != width || imgH != height) {
-                    width = imgW;
-                    height = imgH;
+            if (imgW != width || imgH != height) {
+              width = imgW;
+              height = imgH;
 
-                    LOGGER.info("smoke frame: " + width + "," + height);
+              LOGGER.info("smoke frame: " + width + "," + height);
 
-                    caps = new Caps("video/raw");
-                    caps.setFieldInt("width", width);
-                    caps.setFieldInt("height", height);
-                    caps.setFieldInt("aspect_x", 1);
-                    caps.setFieldInt("aspect_y", 1);
-                }
-                buf.object = img;
-                buf.caps = caps;
-
-                ret = srcPad.push(buf);
-            } else {
-                if ((smoke.getFlags() & SmokeCodec.KEYFRAME) != 0) {
-                    LOGGER.warning("could not decode jpeg image");
-                }
-                buf.free();
-                ret = OK;
+              caps = new Caps("video/raw");
+              caps.setFieldInt("width", width);
+              caps.setFieldInt("height", height);
+              caps.setFieldInt("aspect_x", 1);
+              caps.setFieldInt("aspect_y", 1);
             }
-            return ret;
+            buf.object = img;
+            buf.caps = caps;
+
+            ret = srcPad.push(buf);
+          } else {
+            if ((smoke.getFlags() & SmokeCodec.KEYFRAME) != 0) {
+              LOGGER.warning("could not decode jpeg image");
+            }
+            buf.free();
+            ret = OK;
+          }
+          return ret;
         }
-    };
+      };
 
-    public SmokeDec() {
-        super();
-        addPad(srcPad);
-        addPad(sinkPad);
-        this.smoke = new SmokeCodec();
-    }
+  public SmokeDec() {
+    super();
+    addPad(srcPad);
+    addPad(sinkPad);
+    this.smoke = new SmokeCodec();
+  }
 
-    @Override
-    public boolean setProperty(String name, java.lang.Object value) {
-        if (name.equals("component")) {
-            component = (Component) value;
-        } else {
-            return false;
-        }
-        return true;
+  @Override
+  public boolean setProperty(String name, java.lang.Object value) {
+    if (name.equals("component")) {
+      component = (Component) value;
+    } else {
+      return false;
     }
+    return true;
+  }
 
-    @Override
-    public java.lang.Object getProperty(String name) {
-        if (name.equals("component")) {
-            return component;
-        }
-        return null;
+  @Override
+  public java.lang.Object getProperty(String name) {
+    if (name.equals("component")) {
+      return component;
     }
+    return null;
+  }
 
-    @Override
-    public String getFactoryName() {
-        return "smokedec";
-    }
+  @Override
+  public String getFactoryName() {
+    return "smokedec";
+  }
 
-    @Override
-    public String getMime() {
-        return "video/x-smoke";
-    }
+  @Override
+  public String getMime() {
+    return "video/x-smoke";
+  }
 
-    @Override
-    public int typeFind(byte[] data, int offset, int length) {
-        if (data != null && length - offset > 1 && data[offset + 1] == 0x73) {
-            return 10;
-        }
-        return -1;
+  @Override
+  public int typeFind(byte[] data, int offset, int length) {
+    if (data != null && length - offset > 1 && data[offset + 1] == 0x73) {
+      return 10;
     }
+    return -1;
+  }
 }

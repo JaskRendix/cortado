@@ -22,525 +22,508 @@ import com.fluendo.jst.*;
 import com.fluendo.utils.*;
 
 public abstract class AudioSink extends Sink implements ClockProvider {
-    protected RingBuffer ringBuffer = null;
+  protected RingBuffer ringBuffer = null;
 
-    private class AudioClock extends SystemClock {
-        private long lastTime = -1;
-        private long diff = -1;
-        private boolean started = false;
+  private class AudioClock extends SystemClock {
+    private long lastTime = -1;
+    private long diff = -1;
+    private boolean started = false;
 
-        public void setStarted(boolean s) {
-            started = s;
-            if (started) {
-                diff = -1;
-                lastTime = -1;
-            }
-        }
-
-        @Override
-        protected long getInternalTime() {
-            long samples;
-            long result;
-            long timePos;
-            long now;
-
-            synchronized (ringBuffer) {
-                if (ringBuffer == null || ringBuffer.rate == 0)
-                    return 0;
-
-                samples = ringBuffer.samplesPlayed();
-                timePos = samples * Clock.SECOND / ringBuffer.rate;
-
-                if (started) {
-                    /* Interpolate as the position can jump a lot */
-                    now = System.currentTimeMillis() * Clock.MSECOND;
-                    if (diff == -1) {
-                        diff = now;
-                    }
-
-                    if (timePos != lastTime) {
-                        lastTime = timePos;
-                        diff = now - timePos;
-                    }
-                    result = now - diff;
-                } else {
-                    result = timePos;
-                }
-            }
-
-            return result;
-        }
+    public void setStarted(boolean s) {
+      started = s;
+      if (started) {
+        diff = -1;
+        lastTime = -1;
+      }
     }
-
-    private final AudioClock audioClock = new AudioClock();
 
     @Override
-    public Clock provideClock() {
-        return audioClock;
+    protected long getInternalTime() {
+      long samples;
+      long result;
+      long timePos;
+      long now;
+
+      synchronized (ringBuffer) {
+        if (ringBuffer == null || ringBuffer.rate == 0) return 0;
+
+        samples = ringBuffer.samplesPlayed();
+        timePos = samples * Clock.SECOND / ringBuffer.rate;
+
+        if (started) {
+          /* Interpolate as the position can jump a lot */
+          now = System.currentTimeMillis() * Clock.MSECOND;
+          if (diff == -1) {
+            diff = now;
+          }
+
+          if (timePos != lastTime) {
+            lastTime = timePos;
+            diff = now - timePos;
+          }
+          result = now - diff;
+        } else {
+          result = timePos;
+        }
+      }
+
+      return result;
     }
+  }
 
-    // Removed the 'abstract' keyword here:
-    protected class RingBuffer implements Runnable {
-        protected byte[] buffer;
-        private int state;
-        private Thread thread;
-        private long nextSample;
-        private boolean flushing;
-        private boolean autoStart;
-        private boolean opened;
+  private final AudioClock audioClock = new AudioClock();
 
-        protected static final int STOP = 0;
-        protected static final int PAUSE = 1;
-        protected static final int PLAY = 2;
+  @Override
+  public Clock provideClock() {
+    return audioClock;
+  }
 
-        public int bps, sps;
-        public byte[] emptySeg;
-        public long playSeg;
-        public int segTotal;
-        public int segSize;
-        public int rate, channels;
+  // Removed the 'abstract' keyword here:
+  protected class RingBuffer implements Runnable {
+    protected byte[] buffer;
+    private int state;
+    private Thread thread;
+    private long nextSample;
+    private boolean flushing;
+    private boolean autoStart;
+    private boolean opened;
 
-        @Override
-        public void run() {
-            boolean running = true;
+    protected static final int STOP = 0;
+    protected static final int PAUSE = 1;
+    protected static final int PLAY = 2;
 
-            while (running) {
-                synchronized (this) {
-                    if (state != PLAY) {
-                        while (state == PAUSE) {
-                            try {
-                                notifyAll();
-                                wait();
-                            } catch (InterruptedException ie) {
-                                Thread.currentThread().interrupt();
-                            }
-                        }
-                        if (state == STOP) {
-                            running = false;
-                            break;
-                        }
-                    }
-                }
+    public int bps, sps;
+    public byte[] emptySeg;
+    public long playSeg;
+    public int segTotal;
+    public int segSize;
+    public int rate, channels;
 
-                int segNum = (int) (playSeg % segTotal);
-                int index = segNum * segSize;
-                int ret, toWrite;
+    @Override
+    public void run() {
+      boolean running = true;
 
-                toWrite = segSize;
-                while (toWrite > 0) {
-                    ret = write(buffer, index, segSize);
-                    if (ret == -1)
-                        break;
-
-                    toWrite -= ret;
-                }
-
-                clear(segNum);
-
-                synchronized (this) {
-                    playSeg++;
-                    notifyAll();
-                }
-            }
-        }
-
-        public synchronized void setFlushing(boolean flushing) {
-            this.flushing = flushing;
-            clearAll();
-            if (flushing) {
-                pause();
-            }
-        }
-
-        protected void startWriteThread() {
-            thread = new Thread(this, "cortado-audiosink-ringbuffer");
-            thread.start();
-            try {
+      while (running) {
+        synchronized (this) {
+          if (state != PLAY) {
+            while (state == PAUSE) {
+              try {
+                notifyAll();
                 wait();
-            } catch (InterruptedException ie) {
+              } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
+              }
             }
-        }
-
-        public synchronized boolean acquire(Caps caps) {
-            boolean res;
-
-            if (thread != null)
-                return false;
-
-            if (opened)
-                return false;
-
-            String mime = caps.getMime();
-            if (!mime.equals("audio/raw"))
-                return false;
-
-            rate = caps.getFieldInt("rate", 44100);
-            channels = caps.getFieldInt("channels", 1);
-            bps = 2 * channels;
-
-            if (!(res = open(this)))
-                return res;
-
-            opened = true;
-
-            Debug.log(Debug.INFO, "audio: segSize: " + segSize);
-            Debug.log(Debug.INFO, "audio: segTotal: " + segTotal);
-
-            segTotal++;
-
-            buffer = new byte[segSize * segTotal];
-            sps = segSize / bps;
-
-            state = PAUSE;
-            nextSample = 0;
-            playSeg = 0;
-
-            startWriteThread();
-
-            return res;
-        }
-
-        public synchronized boolean isAcquired() {
-            return opened;
-        }
-
-        public boolean release() {
-            stop();
-
-            synchronized (this) {
-                if (opened) {
-                    if (!close(this))
-                        return false;
-                }
-                opened = false;
+            if (state == STOP) {
+              running = false;
+              break;
             }
-
-            return true;
+          }
         }
 
-        private synchronized boolean waitSegment() {
-            if (flushing)
-                return false;
+        int segNum = (int) (playSeg % segTotal);
+        int index = segNum * segSize;
+        int ret, toWrite;
 
-            if (state != PLAY && autoStart) {
-                play();
-            }
+        toWrite = segSize;
+        while (toWrite > 0) {
+          ret = write(buffer, index, segSize);
+          if (ret == -1) break;
 
-            try {
-                if (state != PLAY) {
-                    return false;
-                }
-
-                wait();
-                if (flushing)
-                    return false;
-
-                if (state != PLAY)
-                    return false;
-            } catch (InterruptedException ie) {
-                Thread.currentThread().interrupt();
-            }
-
-            return true;
+          toWrite -= ret;
         }
 
-        public int commit(byte[] data, long sample, int offset, int len) {
-            int idx;
+        clear(segNum);
 
-            if (sample == -1) {
-                sample = nextSample;
-            }
-            if (sample < 0) {
-                return len;
-            }
-            if (nextSample != -1) {
-                if (Math.abs(sample - nextSample) < (rate / 10))
-                    sample = nextSample;
-                else
-                    System.out.println("discont: found " + sample + " expected " + nextSample);
-            }
-
-            idx = offset;
-
-            nextSample = sample + (len / bps);
-            while (len > 0) {
-                long writeSeg;
-                int writeOff;
-                int writeLen = 0;
-                long diff = -1;
-
-                writeSeg = sample / sps;
-                writeOff = (int) ((sample % sps) * bps);
-
-                while (true) {
-                    /* Get the currently playing segment */
-                    synchronized (this) {
-                        /* See how far away it is from the write segment */
-                        diff = writeSeg - playSeg;
-                    }
-
-                    /* Play segment too far ahead, we need to drop */
-                    if (diff < 0) {
-                        writeLen = Math.min(segSize, len);
-                        break;
-                    } else {
-                        /* Write segment is within writable range */
-                        if (diff < segTotal)
-                            break;
-
-                        /* Else wait for the segment to become writable */
-                        if (!waitSegment()) {
-                            return -1;
-                        }
-                    }
-                }
-                if (diff >= 0) {
-                    int writeSegRel;
-
-                    /* We can write now */
-                    writeSegRel = (int) (writeSeg % segTotal);
-                    writeLen = Math.min(segSize - writeOff, len);
-
-                    System.arraycopy(data, idx, buffer, writeSegRel * segSize + writeOff, writeLen);
-                }
-
-                len -= writeLen;
-                idx += writeLen;
-                sample += writeLen / bps;
-            }
-
-            return len;
+        synchronized (this) {
+          playSeg++;
+          notifyAll();
         }
-
-        public long samplesPlayed() {
-            long delay, samples;
-            long seg;
-
-            /* Get the number of samples not yet played */
-            delay = delay();
-
-            seg = Math.max(0, playSeg - 1);
-
-            samples = (seg * sps);
-
-            if (samples >= delay)
-                samples -= delay;
-            else
-                samples = 0;
-
-            return samples;
-        }
-
-        public synchronized void clear(long segNum) {
-            int index = ((int) (segNum % segTotal)) * segSize;
-            System.arraycopy(emptySeg, 0, buffer, index, segSize);
-        }
-
-        public synchronized void clearAll() {
-            for (int i = 0; i < segTotal; i++) {
-                clear(i);
-            }
-        }
-
-        public synchronized void setSample(long sample) {
-            if (sample == -1)
-                sample = 0;
-
-            playSeg = sample / sps;
-            nextSample = sample;
-
-            clearAll();
-        }
-
-        public synchronized void setAutoStart(boolean start) {
-            autoStart = start;
-        }
-
-        public boolean play() {
-            synchronized (this) {
-                if (flushing)
-                    return false;
-
-                state = PLAY;
-                audioClock.setStarted(true);
-                notifyAll();
-            }
-            Debug.log(Debug.DEBUG, this + " playing");
-            return true;
-        }
-
-        public boolean pause() {
-            synchronized (this) {
-                Debug.log(Debug.DEBUG, this + " pausing");
-                state = PAUSE;
-                audioClock.setStarted(false);
-                notifyAll();
-                if (thread != null) {
-                    try {
-                        Debug.log(Debug.DEBUG, this + " waiting for pause");
-                        wait();
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            }
-            Debug.log(Debug.DEBUG, this + " paused");
-            return true;
-        }
-
-        public boolean stop() {
-            synchronized (this) {
-                Debug.log(Debug.DEBUG, this + " stopping");
-                state = STOP;
-                audioClock.setStarted(false);
-                notifyAll();
-            }
-            if (thread != null) {
-                try {
-                    Debug.log(Debug.DEBUG, this + " joining thread");
-                    thread.join();
-                    thread = null;
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-            Debug.log(Debug.DEBUG, this + " stopped");
-            return true;
-        }
-
-        public synchronized int getState() {
-            return state;
-        }
+      }
     }
 
-    /* Test whether the audio sink is likely to work. */
-    public boolean test() {
-        return true;
+    public synchronized void setFlushing(boolean flushing) {
+      this.flushing = flushing;
+      clearAll();
+      if (flushing) {
+        pause();
+      }
     }
 
-    @Override
-    protected WaitStatus doSync(long time) {
-        return WaitStatus.newOK();
+    protected void startWriteThread() {
+      thread = new Thread(this, "cortado-audiosink-ringbuffer");
+      thread.start();
+      try {
+        wait();
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+      }
     }
 
-    @Override
-    protected boolean doEvent(Event event) {
-        switch (event.getType()) {
-            case FLUSH_START:
-                ringBuffer.setFlushing(true);
-                break;
+    public synchronized boolean acquire(Caps caps) {
+      boolean res;
 
-            case FLUSH_STOP:
-                ringBuffer.setFlushing(false);
-                break;
+      if (thread != null) return false;
 
-            case NEWSEGMENT:
-                break;
+      if (opened) return false;
 
-            case EOS:
-                drain();
-                break;
+      String mime = caps.getMime();
+      if (!mime.equals("audio/raw")) return false;
 
-            case SEEK:
-                break;
+      rate = caps.getFieldInt("rate", 44100);
+      channels = caps.getFieldInt("channels", 1);
+      bps = 2 * channels;
+
+      if (!(res = open(this))) return res;
+
+      opened = true;
+
+      Debug.log(Debug.INFO, "audio: segSize: " + segSize);
+      Debug.log(Debug.INFO, "audio: segTotal: " + segTotal);
+
+      segTotal++;
+
+      buffer = new byte[segSize * segTotal];
+      sps = segSize / bps;
+
+      state = PAUSE;
+      nextSample = 0;
+      playSeg = 0;
+
+      startWriteThread();
+
+      return res;
+    }
+
+    public synchronized boolean isAcquired() {
+      return opened;
+    }
+
+    public boolean release() {
+      stop();
+
+      synchronized (this) {
+        if (opened) {
+          if (!close(this)) return false;
         }
-        return true;
+        opened = false;
+      }
+
+      return true;
     }
 
-    @Override
-    protected int render(Buffer buf) {
-        long sample;
-        long time;
+    private synchronized boolean waitSegment() {
+      if (flushing) return false;
 
-        if (buf.isFlagSet(com.fluendo.jst.Buffer.FLAG_DISCONT))
-            ringBuffer.nextSample = -1;
+      if (state != PLAY && autoStart) {
+        play();
+      }
 
-        time = buf.timestamp - segStart;
-        if (time < 0)
-            return Pad.OK;
-        time += baseTime;
+      try {
+        if (state != PLAY) {
+          return false;
+        }
 
-        sample = time * ringBuffer.rate / Clock.SECOND;
+        wait();
+        if (flushing) return false;
 
-        ringBuffer.commit(buf.data, sample, buf.offset, buf.length);
+        if (state != PLAY) return false;
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+      }
 
-        return Pad.OK;
+      return true;
     }
 
-    @Override
-    protected boolean setCapsFunc(Caps caps) {
-        boolean res;
+    public int commit(byte[] data, long sample, int offset, int len) {
+      int idx;
 
+      if (sample == -1) {
+        sample = nextSample;
+      }
+      if (sample < 0) {
+        return len;
+      }
+      if (nextSample != -1) {
+        if (Math.abs(sample - nextSample) < (rate / 10)) sample = nextSample;
+        else System.out.println("discont: found " + sample + " expected " + nextSample);
+      }
+
+      idx = offset;
+
+      nextSample = sample + (len / bps);
+      while (len > 0) {
+        long writeSeg;
+        int writeOff;
+        int writeLen = 0;
+        long diff = -1;
+
+        writeSeg = sample / sps;
+        writeOff = (int) ((sample % sps) * bps);
+
+        while (true) {
+          /* Get the currently playing segment */
+          synchronized (this) {
+            /* See how far away it is from the write segment */
+            diff = writeSeg - playSeg;
+          }
+
+          /* Play segment too far ahead, we need to drop */
+          if (diff < 0) {
+            writeLen = Math.min(segSize, len);
+            break;
+          } else {
+            /* Write segment is within writable range */
+            if (diff < segTotal) break;
+
+            /* Else wait for the segment to become writable */
+            if (!waitSegment()) {
+              return -1;
+            }
+          }
+        }
+        if (diff >= 0) {
+          int writeSegRel;
+
+          /* We can write now */
+          writeSegRel = (int) (writeSeg % segTotal);
+          writeLen = Math.min(segSize - writeOff, len);
+
+          System.arraycopy(data, idx, buffer, writeSegRel * segSize + writeOff, writeLen);
+        }
+
+        len -= writeLen;
+        idx += writeLen;
+        sample += writeLen / bps;
+      }
+
+      return len;
+    }
+
+    public long samplesPlayed() {
+      long delay, samples;
+      long seg;
+
+      /* Get the number of samples not yet played */
+      delay = delay();
+
+      seg = Math.max(0, playSeg - 1);
+
+      samples = (seg * sps);
+
+      if (samples >= delay) samples -= delay;
+      else samples = 0;
+
+      return samples;
+    }
+
+    public synchronized void clear(long segNum) {
+      int index = ((int) (segNum % segTotal)) * segSize;
+      System.arraycopy(emptySeg, 0, buffer, index, segSize);
+    }
+
+    public synchronized void clearAll() {
+      for (int i = 0; i < segTotal; i++) {
+        clear(i);
+      }
+    }
+
+    public synchronized void setSample(long sample) {
+      if (sample == -1) sample = 0;
+
+      playSeg = sample / sps;
+      nextSample = sample;
+
+      clearAll();
+    }
+
+    public synchronized void setAutoStart(boolean start) {
+      autoStart = start;
+    }
+
+    public boolean play() {
+      synchronized (this) {
+        if (flushing) return false;
+
+        state = PLAY;
+        audioClock.setStarted(true);
+        notifyAll();
+      }
+      Debug.log(Debug.DEBUG, this + " playing");
+      return true;
+    }
+
+    public boolean pause() {
+      synchronized (this) {
+        Debug.log(Debug.DEBUG, this + " pausing");
+        state = PAUSE;
+        audioClock.setStarted(false);
+        notifyAll();
+        if (thread != null) {
+          try {
+            Debug.log(Debug.DEBUG, this + " waiting for pause");
+            wait();
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+          }
+        }
+      }
+      Debug.log(Debug.DEBUG, this + " paused");
+      return true;
+    }
+
+    public boolean stop() {
+      synchronized (this) {
+        Debug.log(Debug.DEBUG, this + " stopping");
+        state = STOP;
+        audioClock.setStarted(false);
+        notifyAll();
+      }
+      if (thread != null) {
+        try {
+          Debug.log(Debug.DEBUG, this + " joining thread");
+          thread.join();
+          thread = null;
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+        }
+      }
+      Debug.log(Debug.DEBUG, this + " stopped");
+      return true;
+    }
+
+    public synchronized int getState() {
+      return state;
+    }
+  }
+
+  /* Test whether the audio sink is likely to work. */
+  public boolean test() {
+    return true;
+  }
+
+  @Override
+  protected WaitStatus doSync(long time) {
+    return WaitStatus.newOK();
+  }
+
+  @Override
+  protected boolean doEvent(Event event) {
+    switch (event.getType()) {
+      case FLUSH_START:
+        ringBuffer.setFlushing(true);
+        break;
+
+      case FLUSH_STOP:
+        ringBuffer.setFlushing(false);
+        break;
+
+      case NEWSEGMENT:
+        break;
+
+      case EOS:
+        drain();
+        break;
+
+      case SEEK:
+        break;
+    }
+    return true;
+  }
+
+  @Override
+  protected int render(Buffer buf) {
+    long sample;
+    long time;
+
+    if (buf.isFlagSet(com.fluendo.jst.Buffer.FLAG_DISCONT)) ringBuffer.nextSample = -1;
+
+    time = buf.timestamp - segStart;
+    if (time < 0) return Pad.OK;
+    time += baseTime;
+
+    sample = time * ringBuffer.rate / Clock.SECOND;
+
+    ringBuffer.commit(buf.data, sample, buf.offset, buf.length);
+
+    return Pad.OK;
+  }
+
+  @Override
+  protected boolean setCapsFunc(Caps caps) {
+    boolean res;
+
+    ringBuffer.release();
+    res = ringBuffer.acquire(caps);
+    return res;
+  }
+
+  @Override
+  protected int changeState(int transition) {
+    int result;
+
+    switch (transition) {
+      case STOP_PAUSE:
+        ringBuffer = createRingBuffer();
+        ringBuffer.setFlushing(false);
+        break;
+      case PAUSE_PLAY:
+        ringBuffer.setAutoStart(true);
+        break;
+      case PLAY_PAUSE:
+        reset();
+        ringBuffer.setAutoStart(false);
+        ringBuffer.pause();
+        break;
+      case PAUSE_STOP:
+        ringBuffer.setFlushing(true);
+        break;
+    }
+    result = super.changeState(transition);
+
+    switch (transition) {
+      case PAUSE_STOP:
         ringBuffer.release();
-        res = ringBuffer.acquire(caps);
-        return res;
+        break;
     }
 
-    @Override
-    protected int changeState(int transition) {
-        int result;
+    return result;
+  }
 
-        switch (transition) {
-            case STOP_PAUSE:
-                ringBuffer = createRingBuffer();
-                ringBuffer.setFlushing(false);
-                break;
-            case PAUSE_PLAY:
-                ringBuffer.setAutoStart(true);
-                break;
-            case PLAY_PAUSE:
-                reset();
-                ringBuffer.setAutoStart(false);
-                ringBuffer.pause();
-                break;
-            case PAUSE_STOP:
-                ringBuffer.setFlushing(true);
-                break;
-        }
-        result = super.changeState(transition);
-
-        switch (transition) {
-            case PAUSE_STOP:
-                ringBuffer.release();
-                break;
-        }
-
-        return result;
+  /* Block until audio playback is finished */
+  protected void drain() {
+    if (ringBuffer.rate <= 0) {
+      return;
     }
 
-    /* Block until audio playback is finished */
-    protected void drain() {
-        if (ringBuffer.rate <= 0) {
-            return;
-        }
-
-        if (!ringBuffer.isAcquired()) {
-            return;
-        }
-
-        if (ringBuffer.getState() != PLAY) {
-            ringBuffer.play();
-        }
-
-        if (ringBuffer.nextSample != -1) {
-            long time = ringBuffer.nextSample * Clock.SECOND / ringBuffer.rate;
-            Clock.ClockID id = audioClock.newSingleShotID(time);
-            Debug.log(Debug.DEBUG, this + " waiting until t=" + ((double) time / Clock.SECOND) + "s for playback to finish");
-            id.waitID();
-            ringBuffer.nextSample = -1;
-        }
+    if (!ringBuffer.isAcquired()) {
+      return;
     }
 
-    protected abstract RingBuffer createRingBuffer();
+    if (ringBuffer.getState() != PLAY) {
+      ringBuffer.play();
+    }
 
-    protected abstract boolean open(RingBuffer ring);
+    if (ringBuffer.nextSample != -1) {
+      long time = ringBuffer.nextSample * Clock.SECOND / ringBuffer.rate;
+      Clock.ClockID id = audioClock.newSingleShotID(time);
+      Debug.log(
+          Debug.DEBUG,
+          this + " waiting until t=" + ((double) time / Clock.SECOND) + "s for playback to finish");
+      id.waitID();
+      ringBuffer.nextSample = -1;
+    }
+  }
 
-    protected abstract boolean close(RingBuffer ring);
+  protected abstract RingBuffer createRingBuffer();
 
-    protected abstract int write(byte[] data, int offset, int length);
+  protected abstract boolean open(RingBuffer ring);
 
-    protected abstract long delay();
+  protected abstract boolean close(RingBuffer ring);
 
-    protected abstract void reset();
+  protected abstract int write(byte[] data, int offset, int length);
+
+  protected abstract long delay();
+
+  protected abstract void reset();
 }

@@ -7,12 +7,12 @@
  * modify it under the terms of the GNU Library General Public License
  * as published by the Free Software Foundation; either version 2 of
  * the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Library General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Library General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -21,18 +21,16 @@
 package com.fluendo.jkate;
 
 public enum KateMarkupType {
-    KATE_MARKUP_NONE,
-    KATE_MARKUP_SIMPLE;
+  KATE_MARKUP_NONE,
+  KATE_MARKUP_SIMPLE;
 
-    private static final KateMarkupType[] VALUES = values();
+  private static final KateMarkupType[] VALUES = values();
 
-    /**
-     * Create a KateMarkupType object from an integer index.
-     */
-    public static KateMarkupType createMarkupType(int idx) throws KateException {
-        if (idx < 0 || idx >= VALUES.length) {
-            throw new KateException("Markup type " + idx + " out of bounds");
-        }
-        return VALUES[idx];
+  /** Create a KateMarkupType object from an integer index. */
+  public static KateMarkupType createMarkupType(int idx) throws KateException {
+    if (idx < 0 || idx >= VALUES.length) {
+      throw new KateException("Markup type " + idx + " out of bounds");
     }
+    return VALUES[idx];
+  }
 }

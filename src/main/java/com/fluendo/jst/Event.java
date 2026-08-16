@@ -20,104 +20,106 @@ package com.fluendo.jst;
 
 public final class Event {
 
-    public enum Type {
-        FLUSH_START,
-        FLUSH_STOP,
-        EOS,
-        NEWSEGMENT,
-        SEEK
-    }
+  public enum Type {
+    FLUSH_START,
+    FLUSH_STOP,
+    EOS,
+    NEWSEGMENT,
+    SEEK
+  }
 
-    private final Type type;
-    private int format;
-    private boolean update;
-    private long start;
-    private long stop;
-    private long position = -1;
+  private final Type type;
+  private int format;
+  private boolean update;
+  private long start;
+  private long stop;
+  private long position = -1;
 
-    private Event(Type type) {
-        this.type = type;
-    }
+  private Event(Type type) {
+    this.type = type;
+  }
 
-    @Override
-    public String toString() {
-        return switch (type) {
-            case SEEK ->
-                "[Event] type: " + type +
-                ", format: " + format +
-                ", position: " + position;
+  @Override
+  public String toString() {
+    return switch (type) {
+      case SEEK -> "[Event] type: " + type + ", format: " + format + ", position: " + position;
 
-            case NEWSEGMENT ->
-                "[Event] type: " + type +
-                (update ? ", update" : ", non-update") +
-                ", format: " + format +
-                ", start: " + start +
-                ", stop: " + stop +
-                ", position: " + position;
+      case NEWSEGMENT ->
+          "[Event] type: "
+              + type
+              + (update ? ", update" : ", non-update")
+              + ", format: "
+              + format
+              + ", start: "
+              + start
+              + ", stop: "
+              + stop
+              + ", position: "
+              + position;
 
-            default ->
-                "[Event] type: " + type;
-        };
-    }
+      default -> "[Event] type: " + type;
+    };
+  }
 
-    public Type getType() {
-        return type;
-    }
+  public Type getType() {
+    return type;
+  }
 
-    public static Event newEOS() {
-        return new Event(Type.EOS);
-    }
+  public static Event newEOS() {
+    return new Event(Type.EOS);
+  }
 
-    public static Event newFlushStart() {
-        return new Event(Type.FLUSH_START);
-    }
+  public static Event newFlushStart() {
+    return new Event(Type.FLUSH_START);
+  }
 
-    public static Event newFlushStop() {
-        return new Event(Type.FLUSH_STOP);
-    }
+  public static Event newFlushStop() {
+    return new Event(Type.FLUSH_STOP);
+  }
 
-    public static Event newSeek(int format, long position) {
-        Event e = new Event(Type.SEEK);
-        e.format = format;
-        e.position = position;
-        return e;
-    }
+  public static Event newSeek(int format, long position) {
+    Event e = new Event(Type.SEEK);
+    e.format = format;
+    e.position = position;
+    return e;
+  }
 
-    public long parseSeekPosition() {
-        return position;
-    }
+  public long parseSeekPosition() {
+    return position;
+  }
 
-    public int parseSeekFormat() {
-        return format;
-    }
+  public int parseSeekFormat() {
+    return format;
+  }
 
-    public static Event newNewsegment(boolean update, int format, long start, long stop, long position) {
-        Event e = new Event(Type.NEWSEGMENT);
-        e.update = update;
-        e.format = format;
-        e.start = start;
-        e.stop = stop;
-        e.position = position;
-        return e;
-    }
+  public static Event newNewsegment(
+      boolean update, int format, long start, long stop, long position) {
+    Event e = new Event(Type.NEWSEGMENT);
+    e.update = update;
+    e.format = format;
+    e.start = start;
+    e.stop = stop;
+    e.position = position;
+    return e;
+  }
 
-    public boolean parseNewsegmentUpdate() {
-        return update;
-    }
+  public boolean parseNewsegmentUpdate() {
+    return update;
+  }
 
-    public int parseNewsegmentFormat() {
-        return format;
-    }
+  public int parseNewsegmentFormat() {
+    return format;
+  }
 
-    public long parseNewsegmentStart() {
-        return start;
-    }
+  public long parseNewsegmentStart() {
+    return start;
+  }
 
-    public long parseNewsegmentStop() {
-        return stop;
-    }
+  public long parseNewsegmentStop() {
+    return stop;
+  }
 
-    public long parseNewsegmentPosition() {
-        return position;
-    }
+  public long parseNewsegmentPosition() {
+    return position;
+  }
 }

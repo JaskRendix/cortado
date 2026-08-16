@@ -18,107 +18,111 @@
 
 package com.fluendo.plugin;
 
-import java.awt.Component;
-import java.awt.Frame;
-import java.util.logging.Logger;
+import com.fluendo.jst.Buffer;
 import com.fluendo.jst.Element;
 import com.fluendo.jst.Event;
 import com.fluendo.jst.Pad;
-import com.fluendo.jst.Buffer;
+import java.awt.Component;
+import java.awt.Frame;
+import java.util.logging.Logger;
 
 /**
- * This is a base overlay element, just passes images from sink to source.
- * Extend this and override the overlay function to draw something onto
- * images as they go from sink to source.
+ * This is a base overlay element, just passes images from sink to source. Extend this and override
+ * the overlay function to draw something onto images as they go from sink to source.
  */
 public class Overlay extends Element {
-    private static final Logger LOGGER = Logger.getLogger(Overlay.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(Overlay.class.getName());
 
-    protected Component component;
+  protected Component component;
 
-    private final Pad videoSrcPad = new Pad(Pad.SRC, "videosrc") {
+  private final Pad videoSrcPad =
+      new Pad(Pad.SRC, "videosrc") {
         @Override
         protected boolean eventFunc(Event event) {
-            return videoSinkPad.pushEvent(event);
+          return videoSinkPad.pushEvent(event);
         }
-    };
+      };
 
-    private final Pad videoSinkPad = new Pad(Pad.SINK, "videosink") {
+  private final Pad videoSinkPad =
+      new Pad(Pad.SINK, "videosink") {
         @Override
         protected boolean eventFunc(Event event) {
-            return videoSrcPad.pushEvent(event);
+          return videoSrcPad.pushEvent(event);
         }
 
         /**
-         * Receives an image, allows a derived class to overlay whatever it wants on it,
-         * and sends it to the video source pad.
+         * Receives an image, allows a derived class to overlay whatever it wants on it, and sends
+         * it to the video source pad.
          */
         @Override
         protected int chainFunc(Buffer buf) {
-            int result;
+          int result;
 
-            LOGGER.fine(() -> (parent != null ? parent.getName() : "Overlay") + " <<< " + buf);
+          LOGGER.fine(() -> (parent != null ? parent.getName() : "Overlay") + " <<< " + buf);
 
-            overlay(buf);
+          overlay(buf);
 
-            result = videoSrcPad.push(buf);
-            if (result != Pad.OK) {
-                LOGGER.warning(() -> (parent != null ? parent.getName() : "Overlay") + ": failed to push buffer to video source pad: " + result);
-            }
+          result = videoSrcPad.push(buf);
+          if (result != Pad.OK) {
+            LOGGER.warning(
+                () ->
+                    (parent != null ? parent.getName() : "Overlay")
+                        + ": failed to push buffer to video source pad: "
+                        + result);
+          }
 
-            return result;
+          return result;
         }
 
         @Override
         protected boolean activateFunc(int mode) {
-            return true;
+          return true;
         }
-    };
+      };
 
-    public Overlay() {
-        super();
-        addPad(videoSinkPad);
-        addPad(videoSrcPad);
-    }
+  public Overlay() {
+    super();
+    addPad(videoSinkPad);
+    addPad(videoSrcPad);
+  }
 
-    /**
-     * This function may be overridden to draw whatever the derived
-     * class wants onto the incoming image.
-     * By default, the image is passed without alteration.
-     */
-    protected void overlay(Buffer buf) {
-        /* straight pass through by default */
-    }
+  /**
+   * This function may be overridden to draw whatever the derived class wants onto the incoming
+   * image. By default, the image is passed without alteration.
+   */
+  protected void overlay(Buffer buf) {
+    /* straight pass through by default */
+  }
 
-    @Override
-    public boolean setProperty(String name, java.lang.Object value) {
-        if ("component".equals(name)) {
-            component = (Component) value;
-        } else {
-            return super.setProperty(name, value);
-        }
-        return true;
+  @Override
+  public boolean setProperty(String name, java.lang.Object value) {
+    if ("component".equals(name)) {
+      component = (Component) value;
+    } else {
+      return super.setProperty(name, value);
     }
+    return true;
+  }
 
-    @Override
-    public java.lang.Object getProperty(String name) {
-        if ("component".equals(name)) {
-            return component;
-        } else {
-            return super.getProperty(name);
-        }
+  @Override
+  public java.lang.Object getProperty(String name) {
+    if ("component".equals(name)) {
+      return component;
+    } else {
+      return super.getProperty(name);
     }
+  }
 
-    @Override
-    protected int changeState(int transition) {
-        if (currentState == STOP && pendingState == PAUSE && component == null) {
-            component = new Frame();
-        }
-        return super.changeState(transition);
+  @Override
+  protected int changeState(int transition) {
+    if (currentState == STOP && pendingState == PAUSE && component == null) {
+      component = new Frame();
     }
+    return super.changeState(transition);
+  }
 
-    @Override
-    public String getFactoryName() {
-        return "overlay";
-    }
+  @Override
+  public String getFactoryName() {
+    return "overlay";
+  }
 }

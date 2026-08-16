@@ -18,10 +18,12 @@
 
 package com.fluendo.player;
 
-public interface StatusListener
-{
+public interface StatusListener {
   void onState(int newState);
+
   void onSeek(double position);
+
   void onAudio();
+
   void onSubtitles(int x, int y);
 }
