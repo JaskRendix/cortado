@@ -90,7 +90,7 @@ public class TheoraDec extends Element implements OggPayload {
 
     /* first find buffer with valid offset */
     for (i = 0; i < len; i++) {
-      data = (com.fluendo.jst.Buffer) packets.get(i);
+      data = packets.get(i);
 
       if (data.time_offset != -1) break;
     }
@@ -98,9 +98,9 @@ public class TheoraDec extends Element implements OggPayload {
 
     long time = granuleToTime(data.time_offset);
 
-    data = (com.fluendo.jst.Buffer) packets.get(0);
+    data = packets.get(0);
     data.timestamp =
-        time - (long) ((i + 1) * (Clock.SECOND * ti.fps_denominator / ti.fps_numerator));
+        time - ((i + 1) * (Clock.SECOND * ti.fps_denominator / ti.fps_numerator));
 
     return time;
   }

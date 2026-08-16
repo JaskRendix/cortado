@@ -1050,7 +1050,7 @@ public class VorbisFile {
       }
     }
 
-    return ((float) time_total + (float) (pcm_offset - pcm_total) / vi[link].getRate());
+    return (time_total + (float) (pcm_offset - pcm_total) / vi[link].getRate());
   }
 
   //  link:   -1) return the vorbis_info struct for the bitstream section

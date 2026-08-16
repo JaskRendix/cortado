@@ -74,7 +74,7 @@ public class Info {
       return Result.KATE_E_VERSION;
     }
 
-    num_headers = (int) opb.read(8);
+    num_headers = opb.read(8);
     if (num_headers < 1) {
       return Result.KATE_E_BAD_PACKET;
     }

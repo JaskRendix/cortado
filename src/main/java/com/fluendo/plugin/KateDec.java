@@ -94,7 +94,7 @@ public class KateDec extends Element implements OggPayload {
 
     /* first find buffer with valid offset */
     for (i = 0; i < len; i++) {
-      data = (com.fluendo.jst.Buffer) packets.get(i);
+      data = packets.get(i);
 
       if (data.time_offset != -1) break;
     }
@@ -102,9 +102,9 @@ public class KateDec extends Element implements OggPayload {
 
     long time = granuleToTime(data.time_offset);
 
-    data = (com.fluendo.jst.Buffer) packets.get(0);
+    data = packets.get(0);
     data.timestamp =
-        time - (long) ((i + 1) * (Clock.SECOND * ki.gps_denominator / ki.gps_numerator));
+        time - (i + 1) * (Clock.SECOND * ki.gps_denominator / ki.gps_numerator);
 
     return time;
   }

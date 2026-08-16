@@ -73,7 +73,7 @@ public final class DCTDecode {
     short[] dequantCoeffs;
     int qi = pbi.FragQs[fragmentNumber];
 
-    if (fragmentNumber < (int) pbi.YPlaneFragments) {
+    if (fragmentNumber < pbi.YPlaneFragments) {
       reconPixelsPerLine = pbi.YStride;
       dequantCoeffs = pbi.info.dequant_tables[0][0][pbi.frameQIS[qi]];
       dequantMatrix[0] = pbi.info.dequant_tables[0][0][pbi.frameQIS[0]][0];
@@ -120,7 +120,7 @@ public final class DCTDecode {
       codingMode = pbi.FragCodingMethod[fragmentNumber];
     }
 
-    if (fragmentNumber < (int) pbi.YPlaneFragments) {
+    if (fragmentNumber < pbi.YPlaneFragments) {
       reconPixelsPerLine = pbi.YStride;
       mvShiftX = 1;
       mvShiftY = 1;
@@ -572,7 +572,7 @@ public final class DCTDecode {
       }
     }
 
-    if (pbi.CodedBlockIndex > (int) (pbi.UnitFragments >> 1)) {
+    if (pbi.CodedBlockIndex > pbi.UnitFragments >> 1) {
       short[] swapReconBuffersTemp = pbi.ThisFrameRecon;
       pbi.ThisFrameRecon = pbi.LastFrameRecon;
       pbi.LastFrameRecon = swapReconBuffersTemp;

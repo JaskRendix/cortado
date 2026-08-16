@@ -83,7 +83,7 @@ public class VorbisDec extends Element implements OggPayload {
       boolean ignore;
       long temp;
 
-      buf = (com.fluendo.jst.Buffer) packets.get(i);
+      buf = packets.get(i);
 
       p.packetBase = buf.data;
       p.packet = buf.offset;
@@ -109,7 +109,7 @@ public class VorbisDec extends Element implements OggPayload {
         total = buf.time_offset - total;
         long result = granuleToTime(total);
 
-        buf = (com.fluendo.jst.Buffer) packets.get(0);
+        buf = packets.get(0);
         buf.timestamp = result;
         return result;
       }

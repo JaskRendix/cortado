@@ -173,7 +173,7 @@ public final class Decode {
 
         if (fullRun && codedFrag < nCodedFrags) {
           val = opb.readB(1);
-          flag = (int) val;
+          flag = val;
         } else {
           flag = (flag != 0) ? 0 : 1;
         }
@@ -622,15 +622,15 @@ public final class Decode {
     MemUtils.set(pbi.FragCoefEOB, (byte) 0, (byte) 0, pbi.UnitFragments);
     blocksToDecode = pbi.CodedBlockIndex;
 
-    int dcHuffChoice1 = (int) (pbi.opb.readB(Huffman.DC_HUFF_CHOICE_BITS) + Huffman.DC_HUFF_OFFSET);
-    int dcHuffChoice2 = (int) (pbi.opb.readB(Huffman.DC_HUFF_CHOICE_BITS) + Huffman.DC_HUFF_OFFSET);
+    int dcHuffChoice1 = pbi.opb.readB(Huffman.DC_HUFF_CHOICE_BITS) + Huffman.DC_HUFF_OFFSET;
+    int dcHuffChoice2 = pbi.opb.readB(Huffman.DC_HUFF_CHOICE_BITS) + Huffman.DC_HUFF_OFFSET;
 
     int cbl = 0;
     int cble = pbi.CodedBlockIndex;
     while (cbl < cble) {
       int fragIndex = pbi.CodedBlockList[cbl];
       pbi.FragCoefEOB[fragIndex] = fragCoeffs[fragIndex];
-      int dcHuffChoice = (fragIndex < (int) pbi.YPlaneFragments) ? dcHuffChoice1 : dcHuffChoice2;
+      int dcHuffChoice = (fragIndex < pbi.YPlaneFragments) ? dcHuffChoice1 : dcHuffChoice2;
 
       if (eobRun != 0) {
         fragCoeffs[fragIndex] = Constants.BLOCK_SIZE;
@@ -642,8 +642,8 @@ public final class Decode {
       cbl++;
     }
 
-    int acHuffIndex1 = (int) (pbi.opb.readB(Huffman.AC_HUFF_CHOICE_BITS) + Huffman.AC_HUFF_OFFSET);
-    int acHuffIndex2 = (int) (pbi.opb.readB(Huffman.AC_HUFF_CHOICE_BITS) + Huffman.AC_HUFF_OFFSET);
+    int acHuffIndex1 = pbi.opb.readB(Huffman.AC_HUFF_CHOICE_BITS) + Huffman.AC_HUFF_OFFSET;
+    int acHuffIndex2 = pbi.opb.readB(Huffman.AC_HUFF_CHOICE_BITS) + Huffman.AC_HUFF_OFFSET;
     int encodedCoeffs = 1;
 
     while (encodedCoeffs < 64) {
@@ -676,7 +676,7 @@ public final class Decode {
             blocksToDecode--;
           } else {
             int acHuffChoice =
-                (fragIndex < (int) pbi.YPlaneFragments) ? acHuffChoice1 : acHuffChoice2;
+                (fragIndex < pbi.YPlaneFragments) ? acHuffChoice1 : acHuffChoice2;
             unpackAndExpandToken(pbi.QFragData[fragIndex], fragCoeffs, fragIndex, acHuffChoice);
           }
         }
