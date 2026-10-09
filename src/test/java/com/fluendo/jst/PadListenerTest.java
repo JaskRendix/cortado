@@ -44,15 +44,15 @@ class PadListenerTest {
     AtomicInteger removed = new AtomicInteger();
 
     PadListener listener =
-        new PadListener() {
-          @Override
-          public void padAdded(Pad pad) {}
+      new PadListener() {
+        @Override
+        public void padAdded(Pad pad) {}
 
-          @Override
-          public void padRemoved(Pad pad) {
-            removed.incrementAndGet();
-          }
-        };
+        @Override
+        public void padRemoved(Pad pad) {
+          removed.incrementAndGet();
+        }
+      };
 
     TestElement element = new TestElement();
     element.addPadListener(listener);
@@ -69,15 +69,15 @@ class PadListenerTest {
     AtomicInteger noMore = new AtomicInteger();
 
     PadListener listener =
-        new PadListener() {
-          @Override
-          public void padAdded(Pad pad) {}
+      new PadListener() {
+        @Override
+        public void padAdded(Pad pad) {}
 
-          @Override
-          public void noMorePads() {
-            noMore.incrementAndGet();
-          }
-        };
+        @Override
+        public void noMorePads() {
+          noMore.incrementAndGet();
+        }
+      };
 
     TestElement element = new TestElement();
     element.addPadListener(listener);
@@ -124,5 +124,54 @@ class PadListenerTest {
     element.addPad(pad2);
 
     assertEquals(1, added.get());
+  }
+
+  @Test
+  void testRemovedListenerReceivesNoFurtherCallbacks() {
+    AtomicInteger added = new AtomicInteger();
+    AtomicInteger removed = new AtomicInteger();
+    AtomicInteger noMore = new AtomicInteger();
+
+    PadListener listener =
+      new PadListener() {
+        @Override
+        public void padAdded(Pad pad) {
+          added.incrementAndGet();
+        }
+
+        @Override
+        public void padRemoved(Pad pad) {
+          removed.incrementAndGet();
+        }
+
+        @Override
+        public void noMorePads() {
+          noMore.incrementAndGet();
+        }
+      };
+
+    TestElement element = new TestElement();
+    element.addPadListener(listener);
+    element.removePadListener(listener);
+
+    TestPad pad = new TestPad("sink");
+
+    element.addPad(pad);
+    element.removePad(pad);
+    element.noMorePads();
+
+    assertEquals(0, added.get());
+    assertEquals(0, removed.get());
+    assertEquals(0, noMore.get());
+  }
+
+  @Test
+  void testDefaultMethodsDoNothing() {
+    PadListener listener = pad -> {};
+
+    TestPad pad = new TestPad("sink");
+
+    assertDoesNotThrow(() -> listener.padRemoved(pad));
+    assertDoesNotThrow(listener::noMorePads);
   }
 }
