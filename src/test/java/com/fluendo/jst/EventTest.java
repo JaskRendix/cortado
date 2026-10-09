@@ -10,7 +10,7 @@ class EventTest {
   void testNewEOS() {
     Event e = Event.newEOS();
     assertEquals(Event.Type.EOS, e.getType());
-    assertEquals(-1, e.parseNewsegmentPosition());
+    assertEquals(-1, e.getSegmentPosition());
     assertEquals("[Event] type: EOS", e.toString());
   }
 
@@ -33,8 +33,8 @@ class EventTest {
     Event e = Event.newSeek(7, 12345L);
 
     assertEquals(Event.Type.SEEK, e.getType());
-    assertEquals(7, e.parseSeekFormat());
-    assertEquals(12345L, e.parseSeekPosition());
+    assertEquals(7, e.getSeekFormat());
+    assertEquals(12345L, e.getSeekPosition());
 
     String s = e.toString();
     assertTrue(s.contains("SEEK"));
@@ -46,20 +46,20 @@ class EventTest {
   void testNewSeekEdgeCases() {
     Event e = Event.newSeek(Integer.MAX_VALUE, Long.MIN_VALUE);
 
-    assertEquals(Integer.MAX_VALUE, e.parseSeekFormat());
-    assertEquals(Long.MIN_VALUE, e.parseSeekPosition());
+    assertEquals(Integer.MAX_VALUE, e.getSeekFormat());
+    assertEquals(Long.MIN_VALUE, e.getSeekPosition());
   }
 
   @Test
   void testNewSegment() {
-    Event e = Event.newNewsegment(true, 3, 100L, 200L, 150L);
+    Event e = Event.newSegment(true, 3, 100L, 200L, 150L);
 
     assertEquals(Event.Type.NEWSEGMENT, e.getType());
-    assertTrue(e.parseNewsegmentUpdate());
-    assertEquals(3, e.parseNewsegmentFormat());
-    assertEquals(100L, e.parseNewsegmentStart());
-    assertEquals(200L, e.parseNewsegmentStop());
-    assertEquals(150L, e.parseNewsegmentPosition());
+    assertTrue(e.isSegmentUpdate());
+    assertEquals(3, e.getSegmentFormat());
+    assertEquals(100L, e.getSegmentStart());
+    assertEquals(200L, e.getSegmentStop());
+    assertEquals(150L, e.getSegmentPosition());
 
     String s = e.toString();
     assertTrue(s.contains("NEWSEGMENT"));
@@ -72,22 +72,15 @@ class EventTest {
 
   @Test
   void testNewSegmentNonUpdate() {
-    Event e = Event.newNewsegment(false, 1, 0L, 0L, -1L);
+    Event e = Event.newSegment(false, 1, 0L, 0L, -1L);
 
-    assertFalse(e.parseNewsegmentUpdate());
-    assertEquals(1, e.parseNewsegmentFormat());
-    assertEquals(0L, e.parseNewsegmentStart());
-    assertEquals(0L, e.parseNewsegmentStop());
-    assertEquals(-1L, e.parseNewsegmentPosition());
+    assertFalse(e.isSegmentUpdate());
+    assertEquals(1, e.getSegmentFormat());
+    assertEquals(0L, e.getSegmentStart());
+    assertEquals(0L, e.getSegmentStop());
+    assertEquals(-1L, e.getSegmentPosition());
 
     assertTrue(e.toString().contains("non-update"));
-  }
-
-  @Test
-  void testTypeIsImmutable() {
-    Event e = Event.newEOS();
-    assertEquals(Event.Type.EOS, e.getType());
-    // no setter exists — compile‑time immutability
   }
 
   @Test
@@ -95,5 +88,22 @@ class EventTest {
     assertEquals("[Event] type: FLUSH_START", Event.newFlushStart().toString());
     assertEquals("[Event] type: FLUSH_STOP", Event.newFlushStop().toString());
     assertEquals("[Event] type: EOS", Event.newEOS().toString());
+  }
+
+  @Test
+  void testNewSegmentEdgeCases() {
+    Event e =
+      Event.newSegment(
+        true,
+        Integer.MAX_VALUE,
+        Long.MIN_VALUE,
+        Long.MAX_VALUE,
+        Long.MIN_VALUE);
+
+    assertTrue(e.isSegmentUpdate());
+    assertEquals(Integer.MAX_VALUE, e.getSegmentFormat());
+    assertEquals(Long.MIN_VALUE, e.getSegmentStart());
+    assertEquals(Long.MAX_VALUE, e.getSegmentStop());
+    assertEquals(Long.MIN_VALUE, e.getSegmentPosition());
   }
 }

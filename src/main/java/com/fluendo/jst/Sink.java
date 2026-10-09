@@ -173,11 +173,11 @@ public abstract class Sink extends Element {
               }
             }
             case NEWSEGMENT -> {
-              int segFmt = event.parseNewsegmentFormat();
+              int segFmt = event.getSegmentFormat();
               if (segFmt == Format.TIME) {
-                segStart = event.parseNewsegmentStart();
-                segStop = event.parseNewsegmentStop();
-                segPosition = event.parseNewsegmentPosition();
+                segStart = event.getSegmentStart();
+                segStop = event.getSegmentStop();
+                segPosition = event.getSegmentPosition();
                 lastTime = segPosition;
               }
             }

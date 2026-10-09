@@ -119,7 +119,7 @@ public class OggDemux extends Element {
       baseTs = firstTs;
       time = firstTs - baseTs;
       Debug.log(Debug.DEBUG, this + " pushing segment start " + firstTs + ", time " + time);
-      pushEvent(Event.newNewsegment(false, Format.TIME, firstTs, -1, time));
+      pushEvent(Event.newSegment(false, Format.TIME, firstTs, -1, time));
       if (!sentHeaders) {
         for (com.fluendo.jst.Buffer header : headers) {
           buf = header;

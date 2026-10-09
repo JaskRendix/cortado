@@ -84,15 +84,15 @@ public final class Event {
     return e;
   }
 
-  public long parseSeekPosition() {
+  public long getSeekPosition() {
     return position;
   }
 
-  public int parseSeekFormat() {
+  public int getSeekFormat() {
     return format;
   }
 
-  public static Event newNewsegment(
+  public static Event newSegment(
       boolean update, int format, long start, long stop, long position) {
     Event e = new Event(Type.NEWSEGMENT);
     e.update = update;
@@ -103,23 +103,23 @@ public final class Event {
     return e;
   }
 
-  public boolean parseNewsegmentUpdate() {
+  public boolean isSegmentUpdate() {
     return update;
   }
 
-  public int parseNewsegmentFormat() {
+  public int getSegmentFormat() {
     return format;
   }
 
-  public long parseNewsegmentStart() {
+  public long getSegmentStart() {
     return start;
   }
 
-  public long parseNewsegmentStop() {
+  public long getSegmentStop() {
     return stop;
   }
 
-  public long parseNewsegmentPosition() {
+  public long getSegmentPosition() {
     return position;
   }
 }

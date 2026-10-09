@@ -56,8 +56,8 @@ public class HTTPSrc extends Element {
           int format;
           long position;
 
-          format = event.parseSeekFormat();
-          position = event.parseSeekPosition();
+          format = event.getSeekFormat();
+          position = event.getSeekPosition();
 
           if (format == Format.PERCENT && contentLength != -1) {
             position = position * contentLength / Format.PERCENT_MAX;
@@ -85,7 +85,7 @@ public class HTTPSrc extends Element {
 
             if (result) {
               pushEvent(
-                  Event.newNewsegment(false, Format.BYTES, position, contentLength, position));
+                  Event.newSegment(false, Format.BYTES, position, contentLength, position));
               postMessage(Message.newStreamStatus(this, true, Pad.OK, "restart after seek"));
               result = startTask("cortado-HTTPSrc-Stream-" + Debug.genId());
             } else {

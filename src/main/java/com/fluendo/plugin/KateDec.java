@@ -166,7 +166,7 @@ public class KateDec extends Element implements OggPayload {
               result = srcPad.pushEvent(event);
             }
             case NEWSEGMENT -> {
-              basetime = event.parseNewsegmentStart();
+              basetime = event.getSegmentStart();
               Debug.info("new segment: base time " + basetime);
               result = srcPad.pushEvent(event);
             }
