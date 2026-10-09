@@ -29,7 +29,7 @@ class KateDecTest {
     @Test
     @DisplayName("Should return correct factory name and mime type")
     void testFactoryAndMime() {
-      assertEquals("katedec", kateDec.getFactoryName());
+      assertEquals("kateDecoders", kateDec.getFactoryName());
       assertEquals("application/x-kate", kateDec.getMime());
       assertTrue(kateDec.isDiscontinuous());
       assertTrue(kateDec.isKeyFrame(new Packet()));

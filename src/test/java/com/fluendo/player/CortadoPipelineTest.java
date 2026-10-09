@@ -107,4 +107,43 @@ class CortadoPipelineTest {
     pipeline.setComponent(mockComp);
     assertEquals(mockComp, pipeline.getComponent());
   }
+
+  @Test
+  void defaultValues() {
+    assertTrue(pipeline.isAudioEnabled());
+    assertTrue(pipeline.isVideoEnabled());
+
+    assertEquals(-1, pipeline.getEnabledKateIndex());
+    assertEquals(-1, pipeline.getBufferSize());
+    assertEquals(-1, pipeline.getBufferLow());
+    assertEquals(-1, pipeline.getBufferHigh());
+
+    assertNull(pipeline.getUrl());
+    assertNull(pipeline.getDocumentBase());
+  }
+
+  @Test
+  void repeatedAudioVideoToggles() {
+    for (int i = 0; i < 10; i++) {
+      pipeline.enableAudio(i % 2 == 0);
+      pipeline.enableVideo(i % 2 == 1);
+    }
+
+    assertFalse(pipeline.isAudioEnabled());
+    assertTrue(pipeline.isVideoEnabled());
+  }
+
+  @Test
+  void nullDocumentBase() {
+    pipeline.setDocumentBase(null);
+
+    assertNull(pipeline.getDocumentBase());
+  }
+
+  @Test
+  void nullComponentAssignment() {
+    pipeline.setComponent(null);
+
+    assertNull(pipeline.getComponent());
+  }
 }

@@ -60,13 +60,13 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
   private Element audiodec;
   private Element videosink;
   private Element audiosink;
-  private Element v_queue, v_queue2, a_queue = null;
+  private Element videoQueue, videoQueue2, audioQueue = null;
   private Element overlay;
   private Pad asinkpad, ovsinkpad, oksinkpad;
   private Pad apad, vpad;
-  private final List<Element> katedec = new ArrayList<>();
-  private final List<Element> k_queue = new ArrayList<>();
-  private Element kselector = null;
+  private final List<Element> kateDecoders = new ArrayList<>();
+  private final List<Element> kateQueues = new ArrayList<>();
+  private Element kateSelector = null;
   public boolean usingJavaX = false;
 
   public CortadoPipeline() {
@@ -95,64 +95,64 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
     switch (mime) {
       case "audio/x-vorbis" -> {
         if (!enableAudio) return;
-        if (a_queue != null) {
+        if (audioQueue != null) {
           Debug.log(
               Debug.INFO, "More than one audio stream detected, ignoring all except first one");
           return;
         }
-        a_queue = ElementFactory.makeByName("queue", "a_queue");
-        if (a_queue == null) {
+        audioQueue = ElementFactory.makeByName("queue", "audioQueue");
+        if (audioQueue == null) {
           noSuchElement("queue");
           return;
         }
-        if (v_queue != null) {
-          v_queue.setProperty("leaky", "2");
+        if (videoQueue != null) {
+          videoQueue.setProperty("leaky", "2");
         }
         audiodec = ElementFactory.makeByName("vorbisdec", "audiodec");
         if (audiodec == null) {
           noSuchElement("vorbisdec");
           return;
         }
-        a_queue.setProperty("maxBuffers", "100");
-        add(a_queue);
+        audioQueue.setProperty("maxBuffers", "100");
+        add(audioQueue);
         add(audiodec);
-        pad.link(a_queue.getPad("sink"));
-        a_queue.getPad("src").link(audiodec.getPad("sink"));
+        pad.link(audioQueue.getPad("sink"));
+        audioQueue.getPad("src").link(audiodec.getPad("sink"));
         if (!audiodec.getPad("src").link(asinkpad)) {
           postMessage(Message.newError(this, "audiosink already linked"));
           return;
         }
         apad = pad;
         audiodec.setState(PAUSE);
-        a_queue.setState(PAUSE);
+        audioQueue.setState(PAUSE);
       }
       case "video/x-theora" -> {
         if (!enableVideo) return;
-        v_queue = ElementFactory.makeByName("queue", "v_queue");
-        v_queue2 = ElementFactory.makeByName("queue", "v_queue2");
-        if (v_queue == null) {
+        videoQueue = ElementFactory.makeByName("queue", "videoQueue");
+        videoQueue2 = ElementFactory.makeByName("queue", "videoQueue2");
+        if (videoQueue == null) {
           noSuchElement("queue");
           return;
         }
         if (!setupVideoDec("theoradec")) return;
-        if (a_queue != null) {
-          v_queue.setProperty("leaky", "2");
+        if (audioQueue != null) {
+          videoQueue.setProperty("leaky", "2");
         }
-        v_queue.setProperty("maxBuffers", "175");
-        v_queue2.setProperty("maxBuffers", "1");
-        add(v_queue);
-        add(v_queue2);
-        pad.link(v_queue.getPad("sink"));
-        v_queue.getPad("src").link(videodec.getPad("sink"));
-        videodec.getPad("src").link(v_queue2.getPad("sink"));
-        if (!v_queue2.getPad("src").link(ovsinkpad)) {
+        videoQueue.setProperty("maxBuffers", "175");
+        videoQueue2.setProperty("maxBuffers", "1");
+        add(videoQueue);
+        add(videoQueue2);
+        pad.link(videoQueue.getPad("sink"));
+        videoQueue.getPad("src").link(videodec.getPad("sink"));
+        videodec.getPad("src").link(videoQueue2.getPad("sink"));
+        if (!videoQueue2.getPad("src").link(ovsinkpad)) {
           postMessage(Message.newError(this, "videosink already linked"));
           return;
         }
         vpad = pad;
         videodec.setState(PAUSE);
-        v_queue.setState(PAUSE);
-        v_queue2.setState(PAUSE);
+        videoQueue.setState(PAUSE);
+        videoQueue2.setState(PAUSE);
       }
       case "image/jpeg" -> {
         if (!enableVideo) return;
@@ -179,19 +179,19 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
       }
       case "application/x-kate" -> {
         if (!enableVideo) return;
-        int kateIndex = katedec.size();
+        int kateIndex = kateDecoders.size();
         Debug.debug("Found Kate stream, setting up pipeline branch");
-        Element tmpKQueue = ElementFactory.makeByName("queue", "k_queue" + kateIndex);
-        if (tmpKQueue == null) {
+        Element kateQueue = ElementFactory.makeByName("queue", "kateQueues" + kateIndex);
+        if (kateQueue == null) {
           noSuchElement("queue");
           return;
         }
-        Element tmpKatedec = ElementFactory.makeByName("katedec", "katedec" + kateIndex);
-        if (tmpKatedec == null) {
-          noSuchElement("katedec");
+        Element kateDecoder = ElementFactory.makeByName("kateDecoders", "kateDecoders" + kateIndex);
+        if (kateDecoder == null) {
+          noSuchElement("kateDecoders");
           return;
         }
-        if (kselector == null) {
+        if (kateSelector == null) {
           Debug.debug("No Kate selector yet, creating one");
           if (videodec != null) {
             ovsinkpad.unlink();
@@ -220,39 +220,39 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
             add(fakesink);
             fakesink.setState(PAUSE);
           }
-          kselector = ElementFactory.makeByName("selector", "selector");
-          if (kselector == null) {
+          kateSelector = ElementFactory.makeByName("selector", "selector");
+          if (kateSelector == null) {
             noSuchElement("selector");
             return;
           }
-          add(kselector);
-          if (!kselector.getPad("src").link(oksinkpad)) {
+          add(kateSelector);
+          if (!kateSelector.getPad("src").link(oksinkpad)) {
             postMessage(Message.newError(this, "Failed linking Kate selector to overlay"));
             return;
           }
-          kselector.setState(PAUSE);
+          kateSelector.setState(PAUSE);
         }
-        add(tmpKQueue);
-        add(tmpKatedec);
-        if (!pad.link(tmpKQueue.getPad("sink"))) {
+        add(kateQueue);
+        add(kateDecoder);
+        if (!pad.link(kateQueue.getPad("sink"))) {
           postMessage(Message.newError(this, "Failed to link new Kate stream to queue"));
           return;
         }
-        if (!tmpKQueue.getPad("src").link(tmpKatedec.getPad("sink"))) {
+        if (!kateQueue.getPad("src").link(kateDecoder.getPad("sink"))) {
           postMessage(Message.newError(this, "Failed to link new Kate queue to decoder"));
           return;
         }
-        Pad newSelectorPad = kselector.requestSinkPad(tmpKatedec.getPad("src"));
-        if (!tmpKatedec.getPad("src").link(newSelectorPad)) {
+        Pad newSelectorPad = kateSelector.requestSinkPad(kateDecoder.getPad("src"));
+        if (!kateDecoder.getPad("src").link(newSelectorPad)) {
           postMessage(Message.newError(this, "kate sink already linked"));
           return;
         }
-        tmpKatedec.setState(PAUSE);
-        tmpKQueue.setState(PAUSE);
-        katedec.add(tmpKatedec);
-        k_queue.add(tmpKQueue);
-        if (enableKate == katedec.size() - 1) {
-          doEnableKateIndex(enableKate);
+        kateDecoder.setState(PAUSE);
+        kateQueue.setState(PAUSE);
+        kateDecoders.add(kateDecoder);
+        kateQueues.add(kateQueue);
+        if (enableKate == kateDecoders.size() - 1) {
+          enableKateIndex(enableKate);
         } else if (enableKate < 0
             && (!enableKateLanguage.isEmpty() || !enableKateCategory.isEmpty())) {
           String language = caps.getFieldString("language", "");
@@ -262,7 +262,7 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
           boolean matchingCategory =
               enableKateCategory.isEmpty() || enableKateCategory.equals(category);
           if (matchingLanguage && matchingCategory) {
-            doEnableKateIndex(katedec.size() - 1);
+            enableKateIndex(kateDecoders.size() - 1);
           }
         }
       }
@@ -284,6 +284,7 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
     }
   }
 
+  @Override
   public void noMorePads() {
     boolean changed = false;
     Debug.log(Debug.INFO, "all streams detected");
@@ -314,16 +315,16 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
     }
   }
 
-  public void setUrl(String anUrl) {
-    url = anUrl;
+  public void setUrl(String url) {
+    this.url = url;
   }
 
   public String getUrl() {
     return url;
   }
 
-  public void setUserId(String aUserId) {
-    userId = aUserId;
+  public void setUserId(String userId) {
+    this.userId = userId;
   }
 
   public void setKeepAspect(boolean keep) {
@@ -334,20 +335,20 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
     ignoreAspect = ignore;
   }
 
-  public void setPassword(String aPassword) {
-    password = aPassword;
+  public void setPassword(String password) {
+    this.password = password;
   }
 
-  public void enableAudio(boolean b) {
-    enableAudio = b;
+  public void enableAudio(boolean enabled) {
+    enableAudio = enabled;
   }
 
   public boolean isAudioEnabled() {
     return enableAudio;
   }
 
-  public void enableVideo(boolean b) {
-    enableVideo = b;
+  public void enableVideo(boolean enabled) {
+    enableVideo = enabled;
   }
 
   public boolean isVideoEnabled() {
@@ -356,8 +357,8 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
 
   private int findKateStream(String language, String category) {
     if (!language.isEmpty() || !category.isEmpty()) {
-      for (int n = 0; n < katedec.size(); ++n) {
-        Element e = katedec.get(n);
+      for (int n = 0; n < kateDecoders.size(); ++n) {
+        Element e = kateDecoders.get(n);
         if (e != null) {
           String eLanguage = String.valueOf(e.getProperty("language"));
           String eCategory = String.valueOf(e.getProperty("category"));
@@ -379,13 +380,13 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
       targetIdx = findKateStream(language, category);
     }
     if (targetIdx == enableKate) return;
-    doEnableKateIndex(targetIdx);
+    enableKateIndex(targetIdx);
   }
 
-  private void doEnableKateIndex(int idx) {
-    if (kselector != null) {
+  private void enableKateIndex(int idx) {
+    if (kateSelector != null) {
       Debug.info("Switching Kate streams from " + enableKate + " to " + idx);
-      kselector.setProperty("selected", idx);
+      kateSelector.setProperty("selected", idx);
     } else {
       Debug.warning("Switching Kate stream request, but no Kate selector exists");
     }
@@ -396,8 +397,8 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
     return enableKate;
   }
 
-  public void setComponent(Component c) {
-    component = c;
+  public void setComponent(Component component) {
+    this.component = component;
   }
 
   public Component getComponent() {
@@ -516,6 +517,7 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
       String agent = System.getProperty("http.agent");
       if (agent != null) extra = agent;
     } catch (Exception ignored) {
+      // Ignore security restrictions when reading system properties.
     }
     userAgent += " " + extra;
     Debug.log(Debug.INFO, "setting User-Agent " + userAgent);
@@ -605,17 +607,17 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
       remove(demux);
       demux = null;
     }
-    if (v_queue != null) {
-      remove(v_queue);
-      v_queue = null;
+    if (videoQueue != null) {
+      remove(videoQueue);
+      videoQueue = null;
     }
-    if (v_queue2 != null) {
-      remove(v_queue2);
-      v_queue2 = null;
+    if (videoQueue2 != null) {
+      remove(videoQueue2);
+      videoQueue2 = null;
     }
-    if (a_queue != null) {
-      remove(a_queue);
-      a_queue = null;
+    if (audioQueue != null) {
+      remove(audioQueue);
+      audioQueue = null;
     }
     if (videodec != null) {
       remove(videodec);
@@ -625,17 +627,17 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
       remove(audiodec);
       audiodec = null;
     }
-    for (Element queue : k_queue) {
+    for (Element queue : kateQueues) {
       if (queue != null) remove(queue);
     }
-    for (Element dec : katedec) {
+    for (Element dec : kateDecoders) {
       if (dec != null) remove(dec);
     }
-    k_queue.clear();
-    katedec.clear();
-    if (kselector != null) {
-      remove(kselector);
-      kselector = null;
+    kateQueues.clear();
+    kateDecoders.clear();
+    if (kateSelector != null) {
+      remove(kateSelector);
+      kateSelector = null;
     }
     return true;
   }
@@ -671,16 +673,16 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
   }
 
   protected int getNumKateStreams() {
-    return katedec.size();
+    return kateDecoders.size();
   }
 
   protected String getKateStreamCategory(int idx) {
-    if (idx < 0 || idx >= katedec.size()) return "";
-    return String.valueOf(katedec.get(idx).getProperty("category"));
+    if (idx < 0 || idx >= kateDecoders.size()) return "";
+    return String.valueOf(kateDecoders.get(idx).getProperty("category"));
   }
 
   protected String getKateStreamLanguage(int idx) {
-    if (idx < 0 || idx >= katedec.size()) return "";
-    return String.valueOf(katedec.get(idx).getProperty("language"));
+    if (idx < 0 || idx >= kateDecoders.size()) return "";
+    return String.valueOf(kateDecoders.get(idx).getProperty("language"));
   }
 }

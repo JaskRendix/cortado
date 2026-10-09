@@ -318,7 +318,7 @@ public class KateDec extends Element implements OggPayload {
 
   @Override
   public String getFactoryName() {
-    return "katedec";
+    return "kateDecoders";
   }
 
   @Override
