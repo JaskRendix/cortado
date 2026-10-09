@@ -653,7 +653,7 @@ public class CortadoPipeline extends Pipeline implements PadListener, CapsListen
   }
 
   @Override
-  protected boolean doSendEvent(com.fluendo.jst.Event event) {
+  protected boolean sendEventToSinks(com.fluendo.jst.Event event) {
     if (event.getType() != com.fluendo.jst.Event.Type.SEEK) return false;
     if (event.getSeekFormat() != Format.PERCENT) return false;
     if (httpsrc == null) return false;

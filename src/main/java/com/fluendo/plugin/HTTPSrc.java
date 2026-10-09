@@ -51,7 +51,7 @@ public class HTTPSrc extends Element {
 
   private final Pad srcpad =
       new Pad(Pad.SRC, "src") {
-        private boolean doSeek(Event event) {
+        private boolean performSeek(Event event) {
           boolean result;
           int format;
           long position;
@@ -100,7 +100,7 @@ public class HTTPSrc extends Element {
           boolean res;
 
           switch (event.getType()) {
-            case SEEK -> res = doSeek(event);
+            case SEEK -> res = performSeek(event);
             default -> res = super.eventFunc(event);
           }
           return res;

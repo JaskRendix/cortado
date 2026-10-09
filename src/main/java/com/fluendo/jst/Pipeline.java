@@ -77,13 +77,15 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
             try {
               wait();
             } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              break;
             }
           }
           stateDirty = false;
         }
         if (!stopping) {
           synchronized (stateLock) {
-            reCalcState(false);
+            recalculateState(false);
           }
         }
       }
@@ -104,6 +106,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
     this(null);
   }
 
+  @Override
   public String getFactoryName() {
     return "pipeline";
   }
@@ -135,7 +138,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
   }
 
   public void useClock(Clock clock) {
-    fixedClock = clock;
+    this.fixedClock = clock;
   }
 
   public synchronized boolean add(Element elem) {
@@ -171,7 +174,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
     return res;
   }
 
-  public synchronized Enumeration<Element> enumElements() {
+  public synchronized Enumeration<Element> enumerateElements() {
     return Collections.enumeration(new ArrayList<>(elements));
   }
 
@@ -183,7 +186,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
 
     private void addToQueue(Element elem) {
       queue.add(elem);
-      hash.put(elem, Integer.valueOf(-1));
+      hash.put(elem, -1);
     }
 
     private void updateDegree(Element elem) {
@@ -209,7 +212,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
           if (newDeg == 0) {
             addToQueue(peerParent);
           } else {
-            hash.put(peerParent, Integer.valueOf(newDeg));
+            hash.put(peerParent, newDeg);
           }
         }
       }
@@ -220,30 +223,30 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
       hash = new HashMap<>();
 
       /* reset all degrees, add sinks to queue */
-      for (Enumeration<Element> e = enumElements(); e.hasMoreElements(); ) {
+      for (Enumeration<Element> e = enumerateElements(); e.hasMoreElements(); ) {
         Element elem = e.nextElement();
 
         if (elem.isFlagSet(Element.FLAG_IS_SINK)) {
           addToQueue(elem);
         } else {
-          hash.put(elem, Integer.valueOf(0));
+          hash.put(elem, 0);
         }
       }
       mode = 1;
       /* update all degrees */
-      for (Enumeration<Element> e = enumElements(); e.hasMoreElements(); ) {
+      for (Enumeration<Element> e = enumerateElements(); e.hasMoreElements(); ) {
         updateDegree(e.nextElement());
       }
       mode = -1;
-      queueNextElement();
+      advanceToNextElement();
     }
 
-    private void queueNextElement() {
+    private void advanceToNextElement() {
       if (queue.isEmpty()) {
         int bestDeg = Integer.MAX_VALUE;
         Element bestElem = null;
 
-        for (Enumeration<Element> e = enumElements(); e.hasMoreElements(); ) {
+        for (Enumeration<Element> e = enumerateElements(); e.hasMoreElements(); ) {
           Element elem = e.nextElement();
           int deg;
 
@@ -262,7 +265,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
             System.out.println(this + " loop detected in pipeline!!");
           }
           next = bestElem;
-          hash.put(next, Integer.valueOf(-1));
+          hash.put(next, -1);
         } else {
           next = null;
         }
@@ -281,13 +284,13 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
 
       if (result == null) throw new NoSuchElementException();
 
-      queueNextElement();
+      advanceToNextElement();
 
       return result;
     }
   }
 
-  public Enumeration<Element> enumSorted() {
+  public Enumeration<Element> enumerateSortedElements() {
     return new SortedEnumerator();
   }
 
@@ -296,11 +299,11 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
     private Element next;
 
     public SinkEnumerator() {
-      e = enumElements();
-      queueNextElement();
+      e = enumerateElements();
+      advanceToNextElement();
     }
 
-    private void queueNextElement() {
+    private void advanceToNextElement() {
       next = null;
       while (e.hasMoreElements()) {
         Element elem = e.nextElement();
@@ -321,17 +324,17 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
 
       if (result == null) throw new NoSuchElementException();
 
-      queueNextElement();
+      advanceToNextElement();
 
       return result;
     }
   }
 
-  public Enumeration<Element> enumSinks() {
+  public Enumeration<Element> enumerateSinks() {
     return new SinkEnumerator();
   }
 
-  private synchronized void replaceMessage(Message message, int type) {
+  private synchronized void addOrReplaceMessage(Message message, int type) {
     int len = messages.size();
     Message msg;
     com.fluendo.jst.Object src = message.getSrc();
@@ -347,7 +350,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
     messages.add(message);
   }
 
-  private synchronized boolean findMessage(com.fluendo.jst.Object obj, int type) {
+  private synchronized boolean hasMessage(com.fluendo.jst.Object obj, int type) {
     int len = messages.size();
     Message msg;
 
@@ -362,10 +365,10 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
   protected boolean isEOS() {
     com.fluendo.jst.Object obj;
 
-    for (Enumeration<Element> e = enumSinks(); e.hasMoreElements(); ) {
+    for (Enumeration<Element> e = enumerateSinks(); e.hasMoreElements(); ) {
       obj = e.nextElement();
 
-      if (!findMessage(obj, Message.EOS)) return false;
+      if (!hasMessage(obj, Message.EOS)) return false;
     }
     return true;
   }
@@ -378,7 +381,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
 
           synchronized (this) {
             Debug.log(Debug.INFO, this + " got EOS from sink: " + message.getSrc());
-            replaceMessage(message, Message.EOS);
+            addOrReplaceMessage(message, Message.EOS);
             isEOS = isEOS();
           }
           if (isEOS) {
@@ -399,7 +402,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
   }
 
   public int getState(int[] resState, int[] resPending, long timeout) {
-    reCalcState(false);
+    recalculateState(false);
     return super.getState(resState, resPending, timeout);
   }
 
@@ -410,11 +413,11 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
     }
   }
 
-  private void reCalcState(boolean force) {
+  private void recalculateState(boolean force) {
     boolean haveAsync, haveNoPreroll;
     int res = SUCCESS;
 
-    Debug.debug("Pipeline.reCalcState");
+    Debug.debug("Pipeline.recalculateState");
 
     synchronized (this) {
       if (force) stateDirty = true;
@@ -428,7 +431,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
       haveAsync = false;
       haveNoPreroll = false;
     }
-    for (Enumeration<Element> e = enumElements(); e.hasMoreElements(); ) {
+    for (Enumeration<Element> e = enumerateElements(); e.hasMoreElements(); ) {
       Element elem = e.nextElement();
 
       res = elem.getState(null, null, 1);
@@ -468,7 +471,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
     }
   }
 
-  protected int doChildStateChange(int transition) {
+  protected int performChildStateChange(int transition) {
     int next;
     int result;
     boolean haveAsync, haveNoPreroll;
@@ -478,7 +481,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
     haveAsync = false;
     haveNoPreroll = false;
 
-    for (Enumeration<Element> e = enumSorted(); e.hasMoreElements(); ) {
+    for (Enumeration<Element> e = enumerateSortedElements(); e.hasMoreElements(); ) {
       Element elem = e.nextElement();
 
       elem.setBus(internalBus);
@@ -527,7 +530,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
         break;
     }
 
-    result = doChildStateChange(transition);
+    result = performChildStateChange(transition);
 
     switch (transition) {
       case STOP_PAUSE:
@@ -548,10 +551,10 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
     return result;
   }
 
-  protected boolean doSendEvent(Event event) {
+  protected boolean sendEventToSinks(Event event) {
     boolean res = true;
 
-    for (Enumeration<Element> e = enumSinks(); e.hasMoreElements(); ) {
+    for (Enumeration<Element> e = enumerateSinks(); e.hasMoreElements(); ) {
       Element elem = e.nextElement();
 
       res &= elem.sendEvent(event);
@@ -559,7 +562,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
     return res;
   }
 
-  private boolean doSeek(Event event) {
+  private boolean performSeek(Event event) {
     boolean ret;
     int[] state = new int[1];
     boolean wasPlaying;
@@ -569,7 +572,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
 
     if (wasPlaying) setState(Element.PAUSE);
 
-    ret = doSendEvent(event);
+    ret = sendEventToSinks(event);
     if (ret) streamTime = 0;
 
     if (wasPlaying) setState(Element.PLAY);
@@ -580,16 +583,16 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
   public boolean sendEvent(Event event) {
     switch (event.getType()) {
       case SEEK:
-        return doSeek(event);
+        return performSeek(event);
       default:
-        return doSendEvent(event);
+        return sendEventToSinks(event);
     }
   }
 
   public boolean query(Query query) {
     boolean res = true;
 
-    for (Enumeration<Element> e = enumSinks(); e.hasMoreElements(); ) {
+    for (Enumeration<Element> e = enumerateSinks(); e.hasMoreElements(); ) {
       Element elem = e.nextElement();
 
       if ((res = elem.query(query))) break;

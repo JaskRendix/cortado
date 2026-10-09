@@ -31,7 +31,7 @@ public class PipelineTestSuite {
     return p;
   }
 
-  private int size(Enumeration<?> e) {
+  private int size(Enumeration < ? > e) {
     int n = 0;
     while (e.hasMoreElements()) {
       e.nextElement();
@@ -45,7 +45,7 @@ public class PipelineTestSuite {
     Pipeline p = new Pipeline("x");
     assertNotNull(p.internalBus);
     assertNotNull(p.bus);
-    assertNotNull(p.enumElements());
+    assertNotNull(p.enumerateElements());
   }
 
   @Test
@@ -54,7 +54,7 @@ public class PipelineTestSuite {
     Element e = elem();
     assertTrue(p.add(e));
     verify(e).setBus(p.internalBus);
-    assertEquals(1, size(p.enumElements()));
+    assertEquals(1, size(p.enumerateElements()));
   }
 
   @Test
@@ -86,7 +86,7 @@ public class PipelineTestSuite {
     Element n = elem();
     p.add(s);
     p.add(n);
-    Enumeration<Element> e = p.enumSorted();
+    Enumeration < Element > e = p.enumerateSortedElements();
     assertEquals(s, e.nextElement());
   }
 
@@ -103,7 +103,7 @@ public class PipelineTestSuite {
     when(b.enumeratePads()).thenReturn(Collections.enumeration(List.of(pb)));
     p.add(a);
     p.add(b);
-    Enumeration<Element> e = p.enumSorted();
+    Enumeration < Element > e = p.enumerateSortedElements();
     assertTrue(e.hasMoreElements());
   }
 
@@ -114,7 +114,7 @@ public class PipelineTestSuite {
     Element n = elem();
     p.add(s);
     p.add(n);
-    Enumeration<Element> e = p.enumSinks();
+    Enumeration < Element > e = p.enumerateSinks();
     assertEquals(s, e.nextElement());
     assertFalse(e.hasMoreElements());
   }
@@ -234,7 +234,7 @@ public class PipelineTestSuite {
     p.add(s);
     p.add(a);
     p.add(b);
-    Enumeration<Element> e = p.enumSorted();
+    Enumeration < Element > e = p.enumerateSortedElements();
     assertEquals(s, e.nextElement());
     assertTrue(e.hasMoreElements());
   }
@@ -257,12 +257,95 @@ public class PipelineTestSuite {
   }
 
   @Test
-  void removeElement_triggersStateDirtyViaPublicAPI() {
-    Pipeline p = spy(new Pipeline());
+  void addNullReturnsFalse() {
+    Pipeline p = new Pipeline();
+    assertFalse(p.add(null));
+  }
+
+  @Test
+  void removeNullReturnsFalse() {
+    Pipeline p = new Pipeline();
+    assertFalse(p.remove(null));
+  }
+
+  @Test
+  void removeUnknownElementReturnsFalse() {
+    Pipeline p = new Pipeline();
     Element e = elem();
-    p.add(e);
+
+    assertFalse(p.remove(e));
+  }
+
+  @Test
+  void useClockStoresFixedClock() {
+    Pipeline p = new Pipeline();
+    Clock clock = mock(Clock.class);
+
+    p.useClock(clock);
+
+    assertSame(clock, p.fixedClock);
+  }
+
+  @Test
+  void enumerateElementsEmpty() {
+    Pipeline p = new Pipeline();
+
+    assertFalse(p.enumerateElements().hasMoreElements());
+  }
+
+  @Test
+  void enumerateSinksEmpty() {
+    Pipeline p = new Pipeline();
+
+    assertFalse(p.enumerateSinks().hasMoreElements());
+  }
+
+  @Test
+  void handleSyncMessagePostsNonSpecialMessages() {
+    Pipeline p = spy(new Pipeline());
+
+    Message msg = mock(Message.class);
+    when(msg.getType()).thenReturn(Message.ERROR);
+
+    doNothing().when(p).postMessage(msg);
+
+    p.handleSyncMessage(msg);
+
+    verify(p).postMessage(msg);
+  }
+
+  @Test
+  void handleStateDirtySchedulesRecalculation() {
+    Pipeline p = spy(new Pipeline());
+
+    Message msg = mock(Message.class);
+    when(msg.getType()).thenReturn(Message.STATE_DIRTY);
+
     doNothing().when(p).scheduleReCalcState();
-    p.remove(e);
+
+    p.handleSyncMessage(msg);
+
     verify(p).scheduleReCalcState();
+  }
+
+  @Test
+  void sendEventDispatchesToAllSinks() {
+    Pipeline p = new Pipeline();
+
+    Element s1 = sink();
+    Element s2 = sink();
+
+    p.add(s1);
+    p.add(s2);
+
+    Event ev = mock(Event.class);
+
+    when(s1.sendEvent(ev)).thenReturn(true);
+    when(s2.sendEvent(ev)).thenReturn(true);
+
+    assertTrue(p.sendEvent(ev));
+
+    verify(s1).sendEvent(ev);
+    verify(s2).sendEvent(ev);
   }
 }
