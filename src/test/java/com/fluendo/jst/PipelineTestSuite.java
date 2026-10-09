@@ -13,7 +13,7 @@ public class PipelineTestSuite {
 
   private Element elem() {
     Element e = mock(Element.class);
-    when(e.enumPads()).thenReturn(Collections.emptyEnumeration());
+    when(e.enumeratePads()).thenReturn(Collections.emptyEnumeration());
     return e;
   }
 
@@ -99,8 +99,8 @@ public class PipelineTestSuite {
     when(b.isFlagSet(Element.FLAG_IS_SINK)).thenReturn(false);
     Pad pa = pad(a, Pad.SINK, null);
     Pad pb = pad(b, Pad.SINK, null);
-    when(a.enumPads()).thenReturn(Collections.enumeration(List.of(pa)));
-    when(b.enumPads()).thenReturn(Collections.enumeration(List.of(pb)));
+    when(a.enumeratePads()).thenReturn(Collections.enumeration(List.of(pa)));
+    when(b.enumeratePads()).thenReturn(Collections.enumeration(List.of(pb)));
     p.add(a);
     p.add(b);
     Enumeration<Element> e = p.enumSorted();
@@ -229,8 +229,8 @@ public class PipelineTestSuite {
     Element b = elem();
     Pad pa = pad(a, Pad.SINK, null);
     Pad pb = pad(b, Pad.SINK, null);
-    when(a.enumPads()).thenReturn(Collections.enumeration(List.of(pa)));
-    when(b.enumPads()).thenReturn(Collections.enumeration(List.of(pb)));
+    when(a.enumeratePads()).thenReturn(Collections.enumeration(List.of(pa)));
+    when(b.enumeratePads()).thenReturn(Collections.enumeration(List.of(pb)));
     p.add(s);
     p.add(a);
     p.add(b);

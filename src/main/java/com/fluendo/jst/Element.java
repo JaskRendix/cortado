@@ -101,17 +101,17 @@ public abstract class Element extends com.fluendo.jst.Object {
     return "Element: [" + getName() + "]";
   }
 
-  public synchronized void setClock(Clock newClock) {
-    Debug.debug(this + ".setClock(" + newClock + ")");
-    clock = newClock;
+  public synchronized void setClock(Clock clock) {
+    Debug.debug(this + ".setClock(" + clock + ")");
+    this.clock = clock;
   }
 
   public synchronized Clock getClock() {
     return clock;
   }
 
-  public synchronized void setBus(Bus newBus) {
-    bus = newBus;
+  public synchronized void setBus(Bus bus) {
+    this.bus = bus;
   }
 
   public synchronized Bus getBus() {
@@ -128,19 +128,21 @@ public abstract class Element extends com.fluendo.jst.Object {
     padListeners.remove(listener);
   }
 
-  private synchronized void doPadListeners(int method, Pad pad) {
+  private synchronized void notifyPadAdded(Pad pad) {
     for (PadListener listener : padListeners) {
-      switch (method) {
-        case 0:
-          listener.padAdded(pad);
-          break;
-        case 1:
-          listener.padRemoved(pad);
-          break;
-        case 2:
-          listener.noMorePads();
-          break;
-      }
+      listener.padAdded(pad);
+    }
+  }
+
+  private synchronized void notifyPadRemoved(Pad pad) {
+    for (PadListener listener : padListeners) {
+      listener.padRemoved(pad);
+    }
+  }
+
+  private synchronized void notifyNoMorePads() {
+    for (PadListener listener : padListeners) {
+      listener.noMorePads();
     }
   }
 
@@ -151,28 +153,28 @@ public abstract class Element extends com.fluendo.jst.Object {
     return null;
   }
 
-  public synchronized boolean addPad(Pad newPad) {
-    if (newPad.setParent(this) == false) return false;
+  public synchronized boolean addPad(Pad pad) {
+    if (!pad.setParent(this)) return false;
 
-    pads.add(newPad);
-    doPadListeners(0, newPad);
+    pads.add(pad);
+    notifyPadAdded(pad);
 
     return true;
   }
 
-  public synchronized boolean removePad(Pad aPad) {
-    if (aPad.getParent() != this) return false;
-    aPad.unParent();
-    pads.remove(aPad);
-    doPadListeners(1, aPad);
+  public synchronized boolean removePad(Pad pad) {
+    if (pad.getParent() != this) return false;
+    pad.unParent();
+    pads.remove(pad);
+    notifyPadRemoved(pad);
     return true;
   }
 
   public synchronized void noMorePads() {
-    doPadListeners(2, null);
+    notifyNoMorePads();
   }
 
-  public Enumeration<Pad> enumPads() {
+  public Enumeration<Pad> enumeratePads() {
     return Collections.enumeration(new ArrayList<>(pads));
   }
 
@@ -209,7 +211,7 @@ public abstract class Element extends com.fluendo.jst.Object {
     return lastReturn;
   }
 
-  private boolean padsActivate(boolean active) {
+  private boolean activatePads(boolean active) {
     int mode = (active ? Pad.MODE_PUSH : Pad.MODE_NONE);
     boolean res = true;
 
@@ -328,7 +330,7 @@ public abstract class Element extends com.fluendo.jst.Object {
 
     switch (transition) {
       case STOP_PAUSE:
-        res = padsActivate(true);
+        res = activatePads(true);
         break;
       case PAUSE_PLAY:
         res = true;
@@ -337,7 +339,7 @@ public abstract class Element extends com.fluendo.jst.Object {
         res = true;
         break;
       case PAUSE_STOP:
-        res = padsActivate(false);
+        res = activatePads(false);
         break;
       default:
         res = false;

@@ -187,7 +187,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
     }
 
     private void updateDegree(Element elem) {
-      for (Enumeration<Pad> p = elem.enumPads(); p.hasMoreElements(); ) {
+      for (Enumeration<Pad> p = elem.enumeratePads(); p.hasMoreElements(); ) {
         Pad pad = p.nextElement();
 
         if (pad.direction == Pad.SINK) {

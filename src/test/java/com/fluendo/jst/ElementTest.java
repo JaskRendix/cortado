@@ -2,6 +2,7 @@ package com.fluendo.jst;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Enumeration;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,22 +80,22 @@ class ElementTest {
     AtomicInteger noMore = new AtomicInteger();
 
     PadListener listener =
-        new PadListener() {
-          @Override
-          public void padAdded(Pad pad) {
-            added.incrementAndGet();
-          }
+      new PadListener() {
+        @Override
+        public void padAdded(Pad pad) {
+          added.incrementAndGet();
+        }
 
-          @Override
-          public void padRemoved(Pad pad) {
-            removed.incrementAndGet();
-          }
+        @Override
+        public void padRemoved(Pad pad) {
+          removed.incrementAndGet();
+        }
 
-          @Override
-          public void noMorePads() {
-            noMore.incrementAndGet();
-          }
-        };
+        @Override
+        public void noMorePads() {
+          noMore.incrementAndGet();
+        }
+      };
 
     element.addPadListener(listener);
 
@@ -194,5 +195,120 @@ class ElementTest {
     assertEquals(Element.SUCCESS, ret);
     assertEquals(Element.STOP, resState[0]);
     assertEquals(Element.NONE, resPending[0]);
+  }
+
+  @Test
+  void testGetPadReturnsNullWhenMissing() {
+    assertNull(element.getPad("missing"));
+  }
+
+  @Test
+  void testRemoveForeignPadFails() {
+    TestElement other = new TestElement();
+
+    TestPad pad = new TestPad("sink");
+    other.addPad(pad);
+
+    assertFalse(element.removePad(pad));
+  }
+
+  @Test
+  void testDuplicatePadListenerAddedOnlyOnce() {
+    AtomicInteger count = new AtomicInteger();
+
+    PadListener listener = pad -> count.incrementAndGet();
+
+    element.addPadListener(listener);
+    element.addPadListener(listener);
+
+    element.addPad(new TestPad("sink"));
+
+    assertEquals(1, count.get());
+  }
+
+  @Test
+  void testAddNullPadListener() {
+    assertDoesNotThrow(() -> element.addPadListener(null));
+  }
+
+  @Test
+  void testSetAndGetBus() {
+    TestBus bus = new TestBus();
+
+    element.setBus(bus);
+
+    assertSame(bus, element.getBus());
+  }
+
+  @Test
+  void testPostMessageWithoutBus() {
+    assertDoesNotThrow(
+      () -> element.postMessage(Message.newStateDirty(element)));
+  }
+
+  @Test
+  void testEnumPads() {
+    TestPad pad = new TestPad("sink");
+
+    element.addPad(pad);
+
+    Enumeration < Pad > pads = element.enumeratePads();
+
+    assertTrue(pads.hasMoreElements());
+    assertSame(pad, pads.nextElement());
+    assertFalse(pads.hasMoreElements());
+  }
+
+  @Test
+  void testGetStateNextUpward() {
+    assertEquals(
+      Element.PAUSE,
+      element.getStateNext(Element.STOP, Element.PLAY));
+  }
+
+  @Test
+  void testGetStateNextDownward() {
+    assertEquals(
+      Element.PAUSE,
+      element.getStateNext(Element.PLAY, Element.STOP));
+  }
+
+  @Test
+  void testGetStateReturnName() {
+    assertEquals(
+      "FAILURE",
+      Element.getStateReturnName(Element.FAILURE));
+
+    assertEquals(
+      "SUCCESS",
+      Element.getStateReturnName(Element.SUCCESS));
+
+    assertEquals(
+      "ASYNC",
+      Element.getStateReturnName(Element.ASYNC));
+
+    assertEquals(
+      "NO_PREROLL",
+      Element.getStateReturnName(Element.NO_PREROLL));
+  }
+
+  @Test
+  void testGetStateName() {
+    assertEquals("none", Element.getStateName(Element.NONE));
+    assertEquals("stop", Element.getStateName(Element.STOP));
+    assertEquals("pause", Element.getStateName(Element.PAUSE));
+    assertEquals("play", Element.getStateName(Element.PLAY));
+  }
+
+  @Test
+  void testGetTransitionHelpers() {
+    int transition =
+      element.getTransition(Element.STOP, Element.PAUSE);
+
+    assertEquals(Element.STOP,
+      element.getTransitionCurrent(transition));
+
+    assertEquals(Element.PAUSE,
+      element.getTransitionNext(transition));
   }
 }
