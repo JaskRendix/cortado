@@ -251,4 +251,20 @@ class VideoSinkTest {
         sink.render(buf),
         "VideoSink should successfully render frames derived from media streams");
   }
+
+  @Test
+  void validRawVideoCapsAccepted() {
+      Caps caps = new Caps("video/raw");
+      caps.setFieldInt("width", 320);
+      caps.setFieldInt("height", 240);
+
+      assertTrue(sink.setCapsFunc(caps));
+  }
+
+  @Test
+  void invalidMimeRejected() {
+      Caps caps = new Caps("audio/raw");
+
+      assertFalse(sink.setCapsFunc(caps));
+  }
 }
