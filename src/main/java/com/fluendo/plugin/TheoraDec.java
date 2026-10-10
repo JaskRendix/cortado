@@ -51,11 +51,11 @@ public class TheoraDec extends Element implements OggPayload {
 
   @Override
   public int takeHeader(Packet op) {
-    int ret;
+    int result;
     byte header;
-    ret = ti.decodeHeader(tc, op);
-    if (ret < 0) {
-      return ret;
+    result = ti.decodeHeader(tc, op);
+    if (result < 0) {
+      return result;
     }
     header = op.packetBase[op.packet];
     if (header == -128) {
@@ -297,7 +297,7 @@ public class TheoraDec extends Element implements OggPayload {
 
   @Override
   protected int changeState(int transition) {
-    int res;
+    int result;
 
     switch (transition) {
       case STOP_PAUSE -> {
@@ -308,7 +308,7 @@ public class TheoraDec extends Element implements OggPayload {
       default -> {}
     }
 
-    res = super.changeState(transition);
+    result = super.changeState(transition);
 
     switch (transition) {
       case PAUSE_STOP -> {
@@ -319,7 +319,7 @@ public class TheoraDec extends Element implements OggPayload {
       default -> {}
     }
 
-    return res;
+    return result;
   }
 
   @Override

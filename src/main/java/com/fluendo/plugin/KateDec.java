@@ -69,16 +69,16 @@ public class KateDec extends Element implements OggPayload {
 
   @Override
   public int takeHeader(Packet op) {
-    int ret = ki.decodeHeader(kc, op);
-    if (ret >= 0) {
+    int result = ki.decodeHeader(kc, op);
+    if (result >= 0) {
       haveBOS = true;
     }
-    if (ret > 0) {
+    if (result > 0) {
       k.decodeInit(ki);
       Debug.debug("Kate decoder ready");
       haveDecoder = true;
     }
-    return ret;
+    return result;
   }
 
   @Override
@@ -115,28 +115,28 @@ public class KateDec extends Element implements OggPayload {
 
   /** Converts a granule position to its time equivalent */
   public long granuleToTime(long gp) {
-    long res;
+    long result;
 
     if (gp < 0 || !haveDecoder) {
       return -1;
     }
 
-    res = (long) (k.granuleTime(gp) * Clock.SECOND);
+    result = (long) (k.granuleTime(gp) * Clock.SECOND);
 
-    return res;
+    return result;
   }
 
   /** Converts a granule position to its duration equivalent */
   public long granuleToDuration(long gp) {
-    long res;
+    long result;
 
     if (gp < 0 || !haveDecoder) {
       return -1;
     }
 
-    res = (long) (k.granuleDuration(gp) * Clock.SECOND);
+    result = (long) (k.granuleDuration(gp) * Clock.SECOND);
 
-    return res;
+    return result;
   }
 
   private final Pad srcPad =
@@ -281,7 +281,7 @@ public class KateDec extends Element implements OggPayload {
 
   @Override
   protected int changeState(int transition) {
-    int res;
+    int result;
 
     switch (transition) {
       case STOP_PAUSE -> {
@@ -291,7 +291,7 @@ public class KateDec extends Element implements OggPayload {
       default -> {}
     }
 
-    res = super.changeState(transition);
+    result = super.changeState(transition);
 
     switch (transition) {
       case PAUSE_STOP -> {
@@ -302,7 +302,7 @@ public class KateDec extends Element implements OggPayload {
       default -> {}
     }
 
-    return res;
+    return result;
   }
 
   @Override
@@ -333,8 +333,8 @@ public class KateDec extends Element implements OggPayload {
     if (!isType(op)) {
       return null;
     }
-    int ret = ki.decodeHeader(kc, op);
-    if (ret < 0) {
+    int result = ki.decodeHeader(kc, op);
+    if (result < 0) {
       return null;
     }
     String mime = "application/x-kate";

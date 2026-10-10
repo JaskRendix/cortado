@@ -46,9 +46,9 @@ public class VorbisDec extends Element implements OggPayload {
 
   @Override
   public int takeHeader(Packet op) {
-    int ret = vi.synthesisHeaderIn(vc, op);
-    if (ret < 0) {
-      return ret;
+    int result = vi.synthesisHeaderIn(vc, op);
+    if (result < 0) {
+      return result;
     }
     byte header = op.packetBase[op.packet];
     if (header == 0x05) {
@@ -287,7 +287,7 @@ public class VorbisDec extends Element implements OggPayload {
 
   @Override
   protected int changeState(int transition) {
-    int res;
+    int result;
 
     switch (transition) {
       case STOP_PAUSE -> {
@@ -299,9 +299,9 @@ public class VorbisDec extends Element implements OggPayload {
       default -> {}
     }
 
-    res = super.changeState(transition);
+    result = super.changeState(transition);
 
-    return res;
+    return result;
   }
 
   @Override

@@ -8,10 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 @DisplayName("KateDec Test Suite")
 class KateDecTest {
 
@@ -107,5 +104,16 @@ class KateDecTest {
       int resultStop = kateDec.changeState(Element.PAUSE_STOP);
       assertTrue(resultStop >= 0);
     }
+  }
+
+  @Test
+  void testPadsExist() {
+      assertNotNull(kateDec.getPad("src"));
+      assertNotNull(kateDec.getPad("sink"));
+  }
+
+  @Test
+  void testMimeForInvalidPacket() {
+      assertNull(kateDec.getMime(new Packet()));
   }
 }
