@@ -55,7 +55,6 @@ public class MulawDec extends Element {
 
         @Override
         protected int chainFunc(com.fluendo.jst.Buffer buf) {
-          int ret;
 
           if (caps == null) {
             Debug.log(Debug.INFO, "mulaw: rate: " + rate);
@@ -68,9 +67,7 @@ public class MulawDec extends Element {
 
           buf.caps = caps;
 
-          ret = srcPad.push(buf);
-
-          return ret;
+          return srcPad.push(buf);
         }
       };
 
