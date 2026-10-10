@@ -257,7 +257,7 @@ public class HTTPSrc extends Element {
         }
       };
 
-  private InputStream openWithConnection(URL url, long offset) throws IOException {
+  private InputStream openStream(URL url, long offset) throws IOException {
     InputStream dis;
 
     URLConnection uc = url.openConnection();
@@ -346,7 +346,7 @@ public class HTTPSrc extends Element {
 
       Debug.log(Debug.INFO, "trying to open " + url + " at offset " + offset);
 
-      dis = openWithConnection(url, offset);
+      dis = openStream(url, offset);
 
       discont = true;
 
