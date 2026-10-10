@@ -7,10 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 @DisplayName("HTTPSrc Test Suite")
 class HTTPSrcTest {
 
@@ -44,9 +41,35 @@ class HTTPSrcTest {
     }
 
     @Test
+    @DisplayName("Should allow null userAgent")
+    void testSetNullUserAgent() {
+      assertTrue(httpSrc.setProperty("userAgent", null));
+    }
+
+    @Test
+    @DisplayName("Should allow null URL")
+    void testSetNullUrl() {
+      assertTrue(httpSrc.setProperty("url", null));
+    }
+
+    @Test
+    @DisplayName("Should allow null documentBase")
+    void testSetNullDocumentBase() {
+      assertTrue(httpSrc.setProperty("documentBase", null));
+    }
+
+    @Test
     @DisplayName("Should reject unknown property names")
     void testSetInvalidProperty() {
       assertFalse(httpSrc.setProperty("nonExistentProperty", "value"));
+    }
+
+    @Test
+    @DisplayName("Should throw NumberFormatException for invalid readSize")
+    void testInvalidReadSize() {
+      assertThrows(
+          NumberFormatException.class,
+          () -> httpSrc.setProperty("readSize", "abc"));
     }
   }
 
@@ -61,14 +84,16 @@ class HTTPSrcTest {
     }
 
     @Test
-    @DisplayName("Should detect Microsoft JVM vendor property and set flag")
+    @DisplayName("Should instantiate under Microsoft JVM vendor setting")
     void testMicrosoftJvmDetection() {
       String originalVendor = System.getProperty("java.vendor");
+
       try {
         System.setProperty("java.vendor", "Microsoft Corporation");
+
         HTTPSrc msSrc = new HTTPSrc();
-        // Verifies instantiation doesn't throw and internal flag handles MS VM logic safely
-        assertNotNull(msSrc.getFactoryName());
+
+        assertEquals("httpsrc", msSrc.getFactoryName());
       } finally {
         if (originalVendor != null) {
           System.setProperty("java.vendor", originalVendor);
@@ -76,20 +101,6 @@ class HTTPSrcTest {
           System.clearProperty("java.vendor");
         }
       }
-    }
-  }
-
-  @Nested
-  @DisplayName("Activation State Edge Cases")
-  class ActivationTests {
-
-    @Test
-    @DisplayName("Should handle MODE_NONE cleanup gracefully without crashing")
-    void testActivateModeNone() {
-      // Accessing inner pad activation logic via standard lifecycle or reflection if needed,
-      // or testing element state handling.
-      boolean result = httpSrc.setProperty("url", "http://invalid-url-to-trigger-fail.local");
-      assertTrue(result);
     }
   }
 }

@@ -43,7 +43,7 @@ public class HTTPSrc extends Element {
   private Caps outCaps;
   private boolean discont;
   private URL documentBase;
-  private boolean microSoft = false;
+  private boolean microsoftVm = false;
 
   private static final int DEFAULT_READSIZE = 4096;
 
@@ -52,12 +52,9 @@ public class HTTPSrc extends Element {
   private final Pad srcpad =
       new Pad(Pad.SRC, "src") {
         private boolean performSeek(Event event) {
+          int format = event.getSeekFormat();
+          long position = event.getSeekPosition();
           boolean result;
-          int format;
-          long position;
-
-          format = event.getSeekFormat();
-          position = event.getSeekPosition();
 
           if (format == Format.PERCENT && contentLength != -1) {
             position = position * contentLength / Format.PERCENT_MAX;
@@ -97,13 +94,13 @@ public class HTTPSrc extends Element {
 
         @Override
         protected boolean eventFunc(Event event) {
-          boolean res;
+          boolean result;
 
           switch (event.getType()) {
-            case SEEK -> res = performSeek(event);
-            default -> res = super.eventFunc(event);
+            case SEEK -> result = performSeek(event);
+            default -> result = super.eventFunc(event);
           }
-          return res;
+          return result;
         }
 
         @Override
@@ -127,7 +124,7 @@ public class HTTPSrc extends Element {
 
           // Calculate the read size
           if (contentLength != -1) {
-            if (microSoft) {
+            if (microsoftVm) {
               /* don't read the last byte in microsoft VM, it screws up the socket completely. */
               if (contentLength == 0) {
                 left = 0;
@@ -226,12 +223,12 @@ public class HTTPSrc extends Element {
 
         @Override
         protected boolean activateFunc(int mode) {
-          boolean res = true;
+          boolean result = true;
 
           switch (mode) {
             case MODE_NONE -> {
               postMessage(Message.newStreamStatus(this, false, Pad.WRONG_STATE, "stopping"));
-              res = stopTask();
+              result = stopTask();
               input = null;
               outCaps = null;
               mime = null;
@@ -241,28 +238,28 @@ public class HTTPSrc extends Element {
                 contentLength = -1;
                 input = getInputStream(0);
                 if (input == null) {
-                  res = false;
+                  result = false;
                 }
               } catch (Exception e) {
-                res = false;
+                result = false;
               }
-              if (res) {
+              if (result) {
                 postMessage(Message.newStreamStatus(this, true, Pad.OK, "activating"));
-                res = startTask("cortado-HTTPSrc-Stream-" + Debug.genId());
+                result = startTask("cortado-HTTPSrc-Stream-" + Debug.genId());
               }
             }
-            default -> res = false;
+            default -> result = false;
           }
-          return res;
+          return result;
         }
       };
 
   private InputStream openStream(URL url, long offset) throws IOException {
-    InputStream dis;
+    InputStream inputStream;
 
-    URLConnection uc = url.openConnection();
+    URLConnection connection = url.openConnection();
 
-    uc.setRequestProperty("Connection", "Keep-Alive");
+    connection.setRequestProperty("Connection", "Keep-Alive");
 
     String range;
     if (offset != 0 && contentLength != -1) {
@@ -274,21 +271,21 @@ public class HTTPSrc extends Element {
     }
     if (range != null) {
       Debug.info("doing range: " + range);
-      uc.setRequestProperty("Range", range);
+      connection.setRequestProperty("Range", range);
     }
 
-    uc.setRequestProperty("User-Agent", userAgent);
+    connection.setRequestProperty("User-Agent", userAgent);
     if (userId != null && password != null) {
       String userPassword = userId + ":" + password;
       String encoding = Base64Converter.encode(userPassword.getBytes());
-      uc.setRequestProperty("Authorization", "Basic " + encoding);
+      connection.setRequestProperty("Authorization", "Basic " + encoding);
     }
-    uc.setRequestProperty("Content-Type", "application/octet-stream");
+    connection.setRequestProperty("Content-Type", "application/octet-stream");
 
     /* This will send the request. */
-    dis = uc.getInputStream();
+    inputStream = connection.getInputStream();
 
-    String responseRange = uc.getHeaderField("Content-Range");
+    String responseRange = connection.getHeaderField("Content-Range");
     long responseOffset;
     if (responseRange == null) {
       Debug.info("Response contained no Content-Range field, assuming offset=0");
@@ -309,8 +306,8 @@ public class HTTPSrc extends Element {
       }
     }
 
-    contentLength = uc.getHeaderFieldInt("Content-Length", -1) + responseOffset;
-    mime = uc.getContentType();
+    contentLength = connection.getHeaderFieldInt("Content-Length", -1) + responseOffset;
+    mime = connection.getContentType();
     this.offset = responseOffset;
 
     if (responseOffset < offset) {
@@ -319,24 +316,24 @@ public class HTTPSrc extends Element {
       this.skipBytes = 0;
     }
 
-    return dis;
+    return inputStream;
   }
 
   private InputStream getInputStream(long offset) {
-    InputStream dis = null;
+    InputStream inputStream = null;
 
     try {
       URL url;
-      boolean isAbsolute;
+      boolean absoluteUrl;
 
       postMessage(Message.newResource(this, "Opening " + urlString));
       Debug.log(Debug.INFO, "reading from url " + urlString);
 
       /* IE fails parsing absolute urls in an absolute context; it adds some random slashes.
        * We workaround this by checking if the urlString is absolute and avoid the documentBase parsing */
-      isAbsolute = urlString.startsWith("http://") || urlString.startsWith("https://");
+      absoluteUrl = urlString.startsWith("http://") || urlString.startsWith("https://");
 
-      if (!isAbsolute && documentBase != null) {
+      if (!absoluteUrl && documentBase != null) {
         Debug.log(Debug.INFO, "parsing in document base");
         url = new URL(documentBase, urlString);
       } else {
@@ -346,7 +343,7 @@ public class HTTPSrc extends Element {
 
       Debug.log(Debug.INFO, "trying to open " + url + " at offset " + offset);
 
-      dis = openStream(url, offset);
+      inputStream = openStream(url, offset);
 
       discont = true;
 
@@ -368,7 +365,7 @@ public class HTTPSrc extends Element {
       postMessage(Message.newError(this, "Failed opening " + urlString + "..."));
     }
 
-    return dis;
+    return inputStream;
   }
 
   @Override
@@ -381,14 +378,14 @@ public class HTTPSrc extends Element {
     String javaVendor = System.getProperty("java.vendor");
     if (javaVendor != null && javaVendor.toUpperCase().startsWith("MICROSOFT")) {
       Debug.log(Debug.WARNING, "Found MS JVM, work around inputStream EOS bugs.");
-      microSoft = true;
+      microsoftVm = true;
     }
     addPad(srcpad);
   }
 
   @Override
   public synchronized boolean setProperty(String name, java.lang.Object value) {
-    boolean res = true;
+    boolean result = true;
 
     if (Objects.equals(name, "url")) {
       urlString = String.valueOf(value);
@@ -403,8 +400,8 @@ public class HTTPSrc extends Element {
     } else if (Objects.equals(name, "readSize")) {
       readSize = Integer.parseInt(String.valueOf(value));
     } else {
-      res = false;
+      result = false;
     }
-    return res;
+    return result;
   }
 }
