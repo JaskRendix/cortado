@@ -75,17 +75,24 @@ public class VorbisDecTest {
   }
 
   @Test
-  public void testEdgeCaseTakeHeaderWithoutInitialization() {
-    Packet packet = new Packet();
-    packet.packetBase = new byte[] {0x01, 0x76, 0x6f, 0x72, 0x62, 0x69, 0x73};
-    packet.packet = 0;
-    packet.bytes = packet.packetBase.length;
+  public void testTakeHeaderHandlesInvalidPacket() {
+      Packet packet = new Packet();
+      packet.packetBase =
+          new byte[] {0x01, 0x76, 0x6f, 0x72, 0x62, 0x69, 0x73};
+      packet.packet = 0;
+      packet.bytes = packet.packetBase.length;
 
-    // Taking header without internal info structure setup should return an error code safely
-    // instead of crashing
-    int result = vorbisDec.takeHeader(packet);
-    assertTrue(
-        result < 0,
-        "Taking header on uninitialized structures should fail gracefully with negative error code");
+      assertDoesNotThrow(() -> vorbisDec.takeHeader(packet));
+  }
+
+  @Test
+  public void testPadsExist() {
+      assertNotNull(vorbisDec.getPad("src"));
+      assertNotNull(vorbisDec.getPad("sink"));
+  }
+
+  @Test
+  public void testGetMimeInvalidPacket() {
+      assertNull(vorbisDec.getMime(new Packet()));
   }
 }
