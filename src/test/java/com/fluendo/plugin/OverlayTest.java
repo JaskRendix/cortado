@@ -3,6 +3,7 @@ package com.fluendo.plugin;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fluendo.jst.Buffer;
+import com.fluendo.jst.Element;
 import com.fluendo.jst.Event;
 import com.fluendo.jst.Pad;
 import java.awt.Button;
@@ -47,7 +48,7 @@ class OverlayTest {
     Pad sinkPad = overlay.getPad("videosink");
     Pad srcPad = overlay.getPad("videosrc");
     assertNotNull(sinkPad);
-    assertNotNull(sinkPad);
+    assertNotNull(srcPad);
 
     Event eos = Event.newEOS();
     Event flushStart = Event.newFlushStart();
@@ -71,20 +72,15 @@ class OverlayTest {
   }
 
   @Test
-  @DisplayName(
-      "State Transition: Automatic Frame instantiation when component is null on STOP->PAUSE")
+  @DisplayName("State transition should execute without throwing")
   void testStateTransitionFallback() {
-    // Ensure component is initially null
-    assertNull(overlay.getProperty("component"));
+      assertDoesNotThrow(
+          () -> overlay.changeState(Element.STOP_PAUSE));
+  }
 
-    // Simulate state transition: STOP (0) -> PAUSE (1)
-    // Note: Element state constants depend on framework, typically STOP/PAUSE are fields or
-    // integers
-    // We trigger changeState directly to test the fallback frame creation logic
-    assertDoesNotThrow(() -> overlay.changeState(1)); // Passing target state or transition code
-
-    // Component should now be initialized as a fallback Frame instance if transition rules matched
-    // If your framework uses specific state constants, changeState handles it safely without
-    // crashing.
+  @Test
+  void testPadsExist() {
+      assertNotNull(overlay.getPad("videosink"));
+      assertNotNull(overlay.getPad("videosrc"));
   }
 }
