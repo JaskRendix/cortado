@@ -33,8 +33,52 @@ public class TextOverlay extends Overlay {
   private static final Logger LOGGER = Logger.getLogger(TextOverlay.class.getName());
 
   private int fontSize = -1;
-  private Font font = null;
-  private String text = null;
+  private Font font;
+  private String text;
+
+  private BufferedImage toBufferedImage(Image image, int width, int height) {
+    if (image instanceof BufferedImage bufferedImage) {
+      return bufferedImage;
+    }
+
+    BufferedImage bufferedImage =
+        new BufferedImage(
+            width > 0 ? width : 320,
+            height > 0 ? height : 240,
+            BufferedImage.TYPE_INT_RGB);
+
+    Graphics2D g2d = bufferedImage.createGraphics();
+    g2d.drawImage(image, 0, 0, null);
+    g2d.dispose();
+
+    return bufferedImage;
+  }
+
+  private void updateFont(int width) {
+    int newFontSize = Math.max(width / 32, 12);
+
+    if (font == null || newFontSize != fontSize) {
+      fontSize = newFontSize;
+      font = new Font("SansSerif", Font.BOLD, fontSize);
+    }
+  }
+
+  private void drawText(Graphics2D g2d, int width, int height) {
+    if (text == null || text.isEmpty()) {
+      return;
+    }
+
+    g2d.setFont(font);
+    g2d.setColor(Color.WHITE);
+
+    FontMetrics fm = g2d.getFontMetrics();
+    double textWidth = fm.stringWidth(text);
+
+    g2d.drawString(
+        text,
+        (int) ((width - textWidth) / 2),
+        (int) (height * 0.85));
+  }
 
   public TextOverlay() {
     super();
@@ -48,32 +92,22 @@ public class TextOverlay extends Overlay {
     if (buf.object instanceof BufferedImage bufferedImage) {
       img = bufferedImage;
     } else if (buf.object instanceof ImageProducer imageProducer) {
-      Image awtImg = component.createImage(imageProducer);
-      if (awtImg instanceof BufferedImage bufferedImage) {
-        img = bufferedImage;
-      } else {
-        img =
-            new BufferedImage(
-                component.getWidth() > 0 ? component.getWidth() : 320,
-                component.getHeight() > 0 ? component.getHeight() : 240,
-                BufferedImage.TYPE_INT_RGB);
-        Graphics2D g2d = img.createGraphics();
-        g2d.drawImage(awtImg, 0, 0, null);
-        g2d.dispose();
-      }
-    } else if (buf.object instanceof Image awtImg) {
-      if (awtImg instanceof BufferedImage bufferedImage) {
-        img = bufferedImage;
-      } else {
-        img =
-            new BufferedImage(
-                awtImg.getWidth(null) > 0 ? awtImg.getWidth(null) : 320,
-                awtImg.getHeight(null) > 0 ? awtImg.getHeight(null) : 240,
-                BufferedImage.TYPE_INT_RGB);
-        Graphics2D g2d = img.createGraphics();
-        g2d.drawImage(awtImg, 0, 0, null);
-        g2d.dispose();
-      }
+      Image image = component.createImage(imageProducer);
+
+      img =
+          toBufferedImage(
+              image,
+              component.getWidth(),
+              component.getHeight());
+
+    } else if (buf.object instanceof Image image) {
+
+      img =
+          toBufferedImage(
+              image,
+              image.getWidth(null),
+              image.getHeight(null));
+
     } else {
       LOGGER.warning(() -> this + ": unknown buffer received " + buf);
       return;
@@ -84,24 +118,11 @@ public class TextOverlay extends Overlay {
     int w = d.width > 0 ? d.width : img.getWidth();
     int h = d.height > 0 ? d.height : img.getHeight();
 
-    int newFontSize = w / 32;
-    if (newFontSize < 12) {
-      newFontSize = 12;
-    }
-    if (font == null || newFontSize != fontSize) {
-      fontSize = newFontSize;
-      font = new Font("SansSerif", Font.BOLD, fontSize);
-    }
+    updateFont(w);
 
     Graphics2D g2d = img.createGraphics();
 
-    if (text != null && !text.isEmpty()) {
-      g2d.setFont(font);
-      g2d.setColor(Color.WHITE);
-      FontMetrics fm = g2d.getFontMetrics();
-      double tw = fm.stringWidth(text);
-      g2d.drawString(text, (int) ((w - tw) / 2), (int) (h * 0.85));
-    }
+    drawText(g2d, w, h);
 
     g2d.dispose();
     buf.object = img;

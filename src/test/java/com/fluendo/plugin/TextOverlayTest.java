@@ -112,4 +112,49 @@ class TextOverlayTest {
         () -> textOverlay.overlay(buffer),
         "Small component dimensions should invoke the font minimum size guard branch safely");
   }
+
+  @Test
+  void testNullTextProperty() {
+      assertTrue(textOverlay.setProperty("text", null));
+      assertNull(textOverlay.getProperty("text"));
+  }
+
+  @Test
+  void testOverlayWithEmptyText() {
+      BufferedImage image =
+          new BufferedImage(320, 240, BufferedImage.TYPE_INT_RGB);
+
+      Buffer buffer = new Buffer();
+      buffer.object = image;
+
+      textOverlay.setProperty("text", "");
+
+      assertDoesNotThrow(() -> textOverlay.overlay(buffer));
+  }
+
+  @Test
+  void testOverlayProducesBufferedImage() {
+      BufferedImage image =
+          new BufferedImage(320, 240, BufferedImage.TYPE_INT_RGB);
+
+      Buffer buffer = new Buffer();
+      buffer.object = image;
+
+      textOverlay.setProperty("text", "Hello");
+
+      textOverlay.overlay(buffer);
+
+      assertTrue(buffer.object instanceof BufferedImage);
+  }
+
+  @Test
+  void testOverlayWithoutText() {
+      BufferedImage image =
+          new BufferedImage(320, 240, BufferedImage.TYPE_INT_RGB);
+
+      Buffer buffer = new Buffer();
+      buffer.object = image;
+
+      assertDoesNotThrow(() -> textOverlay.overlay(buffer));
+  }
 }
