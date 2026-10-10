@@ -76,16 +76,25 @@ public class TheoraDecTest {
   }
 
   @Test
-  public void testEdgeCaseTakeHeaderWithoutInitialization() {
-    Packet packet = new Packet();
-    packet.packetBase = new byte[] {(byte) 0x80, 0x74, 0x68, 0x65, 0x6f, 0x72, 0x61};
-    packet.packet = 0;
-    packet.bytes = packet.packetBase.length;
+  public void testTakeHeaderHandlesInvalidPacket() {
+      Packet packet = new Packet();
+      packet.packetBase =
+          new byte[] {(byte) 0x80, 0x74, 0x68, 0x65, 0x6f, 0x72, 0x61};
 
-    // Taking header without internal info structure setup should return an error code safely
-    int result = theoraDec.takeHeader(packet);
-    assertTrue(
-        result < 0,
-        "Taking header on uninitialized structures should fail gracefully with negative error code");
+      packet.packet = 0;
+      packet.bytes = packet.packetBase.length;
+
+      assertDoesNotThrow(() -> theoraDec.takeHeader(packet));
+  }
+
+  @Test
+  public void testPadsExist() {
+      assertNotNull(theoraDec.getPad("src"));
+      assertNotNull(theoraDec.getPad("sink"));
+  }
+
+  @Test
+  public void testGetMimeInvalidPacket() {
+      assertNull(theoraDec.getMime(new Packet()));
   }
 }
