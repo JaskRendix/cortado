@@ -23,20 +23,24 @@ import java.util.List;
 
 public class ElementFactory {
 
-  private static final String[] components = {
+  private static final String[] PLUGINS = {
     "com.fluendo.plugin.HTTPSrc",
     "com.fluendo.plugin.VideoSink",
     "com.fluendo.plugin.AudioSinkJ2",
-    "com.fluendo.plugin.AudioSinkSA",
     "com.fluendo.plugin.Queue",
     "com.fluendo.plugin.FakeSink",
     "com.fluendo.plugin.Overlay",
+    "com.fluendo.plugin.TextOverlay",
+    "com.fluendo.plugin.KateOverlay",
     "com.fluendo.plugin.Selector",
     "com.fluendo.plugin.OggDemux",
+    "com.fluendo.plugin.MultipartDemux",
     "com.fluendo.plugin.TheoraDec",
     "com.fluendo.plugin.VorbisDec",
     "com.fluendo.plugin.KateDec",
-    "com.fluendo.plugin.KateOverlay"
+    "com.fluendo.plugin.JPEGDec",
+    "com.fluendo.plugin.SmokeDec",
+    "com.fluendo.plugin.MulawDec"
   };
   private static final List<Element> elements = new ArrayList<>();
 
@@ -45,15 +49,25 @@ public class ElementFactory {
   }
 
   public static void loadElements() {
+    elements.clear();
+
     try {
-      for (String str : components) {
+      for (String str : PLUGINS) {
         try {
           Class<?> cl = Class.forName(str);
           Debug.log(Debug.INFO, "registered plugin: " + str);
           Element pl = (Element) cl.getDeclaredConstructor().newInstance();
           elements.add(pl);
         } catch (Throwable t) {
-          Debug.log(Debug.INFO, "Failed to register plugin: " + str);
+            Debug.log(
+                Debug.INFO,
+                "Failed to register plugin: "
+                  + str
+                  + " ("
+                  + t.getClass().getSimpleName()
+                  + ": "
+                  + t.getMessage()
+                  + ")");
         }
       }
     } catch (Exception e) {
@@ -61,7 +75,7 @@ public class ElementFactory {
     }
   }
 
-  private static final Element dup(Element element, String name) {
+  private static Element dup(Element element, String name) {
     Element result = null;
     Class<?> cl = element.getClass();
     try {
@@ -76,7 +90,7 @@ public class ElementFactory {
     return result;
   }
 
-  private static final Element findTypeFind(byte[] data, int offset, int length) {
+  private static Element findTypeFind(byte[] data, int offset, int length) {
     int best = -1;
     Element result = null;
 
@@ -90,29 +104,17 @@ public class ElementFactory {
     return result;
   }
 
-  public static final String typeFindMime(byte[] data, int offset, int length) {
-    Element elem;
-    String result = null;
-
-    elem = findTypeFind(data, offset, length);
-    if (elem != null) {
-      result = elem.getMime();
-    }
-    return result;
+  public static String typeFindMime(byte[] data, int offset, int length) {
+      Element element = findTypeFind(data, offset, length);
+      return element != null ? element.getMime() : null;
   }
 
-  public static final Element makeTypeFind(byte[] data, int offset, int length, String name) {
-    Element result = null;
-
-    result = findTypeFind(data, offset, length);
-
-    if (result != null) {
-      result = dup(result, name);
-    }
-    return result;
+  public static Element makeTypeFind(byte[] data, int offset, int length, String name) {
+    Element element = findTypeFind(data, offset, length);
+    return element != null ? dup(element, name) : null;
   }
 
-  public static final Element makeByMime(String mime, String name) {
+  public static Element makeByMime(String mime, String name) {
     Element result = null;
 
     for (Element element : elements) {
@@ -124,7 +126,7 @@ public class ElementFactory {
     return result;
   }
 
-  public static final Element makeByName(String name, String elemName) {
+  public static Element makeByName(String name, String elemName) {
     Element result = null;
 
     for (Element element : elements) {

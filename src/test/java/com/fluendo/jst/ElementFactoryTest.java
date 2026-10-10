@@ -104,4 +104,22 @@ class ElementFactoryTest {
     assertEquals("copyA", copy.getName());
     assertEquals(original.getMime(), copy.getMime());
   }
+
+  @Test
+  void testDupWithNullName() throws Exception {
+      Element original = new TestElementA();
+
+      var m = ElementFactory.class.getDeclaredMethod(
+          "dup",
+          Element.class,
+          String.class);
+
+      m.setAccessible(true);
+
+      Element copy =
+          (Element) m.invoke(null, original, null);
+
+      assertNotNull(copy);
+      assertNotSame(original, copy);
+  }
 }
