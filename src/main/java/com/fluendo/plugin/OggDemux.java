@@ -222,10 +222,10 @@ public class OggDemux extends Element {
       }
       if (haveHeaders && !payload.isHeader(op)) {
         if (complete && started) {
-          int ret;
+          int result;
           com.fluendo.jst.Buffer data = bufferFromPacket(op);
-          ret = push(data);
-          return combineFlows(this, ret);
+          result = push(data);
+          return combineFlows(this, result);
         }
         if (haveKeyframe || payload.isKeyFrame(op)) {
           com.fluendo.jst.Buffer data = bufferFromPacket(op);
@@ -240,21 +240,21 @@ public class OggDemux extends Element {
     }
 
     public int pushPage(Page og) {
-      int res;
+      int result;
       int flowRet = Pad.OK;
-      res = os.pagein(og);
-      if (res < 0) {
+      result = os.pagein(og);
+      if (result < 0) {
         System.err.println("Error reading first page of Ogg bitstream data.");
         postMessage(Message.newError(this, "Error reading first page of Ogg bitstream data."));
         return ERROR;
       }
       while (flowRet == OK) {
-        res = os.packetout(op);
-        if (res == 0) {
+        result = os.packetout(op);
+        if (result == 0) {
           break;
         }
-        if (res == -1) {
-          Debug.log(Debug.WARNING, "ogg error: packetout gave " + res);
+        if (result == -1) {
+          Debug.log(Debug.WARNING, "ogg error: packetout gave " + result);
           discont = true;
         } else {
           flowRet = pushPacket(op);
@@ -429,7 +429,7 @@ public class OggDemux extends Element {
 
         @Override
         protected int chainFunc(com.fluendo.jst.Buffer buf) {
-          int res;
+          int result;
           int flowRet = OK;
           int index = oy.buffer(buf.length);
           if (buf.isFlagSet(com.fluendo.jst.Buffer.FLAG_DISCONT)) {
@@ -441,12 +441,12 @@ public class OggDemux extends Element {
           System.arraycopy(buf.data, buf.offset, oy.data, index, buf.length);
           oy.wrote(buf.length);
           while (flowRet == OK) {
-            res = oy.pageOut(og);
-            if (res == 0) {
+            result = oy.pageOut(og);
+            if (result == 0) {
               break;
             }
-            if (res == -1) {
-              Debug.log(Debug.WARNING, "ogg: pageOut gave " + res);
+            if (result == -1) {
+              Debug.log(Debug.WARNING, "ogg: pageOut gave " + result);
               if (chain != null) {
                 chain.markDiscont();
               }
@@ -490,23 +490,23 @@ public class OggDemux extends Element {
         }
       };
 
-  private int combineFlows(OggStream stream, int ret) {
-    stream.lastRet = ret;
-    if (Pad.isFlowSuccess(ret)) {
-      return ret;
+  private int combineFlows(OggStream stream, int result) {
+    stream.lastRet = result;
+    if (Pad.isFlowSuccess(result)) {
+      return result;
     }
-    if (ret != Pad.NOT_LINKED) {
-      return ret;
+    if (result != Pad.NOT_LINKED) {
+      return result;
     }
     if (chain != null) {
       for (OggStream ostream : chain.streams) {
-        ret = ostream.lastRet;
-        if (ret != Pad.NOT_LINKED) {
-          return ret;
+        result = ostream.lastRet;
+        if (result != Pad.NOT_LINKED) {
+          return result;
         }
       }
     }
-    return ret;
+    return result;
   }
 
   @Override

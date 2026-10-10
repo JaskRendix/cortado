@@ -134,9 +134,9 @@ public class MultipartDemux extends Element {
 
           /* make room */
           if (accum.length < lastPos + buf.length) {
-            byte[] newAcum = new byte[accum.length + buf.length];
-            System.arraycopy(accum, accumPos, newAcum, 0, accumSize);
-            accum = newAcum;
+            byte[] newAccum = new byte[accum.length + buf.length];
+            System.arraycopy(accum, accumPos, newAccum, 0, accumSize);
+            accum = newAccum;
             accumPos = 0;
             lastPos = accumSize;
           }

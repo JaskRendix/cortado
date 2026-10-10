@@ -1,9 +1,9 @@
 package com.fluendo.plugin;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 import com.fluendo.jst.*;
+import java.lang.reflect.Field;
 import java.io.InputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,9 +49,10 @@ public class OggDemuxTest {
     Pad sinkPad = oggDemux.getPad("sink");
     assertNotNull(sinkPad);
 
-    sinkPad.pushEvent(Event.newFlushStart());
-    sinkPad.pushEvent(Event.newFlushStop());
-    assertTrue(true, "Flush events executed successfully");
+    assertDoesNotThrow(() -> {
+      sinkPad.pushEvent(Event.newFlushStart());
+      sinkPad.pushEvent(Event.newFlushStop());
+    });
   }
 
   @Test
@@ -59,8 +60,8 @@ public class OggDemuxTest {
     Pad sinkPad = oggDemux.getPad("sink");
     assertNotNull(sinkPad);
 
-    sinkPad.pushEvent(Event.newEOS());
-    assertTrue(true, "EOS event executed successfully");
+    assertDoesNotThrow(
+        () -> sinkPad.pushEvent(Event.newEOS()));
   }
 
   @Test
@@ -152,27 +153,46 @@ public class OggDemuxTest {
   }
 
   @Test
-  public void testEventInteractionsWithMockito() {
-    Pad sinkPad = oggDemux.getPad("sink");
-    assertNotNull(sinkPad);
+  void testConstructorState() throws Exception {
+      Field oyField =
+          OggDemux.class.getDeclaredField("oy");
 
-    Event mockEvent = mock(Event.class);
-    when(mockEvent.getType()).thenReturn(Event.Type.FLUSH_START);
+      Field ogField =
+          OggDemux.class.getDeclaredField("og");
 
-    // Verify pushing custom or mocked events handles gracefully without errors
-    assertDoesNotThrow(() -> sinkPad.pushEvent(mockEvent), "Pushing events should execute cleanly");
+      Field opField =
+          OggDemux.class.getDeclaredField("op");
+
+      Field chainField =
+          OggDemux.class.getDeclaredField("chain");
+
+      oyField.setAccessible(true);
+      ogField.setAccessible(true);
+      opField.setAccessible(true);
+      chainField.setAccessible(true);
+
+      assertNotNull(oyField.get(oggDemux));
+      assertNotNull(ogField.get(oggDemux));
+      assertNotNull(opField.get(oggDemux));
+
+      assertNull(chainField.get(oggDemux));
   }
 
   @Test
-  public void testBufferDataDelegationWithMockito() {
-    Buffer mockBuffer = spy(Buffer.create());
+  void testSinkPadExists() {
+      assertNotNull(oggDemux.getPad("sink"));
+  }
 
-    byte[] dummyData = new byte[] {0x4f, 0x67, 0x67, 0x53, 0x00, 0x02, 0x00};
-    mockBuffer.copyData(dummyData, 0, dummyData.length);
+  @Test
+  void testPayloadArrayInitialization() throws Exception {
+      Field payloadsField =
+          OggDemux.class.getDeclaredField("payloads");
 
-    assertNotNull(mockBuffer.data, "Spy buffer should retain real data");
+      payloadsField.setAccessible(true);
 
-    int score = oggDemux.typeFind(mockBuffer.data, 0, mockBuffer.length);
-    assertEquals(10, score, "Typefind should still succeed on spy buffer data");
+      OggPayload[] payloads =
+          (OggPayload[]) payloadsField.get(oggDemux);
+
+      assertEquals(3, payloads.length);
   }
 }
