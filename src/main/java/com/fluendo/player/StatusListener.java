@@ -19,11 +19,15 @@
 package com.fluendo.player;
 
 public interface StatusListener {
+  /** Called when the player state changes. */
   void onState(int newState);
 
+  /** Called when playback position changes due to a seek. */
   void onSeek(double position);
 
+  /** Called when an audio stream is detected. */
   void onAudio();
 
+  /** Called when subtitle parameters change. */
   void onSubtitles(int x, int y);
 }
