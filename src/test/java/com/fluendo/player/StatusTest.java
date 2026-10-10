@@ -175,4 +175,346 @@ class StatusTest {
 
     status.removeStatusListener(dummyListener);
   }
+
+  @Test
+  @DisplayName("Listeners: removed listener no longer receives callbacks")
+  void testRemoveStatusListener() {
+      AtomicInteger stateCalled = new AtomicInteger(-1);
+
+      StatusListener listener = new StatusListener() {
+          @Override
+          public void onState(int state) {
+              stateCalled.set(state);
+          }
+
+          @Override
+          public void onSeek(double position) {}
+
+          @Override
+          public void onAudio() {}
+
+          @Override
+          public void onSubtitles(int x, int y) {}
+      };
+
+      status.addStatusListener(listener);
+      status.removeStatusListener(listener);
+
+      status.notifyNewState(Status.STATE_PLAYING);
+
+      assertEquals(-1, stateCalled.get());
+  }
+
+  @Test
+  @DisplayName("Mouse: play button triggers state listener")
+  void testPlayButtonNotifiesListener() {
+      AtomicInteger stateCalled = new AtomicInteger(-1);
+
+      status.addStatusListener(new StatusListener() {
+          @Override
+          public void onState(int state) {
+              stateCalled.set(state);
+          }
+
+          @Override public void onSeek(double position) {}
+          @Override public void onAudio() {}
+          @Override public void onSubtitles(int x, int y) {}
+      });
+
+      status.setState(Status.STATE_STOPPED);
+
+      MouseEvent press =
+              new MouseEvent(dummyComponent,
+                      MouseEvent.MOUSE_PRESSED,
+                      System.currentTimeMillis(),
+                      0, 5, 5, 1, false);
+
+      MouseEvent release =
+              new MouseEvent(dummyComponent,
+                      MouseEvent.MOUSE_RELEASED,
+                      System.currentTimeMillis(),
+                      0, 5, 5, 1, false);
+
+      status.mousePressed(press);
+      status.mouseReleased(release);
+
+      assertEquals(Status.STATE_PLAYING, stateCalled.get());
+  }
+
+  @Test
+  @DisplayName("Mouse: stop button triggers state listener")
+  void testStopButtonNotifiesListener() {
+      AtomicInteger stateCalled = new AtomicInteger(-1);
+
+      status.addStatusListener(new StatusListener() {
+          @Override
+          public void onState(int state) {
+              stateCalled.set(state);
+          }
+
+          @Override public void onSeek(double position) {}
+          @Override public void onAudio() {}
+          @Override public void onSubtitles(int x, int y) {}
+      });
+
+      status.setState(Status.STATE_PLAYING);
+
+      int stopX = status.getHeight() + 5;
+
+      MouseEvent press =
+              new MouseEvent(dummyComponent,
+                      MouseEvent.MOUSE_PRESSED,
+                      System.currentTimeMillis(),
+                      0, stopX, 5, 1, false);
+
+      MouseEvent release =
+              new MouseEvent(dummyComponent,
+                      MouseEvent.MOUSE_RELEASED,
+                      System.currentTimeMillis(),
+                      0, stopX, 5, 1, false);
+
+      status.mousePressed(press);
+      status.mouseReleased(release);
+
+      assertEquals(Status.STATE_STOPPED, stateCalled.get());
+  }
+
+  @Test
+  @DisplayName("Listeners: all listeners receive notifications")
+  void testMultipleListeners() {
+      AtomicInteger first = new AtomicInteger();
+      AtomicInteger second = new AtomicInteger();
+
+      status.addStatusListener(new StatusListener() {
+          @Override
+          public void onState(int state) {
+              first.set(state);
+          }
+
+          @Override public void onSeek(double position) {}
+          @Override public void onAudio() {}
+          @Override public void onSubtitles(int x, int y) {}
+      });
+
+      status.addStatusListener(new StatusListener() {
+          @Override
+          public void onState(int state) {
+              second.set(state);
+          }
+
+          @Override public void onSeek(double position) {}
+          @Override public void onAudio() {}
+          @Override public void onSubtitles(int x, int y) {}
+      });
+
+      status.notifyNewState(Status.STATE_PLAYING);
+
+      assertEquals(Status.STATE_PLAYING, first.get());
+      assertEquals(Status.STATE_PLAYING, second.get());
+  }
+
+  @Test
+  @DisplayName("notifySeek forwards position")
+  void testNotifySeek() {
+      AtomicReference<Double> position = new AtomicReference<>();
+
+      status.addStatusListener(new StatusListener() {
+          @Override public void onState(int state) {}
+
+          @Override
+          public void onSeek(double value) {
+              position.set(value);
+          }
+
+          @Override public void onAudio() {}
+          @Override public void onSubtitles(int x, int y) {}
+      });
+
+      status.notifySeek(0.5);
+
+      assertEquals(0.5, position.get(), 0.001);
+  }
+
+  @Test
+  @DisplayName("setStartTime clamps negative values")
+  void testNegativeStartTime() {
+      assertDoesNotThrow(() -> status.setStartTime(-100));
+  }
+
+  @Test
+  @DisplayName("Byte duration zero does not crash")
+  void testZeroByteDuration() {
+      assertDoesNotThrow(() -> {
+          status.setDuration(-1);
+          status.setByteDuration(0);
+          status.setBytePosition(0);
+      });
+  }
+
+  @Test
+  @DisplayName("Mouse: audio button triggers listener")
+  void testAudioButtonClick() {
+      AtomicBoolean audioCalled = new AtomicBoolean(false);
+
+      status.addStatusListener(new StatusListener() {
+          @Override public void onState(int state) {}
+          @Override public void onSeek(double position) {}
+
+          @Override
+          public void onAudio() {
+              audioCalled.set(true);
+          }
+
+          @Override public void onSubtitles(int x, int y) {}
+      });
+
+      status.setHaveAudio(true);
+      status.setShowSpeaker(true);
+
+      int x = status.getWidth() - 6;
+      int y = status.getHeight() - 5;
+
+      MouseEvent press =
+          new MouseEvent(
+              dummyComponent,
+              MouseEvent.MOUSE_PRESSED,
+              System.currentTimeMillis(),
+              0,
+              x,
+              y,
+              1,
+              false);
+
+      MouseEvent release =
+          new MouseEvent(
+              dummyComponent,
+              MouseEvent.MOUSE_RELEASED,
+              System.currentTimeMillis(),
+              0,
+              x,
+              y,
+              1,
+              false);
+
+      status.mousePressed(press);
+      status.mouseReleased(release);
+
+      assertTrue(audioCalled.get());
+  }
+
+  @Test
+  @DisplayName("Mouse: subtitles button triggers listener")
+  void testSubtitleButtonClick() {
+      AtomicBoolean subtitleCalled = new AtomicBoolean(false);
+
+      status.addStatusListener(new StatusListener() {
+          @Override public void onState(int state) {}
+          @Override public void onSeek(double position) {}
+          @Override public void onAudio() {}
+
+          @Override
+          public void onSubtitles(int x, int y) {
+              subtitleCalled.set(true);
+          }
+      });
+
+      status.setHaveSubtitles(true);
+      status.setShowSubtitles(true);
+
+      int x = status.getWidth() - 10;
+      int y = 10;
+
+      MouseEvent press =
+          new MouseEvent(dummyComponent,
+              MouseEvent.MOUSE_PRESSED,
+              System.currentTimeMillis(),
+              0, x, y, 1, false);
+
+      MouseEvent release =
+          new MouseEvent(dummyComponent,
+              MouseEvent.MOUSE_RELEASED,
+              System.currentTimeMillis(),
+              0, x, y, 1, false);
+
+      status.mousePressed(press);
+      status.mouseReleased(release);
+
+      assertTrue(subtitleCalled.get());
+  }
+
+  @Test
+  @DisplayName("Play button toggles playing to paused")
+  void testPlayToPauseTransition() {
+      AtomicInteger stateCalled = new AtomicInteger();
+
+      status.addStatusListener(new StatusListener() {
+          @Override
+          public void onState(int state) {
+              stateCalled.set(state);
+          }
+
+          @Override public void onSeek(double position) {}
+          @Override public void onAudio() {}
+          @Override public void onSubtitles(int x, int y) {}
+      });
+
+      status.setState(Status.STATE_PLAYING);
+
+      MouseEvent press =
+          new MouseEvent(dummyComponent,
+              MouseEvent.MOUSE_PRESSED,
+              System.currentTimeMillis(),
+              0, 5, 5, 1, false);
+
+      MouseEvent release =
+          new MouseEvent(dummyComponent,
+              MouseEvent.MOUSE_RELEASED,
+              System.currentTimeMillis(),
+              0, 5, 5, 1, false);
+
+      status.mousePressed(press);
+      status.mouseReleased(release);
+
+      assertEquals(Status.STATE_PAUSED, stateCalled.get());
+  }
+
+  @Test
+  @DisplayName("Seeking notifies listener")
+  void testSeekNotifiesListener() {
+      AtomicReference<Double> seekPosition = new AtomicReference<>();
+
+      status.addStatusListener(new StatusListener() {
+          @Override public void onState(int state) {}
+
+          @Override
+          public void onSeek(double position) {
+              seekPosition.set(position);
+          }
+
+          @Override public void onAudio() {}
+          @Override public void onSubtitles(int x, int y) {}
+      });
+
+      status.setSeekable(true);
+      status.setState(Status.STATE_PLAYING);
+
+      // Click somewhere in the seek bar
+
+      MouseEvent press =
+          new MouseEvent(dummyComponent,
+              MouseEvent.MOUSE_PRESSED,
+              System.currentTimeMillis(),
+              0, 120, 25, 1, false);
+
+      MouseEvent release =
+          new MouseEvent(dummyComponent,
+              MouseEvent.MOUSE_RELEASED,
+              System.currentTimeMillis(),
+              0, 120, 25, 1, false);
+
+      status.mousePressed(press);
+      status.mouseReleased(release);
+
+      assertNotNull(seekPosition.get());
+  }
 }

@@ -38,10 +38,10 @@ public class Status extends Component implements MouseListener, MouseMotionListe
   private int bufferPercent;
   private boolean buffering;
   private String message;
-  private Rectangle r;
+  private Rectangle bounds;
   private final Component component;
   private final Font font = new Font("SansSerif", Font.PLAIN, 10);
-  private Font boldFont = null;
+  private Font boldFont;
   private boolean haveAudio;
   private boolean haveSubtitles;
   private boolean havePercent;
@@ -50,7 +50,7 @@ public class Status extends Component implements MouseListener, MouseMotionListe
   private boolean showSpeaker;
   private boolean showSubtitles;
   private boolean clearedScreen;
-  private boolean ignoreBasetime = false;
+  private boolean ignoreBasetime;
 
   private static final int NONE = -1;
   private static final int BUTTON1 = 0;
@@ -76,14 +76,14 @@ public class Status extends Component implements MouseListener, MouseMotionListe
   public static final int STATE_PLAYING = 2;
 
   private int state = STATE_STOPPED;
-  private double position = 0;
+  private double position;
   private long time;
-  private double startTime = 0;
+  private double startTime;
   private double duration;
   private long byteDuration;
   private long bytePosition;
 
-  private final String speaker =
+  private static final String SPEAKER_IMAGE_DATA =
       "\0\0\0\0\0\357\0\0\357U\27"
           + "\36\0\0\0\0\357\357\0\0"
           + "\0\357U\30\0\0\0\357\0\357"
@@ -103,25 +103,29 @@ public class Status extends Component implements MouseListener, MouseMotionListe
 
   private final List<StatusListener> listeners = new ArrayList<>();
 
-  public Image createImage(Component comp, String s, int w, int h) {
-    int[] pixels = new int[w * h];
-    for (int i = 0; i < w * h; i++) {
-      pixels[i] = 0xff000000 | (s.charAt(i) << 16) | (s.charAt(i) << 8) | (s.charAt(i));
+  private static Image createImage(Component component, String imageData, int width, int height) {
+    int[] pixels = new int[width * height];
+    for (int i = 0; i < width * height; i++) {
+      pixels[i] =
+          0xff000000
+              | (imageData.charAt(i) << 16)
+              | (imageData.charAt(i) << 8)
+              | imageData.charAt(i);
     }
-    return comp.getToolkit().createImage(new MemoryImageSource(w, h, pixels, 0, w));
+    return component.getToolkit().createImage(new MemoryImageSource(width, height, pixels, 0, width));
   }
 
   public Status(Component comp) {
     component = comp;
-    speakerImg = createImage(comp, speaker, SPEAKER_WIDTH, SPEAKER_HEIGHT);
+    speakerImg = createImage(comp, SPEAKER_IMAGE_DATA, SPEAKER_WIDTH, SPEAKER_HEIGHT);
   }
 
-  public void addStatusListener(StatusListener l) {
-    listeners.add(l);
+  public void addStatusListener(StatusListener listener) {
+    listeners.add(listener);
   }
 
-  public void removeStatusListener(StatusListener l) {
-    listeners.remove(l);
+  public void removeStatusListener(StatusListener listener) {
+    listeners.remove(listener);
   }
 
   public void notifyNewState(int newState) {
@@ -155,23 +159,23 @@ public class Status extends Component implements MouseListener, MouseMotionListe
 
   private void paintBox(Graphics g) {
     g.setColor(Color.darkGray);
-    g.drawRect(0, 0, r.width - 1, r.height - 1);
+    g.drawRect(0, 0, bounds.width - 1, bounds.height - 1);
     g.setColor(Color.black);
-    g.fillRect(1, 1, r.width - 2, r.height - 2);
+    g.fillRect(1, 1, bounds.width - 2, bounds.height - 2);
   }
 
   private void paintPercent(Graphics g) {
     if (havePercent) {
       g.setColor(Color.white);
-      g.drawString(bufferPercent + "%", r.width - 26 - speakerWidth - subtitlesWidth, r.height - 2);
+      g.drawString(bufferPercent + "%", bounds.width - 26 - speakerWidth - subtitlesWidth, bounds.height - 2);
     }
   }
 
   private void paintButton1(Graphics g) {
     int x = 1;
     int y = 1;
-    int w = r.height - 2;
-    int h = r.height - 2;
+    int w = bounds.height - 2;
+    int h = bounds.height - 2;
     g.setColor(Color.darkGray);
     g.drawRect(x, y, w, h);
     g.setColor(colors[BUTTON1]);
@@ -193,43 +197,43 @@ public class Status extends Component implements MouseListener, MouseMotionListe
   }
 
   private void paintButton2(Graphics g) {
-    int x = r.height + 1;
+    int x = bounds.height + 1;
     int y = 1;
-    int w = r.height - 2;
-    int h = r.height - 2;
+    int w = bounds.height - 2;
+    int h = bounds.height - 2;
     g.setColor(Color.darkGray);
     g.drawRect(x, y, w, h);
     g.setColor(colors[BUTTON2]);
     g.fillRect(x + 1, y + 1, w - 1, h - 1);
     g.setColor(Color.white);
-    g.fillRect(r.height + (int) (w * .4), (int) (w * .4), (int) (w * .5), (int) (w * .5));
+    g.fillRect(bounds.height + (int) (w * .4), (int) (w * .4), (int) (w * .5), (int) (w * .5));
   }
 
   private void paintMessage(Graphics g, int pos) {
     if (message != null) {
       g.setColor(Color.white);
-      g.drawString(message, pos, r.height - 2);
+      g.drawString(message, pos, bounds.height - 2);
     }
   }
 
   private void paintBuffering(Graphics g, int pos) {
     g.setColor(Color.white);
-    g.drawString("Buffering", pos, r.height - 2);
+    g.drawString("Buffering", pos, bounds.height - 2);
   }
 
   private Rectangle getSeekBarRect() {
     return new Rectangle(
-        r.height * 2 + 1,
+        bounds.height * 2 + 1,
         2,
-        r.width - SEEK_TIME_GAP - TIME_WIDTH - speakerWidth - subtitlesWidth - (r.height * 2),
-        r.height - 4);
+        bounds.width - SEEK_TIME_GAP - TIME_WIDTH - speakerWidth - subtitlesWidth - (bounds.height * 2),
+        bounds.height - 4);
   }
 
   private Rectangle getThumbRect() {
     Rectangle seekRect = getSeekBarRect();
     int availableWidth = seekRect.width - THUMB_WIDTH;
     int pos = (int) (availableWidth * position);
-    return new Rectangle(pos + seekRect.x, 1, THUMB_WIDTH, r.height - 2);
+    return new Rectangle(pos + seekRect.x, 1, THUMB_WIDTH, bounds.height - 2);
   }
 
   private void paintSeekBar(Graphics g) {
@@ -256,37 +260,37 @@ public class Status extends Component implements MouseListener, MouseMotionListe
     long min = t / 60;
     long hour = min / 60;
     min %= 60;
-    r = getBounds();
-    int end = r.width - speakerWidth - subtitlesWidth - TIME_WIDTH;
+    this.bounds = getBounds();
+    int end = bounds.width - speakerWidth - subtitlesWidth - TIME_WIDTH;
     g.setColor(Color.white);
     g.drawString(
         hour + ":" + (min < 10 ? "0" + min : min) + ":" + (sec < 10 ? "0" + sec : sec),
         end,
-        r.height - 2);
+        bounds.height - 2);
   }
 
   private void paintSpeaker(Graphics g) {
     if (haveAudio) {
       g.drawImage(
           speakerImg,
-          r.width - SPEAKER_WIDTH - subtitlesWidth,
-          r.height - SPEAKER_HEIGHT - 1,
+          bounds.width - SPEAKER_WIDTH - subtitlesWidth,
+          bounds.height - SPEAKER_HEIGHT - 1,
           null);
     }
   }
 
   private Rectangle getSubtitlesBounds() {
-    int x = r.width - subtitlesWidth + 1;
+    int x = bounds.width - subtitlesWidth + 1;
     int y = 1;
-    int w = r.height * 3 / 2 - 2;
-    int h = r.height - 2;
+    int w = bounds.height * 3 / 2 - 2;
+    int h = bounds.height - 2;
     return new Rectangle(x, y, w, h);
   }
 
   private void paintSubtitles(Graphics g) {
     if (haveSubtitles) {
       Rectangle sb = getSubtitlesBounds();
-      int fontHeight = r.height - 2;
+      int fontHeight = bounds.height - 2;
       g.setColor(Color.darkGray);
       g.drawRect(sb.x, sb.y, sb.width, sb.height);
       g.setColor(colors[SUBTITLES]);
@@ -309,15 +313,15 @@ public class Status extends Component implements MouseListener, MouseMotionListe
   @Override
   public void paint(Graphics g) {
     if (!isVisible() && clearedScreen) return;
-    r = getBounds();
+    this.bounds = getBounds();
     if (!isVisible() && !clearedScreen) {
-      g.clearRect(r.x, r.y, r.width, r.height);
+      g.clearRect(bounds.x, bounds.y, bounds.width, bounds.height);
       clearedScreen = true;
       return;
     }
     clearedScreen = false;
     int pos;
-    Image img = component.createImage(r.width, r.height);
+    Image img = component.createImage(bounds.width, bounds.height);
     if (img == null) return;
     Graphics g2 = img.getGraphics();
     if (g2 == null) return;
@@ -328,9 +332,9 @@ public class Status extends Component implements MouseListener, MouseMotionListe
     }
     if (!live) {
       paintButton2(g2);
-      pos = r.height * 2;
+      pos = bounds.height * 2;
     } else {
-      pos = r.height;
+      pos = bounds.height;
     }
     if (buffering) {
       paintPercent(g2);
@@ -348,16 +352,16 @@ public class Status extends Component implements MouseListener, MouseMotionListe
     if (showSubtitles) {
       paintSubtitles(g2);
     }
-    g.drawImage(img, r.x, r.y, null);
+    g.drawImage(img, bounds.x, bounds.y, null);
     img.flush();
   }
 
-  public void setBufferPercent(boolean buffering, int bp) {
+  public void setBufferPercent(boolean buffering, int bufferPercent) {
     boolean changed = this.buffering != buffering;
-    changed |= this.bufferPercent != bp;
+    changed |= this.bufferPercent != bufferPercent;
     if (changed) {
       this.buffering = buffering;
-      this.bufferPercent = bp;
+      this.bufferPercent = bufferPercent;
       component.repaint();
     }
   }
@@ -414,92 +418,104 @@ public class Status extends Component implements MouseListener, MouseMotionListe
     }
   }
 
-  public void setMessage(String m) {
-    message = m;
+  public void setMessage(String message) {
+    this.message = message;
     component.repaint();
   }
 
-  public void setHaveAudio(boolean a) {
-    haveAudio = a;
+  public void setHaveAudio(boolean hasAudio) {
+    this.haveAudio = hasAudio;
     component.repaint();
   }
 
-  public void setHaveSubtitles(boolean a) {
-    haveSubtitles = a;
-    subtitlesWidth = showSubtitles && haveSubtitles ? r.height * 3 / 2 : 0;
+  public void setHaveSubtitles(boolean hasSubtitles) {
+    this.haveSubtitles = hasSubtitles;
+    subtitlesWidth =
+        showSubtitles && haveSubtitles && bounds != null
+            ? bounds.height * 3 / 2
+            : 0;
     component.repaint();
   }
 
-  public void setHavePercent(boolean p) {
-    havePercent = p;
+  public void setHavePercent(boolean havePercent) {
+    this.havePercent = havePercent;
     component.repaint();
   }
 
-  public void setSeekable(boolean s) {
-    seekable = s;
+  public void setSeekable(boolean seekable) {
+    this.seekable = seekable;
     component.repaint();
   }
 
-  public void setLive(boolean l) {
-    live = l;
+  public void setLive(boolean live) {
+    this.live = live;
     component.repaint();
   }
 
-  public void setShowSpeaker(boolean s) {
-    showSpeaker = s;
-    speakerWidth = s ? SPEAKER_WIDTH : 0;
+  public void setShowSpeaker(boolean showSpeaker) {
+    this.showSpeaker = showSpeaker;
+    speakerWidth = showSpeaker ? SPEAKER_WIDTH : 0;
     component.repaint();
   }
 
-  public void setShowSubtitles(boolean s) {
-    showSubtitles = s;
-    subtitlesWidth = showSubtitles && haveSubtitles ? r.height * 3 / 2 : 0;
+  public void setShowSubtitles(boolean showSubtitles) {
+    this.showSubtitles = showSubtitles;
+    subtitlesWidth =
+        showSubtitles && haveSubtitles && bounds != null
+            ? bounds.height * 3 / 2
+            : 0;
     component.repaint();
   }
 
-  public void setState(int aState) {
-    if (state != aState) {
-      state = aState;
+  public void setState(int newState) {
+    if (state != newState) {
+      state = newState;
       component.repaint();
     }
   }
 
   private boolean intersectButton1(MouseEvent e) {
-    if (r == null) return false;
-    return (e.getX() >= 0 && e.getX() <= r.height - 2 && e.getY() > 0 && e.getY() <= r.height - 2);
+    if (bounds == null) return false;
+    return (e.getX() >= 0 && e.getX() <= bounds.height - 2 && e.getY() > 0 && e.getY() <= bounds.height - 2);
   }
 
   private boolean intersectButton2(MouseEvent e) {
-    if (r == null) return false;
-    return (e.getX() >= r.height
-        && e.getX() <= r.height + r.height - 2
-        && e.getY() > 0
-        && e.getY() <= r.height - 2);
-  }
-
-  private boolean intersectAudio(MouseEvent e) {
-    return false;
-  }
-
-  private boolean intersectSubtitles(MouseEvent e) {
-    if (r == null) return false;
-    Rectangle bounds = getSubtitlesBounds();
-    return (e.getX() >= bounds.x
-        && e.getX() <= bounds.x + bounds.width - 2
+    if (bounds == null) return false;
+    return (e.getX() >= bounds.height
+        && e.getX() <= bounds.height + bounds.height - 2
         && e.getY() > 0
         && e.getY() <= bounds.height - 2);
   }
 
+  private Rectangle getAudioBounds() {
+      if (bounds == null) {
+          return new Rectangle();
+      }
+
+      return new Rectangle(
+          bounds.width - SPEAKER_WIDTH - subtitlesWidth,
+          bounds.height - SPEAKER_HEIGHT - 1,
+          SPEAKER_WIDTH,
+          SPEAKER_HEIGHT);
+  }
+
+  private boolean intersectAudio(MouseEvent e) {
+      return getAudioBounds().contains(e.getPoint());
+  }
+
   private boolean intersectSeeker(MouseEvent e) {
-    r = getBounds();
-    Rectangle tr = getThumbRect();
-    return tr.contains(e.getPoint());
+      bounds = getBounds();
+      return getThumbRect().contains(e.getPoint());
   }
 
   private boolean intersectSeekbar(MouseEvent e) {
-    r = getBounds();
-    Rectangle sr = getSeekBarRect();
-    return sr.contains(e.getPoint());
+      bounds = getBounds();
+      return getSeekBarRect().contains(e.getPoint());
+  }
+
+  private boolean intersectSubtitles(MouseEvent e) {
+      return bounds != null
+          && getSubtitlesBounds().contains(e.getPoint());
   }
 
   private int findComponent(MouseEvent e) {
