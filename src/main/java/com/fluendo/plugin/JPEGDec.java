@@ -59,10 +59,12 @@ public class JPEGDec extends Element {
 
         @Override
         protected int chainFunc(com.fluendo.jst.Buffer buf) {
-          int ret;
-          Image img = null;
+          int result;
 
-          img = toolkit.createImage(buf.data, buf.offset, buf.length);
+          Image img = toolkit.createImage(
+              buf.data,
+              buf.offset,
+              buf.length);
           if (img != null) {
             int imgWidth;
             int imgHeight;
@@ -94,14 +96,14 @@ public class JPEGDec extends Element {
             buf.object = img;
             buf.caps = caps;
 
-            ret = srcpad.push(buf);
+            result = srcpad.push(buf);
           } else {
             System.out.println("could not decode jpeg image");
             Debug.log(Debug.WARNING, "could not decode jpeg image, continuing");
             buf.free();
-            ret = OK;
+            result = OK;
           }
-          return ret;
+          return result;
         }
       };
 
@@ -116,19 +118,13 @@ public class JPEGDec extends Element {
 
   @Override
   protected int changeState(int transition) {
-    int res;
 
-    switch (transition) {
-      case STOP_PAUSE -> {
-        width = -1;
-        height = -1;
-      }
-      default -> {}
+    if (transition == STOP_PAUSE) {
+      width = -1;
+      height = -1;
     }
 
-    res = super.changeState(transition);
-
-    return res;
+    return super.changeState(transition);
   }
 
   @Override
