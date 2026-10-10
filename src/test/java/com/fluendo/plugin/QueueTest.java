@@ -54,4 +54,15 @@ public class QueueTest {
     assertEquals(1, Queue.LEAK_UPSTREAM);
     assertEquals(2, Queue.LEAK_DOWNSTREAM);
   }
+
+  @Test
+  public void testPadsExist() {
+      assertNotNull(queue.getPad("src"));
+      assertNotNull(queue.getPad("sink"));
+  }
+
+  @Test
+  public void testInvalidProperty() {
+      assertFalse(queue.setProperty("unknown", "value"));
+  }
 }

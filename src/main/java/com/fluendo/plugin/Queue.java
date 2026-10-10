@@ -128,7 +128,7 @@ public class Queue extends Element {
         @Override
         protected void taskFunc() {
           java.lang.Object obj;
-          int res;
+          int result;
 
           synchronized (queue) {
             if (srcResult != OK) {
@@ -151,7 +151,7 @@ public class Queue extends Element {
 
           if (obj instanceof Event event) {
             pushEvent(event);
-            res = OK;
+            result = OK;
             if (event.getType() == Event.Type.EOS) {
               postMessage(Message.newStreamStatus(this, false, OK, "flow stopped, EOS"));
               pauseTask();
@@ -167,7 +167,7 @@ public class Queue extends Element {
             size -= buf.length;
 
             Debug.log(Debug.DEBUG, parent.getName() + " >>> " + buf);
-            res = push(buf);
+            result = push(buf);
             if (maxSize == -1) {
               Debug.log(
                   Debug.DEBUG, parent.getName() + " count = " + queue.size() + "/" + maxBuffers);
@@ -176,12 +176,12 @@ public class Queue extends Element {
             }
           }
           synchronized (queue) {
-            if (res != OK) {
-              srcResult = res;
-              if (isFlowFatal(res)) {
+            if (result != OK) {
+              srcResult = result;
+              if (isFlowFatal(result)) {
                 pushEvent(Event.newEOS());
               }
-              postMessage(Message.newStreamStatus(this, false, res, "flow stopped"));
+              postMessage(Message.newStreamStatus(this, false, result, "flow stopped"));
               pauseTask();
             }
             updateBuffering();
@@ -190,7 +190,7 @@ public class Queue extends Element {
 
         @Override
         protected boolean activateFunc(int mode) {
-          boolean res = true;
+          boolean result = true;
 
           switch (mode) {
             case MODE_NONE -> {
@@ -205,7 +205,7 @@ public class Queue extends Element {
                 postMessage(Message.newBuffering(this, false, 0));
               }
               postMessage(Message.newStreamStatus(this, false, Pad.WRONG_STATE, "stopping"));
-              res = stopTask();
+              result = stopTask();
             }
             case MODE_PUSH -> {
               eosReached = false;
@@ -222,17 +222,17 @@ public class Queue extends Element {
                   postMessage(Message.newBuffering(this, true, 0));
                 }
                 postMessage(Message.newStreamStatus(this, true, Pad.OK, "activating"));
-                res = startTask("cortado-Queue-Stream-" + Debug.genId());
+                result = startTask("cortado-Queue-Stream-" + Debug.genId());
               }
             }
             default -> {
               synchronized (queue) {
                 srcResult = WRONG_STATE;
               }
-              res = false;
+              result = false;
             }
           }
-          return res;
+          return result;
         }
       };
 
