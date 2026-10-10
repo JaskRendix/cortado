@@ -362,7 +362,7 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
     return false;
   }
 
-  protected boolean isEOS() {
+  protected boolean eosReached() {
     com.fluendo.jst.Object obj;
 
     for (Enumeration<Element> e = enumerateSinks(); e.hasMoreElements(); ) {
@@ -377,14 +377,14 @@ public class Pipeline extends com.fluendo.jst.Element implements BusSyncHandler 
     switch (message.getType()) {
       case Message.EOS:
         {
-          boolean isEOS;
+          boolean eosReached;
 
           synchronized (this) {
             Debug.log(Debug.INFO, this + " got EOS from sink: " + message.getSrc());
             addOrReplaceMessage(message, Message.EOS);
-            isEOS = isEOS();
+            eosReached = eosReached();
           }
-          if (isEOS) {
+          if (eosReached) {
             Debug.log(Debug.INFO, "all sinks posted EOS " + this);
             postMessage(Message.newEOS(this));
           }

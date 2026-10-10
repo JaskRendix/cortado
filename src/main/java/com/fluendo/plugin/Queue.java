@@ -39,7 +39,7 @@ public class Queue extends Element {
   private int srcResult = Pad.WRONG_STATE;
   private int size;
   private boolean isBuffering;
-  private boolean isEOS;
+  private boolean eosReached;
   private boolean headNeedsDiscont = false;
   private boolean tailNeedsDiscont = false;
 
@@ -77,7 +77,7 @@ public class Queue extends Element {
     if (!isBuffer || srcResult != Pad.OK) {
       return;
     }
-    if (isEOS) {
+    if (eosReached) {
       if (isBuffering) {
         isBuffering = false;
         postMessage(Message.newBuffering(this, false, 0));
@@ -208,7 +208,7 @@ public class Queue extends Element {
               res = stopTask();
             }
             case MODE_PUSH -> {
-              isEOS = false;
+              eosReached = false;
               synchronized (queue) {
                 srcResult = OK;
                 /*
@@ -259,7 +259,7 @@ public class Queue extends Element {
             }
             case FLUSH_STOP -> {
               srcpad.pushEvent(event);
-              isEOS = false;
+              eosReached = false;
               synchronized (queue) {
                 clearQueue();
                 srcResult = OK;
@@ -274,7 +274,7 @@ public class Queue extends Element {
               doQueue = false;
             }
             case EOS -> {
-              isEOS = true;
+              eosReached = true;
               Debug.log(Debug.INFO, "got EOS: " + this);
               if (isBuffer) {
                 if (isBuffering) {

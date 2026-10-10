@@ -22,7 +22,7 @@ import com.fluendo.utils.Debug;
 
 public abstract class Sink extends Element {
   private final java.lang.Object prerollLock = new java.lang.Object();
-  private boolean isEOS;
+  private boolean eosReached;
   private boolean flushing;
   private boolean havePreroll;
   private boolean needPreroll;
@@ -41,7 +41,7 @@ public abstract class Sink extends Element {
       new Pad(Pad.SINK, "sink") {
         private int finishPreroll(Buffer buf) {
           synchronized (prerollLock) {
-            int res = OK;
+            int result = OK;
             Sink sink = (Sink) parent;
 
             if (isFlushing()) {
@@ -51,7 +51,7 @@ public abstract class Sink extends Element {
             if (needPreroll) {
               havePreroll = true;
               try {
-                res = preroll(buf);
+                result = preroll(buf);
               } catch (Throwable t) {
                 postMessage(Message.newError(this, "preroll exception: " + t.getMessage()));
                 return Pad.ERROR;
@@ -138,7 +138,7 @@ public abstract class Sink extends Element {
               return WRONG_STATE;
             }
 
-            return res;
+            return result;
           }
         }
 
@@ -156,7 +156,7 @@ public abstract class Sink extends Element {
                 }
               }
               synchronized (prerollLock) {
-                sink.isEOS = false;
+                sink.eosReached = false;
                 needPreroll = true;
                 prerollLock.notify();
                 havePreroll = false;
@@ -183,7 +183,7 @@ public abstract class Sink extends Element {
             }
             case EOS -> {
               synchronized (prerollLock) {
-                isEOS = true;
+                eosReached = true;
                 Debug.log(Debug.INFO, this + " got EOS");
                 postMessage(Message.newEOS(parent));
               }
@@ -196,7 +196,7 @@ public abstract class Sink extends Element {
 
         @Override
         protected int chainFunc(Buffer buf) {
-          int res;
+          int result;
           WaitStatus status;
           long time;
 
@@ -222,9 +222,9 @@ public abstract class Sink extends Element {
           buf.setFlag(com.fluendo.jst.Buffer.FLAG_DISCONT, discont);
           discont = false;
 
-          if ((res = finishPreroll(buf)) != Pad.OK) {
+          if ((result = finishPreroll(buf)) != Pad.OK) {
             Debug.debug(parent.getName() + " " + time + " >>> PREROLL DROP");
-            return res;
+            return result;
           }
 
           Debug.debug(parent.getName() + " sync " + time);
@@ -235,22 +235,22 @@ public abstract class Sink extends Element {
               (switchStatus == WaitStatus.LATE && (maxLateness == -1 || status.jitter() <= maxLateness))) {
             try {
               Debug.debug(parent.getName() + " >>> " + time);
-              res = render(buf);
+              result = render(buf);
             } catch (Throwable t) {
               postMessage(Message.newError(this, "render exception: " + t.getMessage()));
-              res = Pad.ERROR;
+              result = Pad.ERROR;
             }
           } else if (switchStatus == WaitStatus.LATE) {
             Debug.debug(parent.getName() + " " + time + " >>> LATE, DROPPED");
-            res = OK;
+            result = OK;
           } else {
             Debug.debug(parent.getName() + " " + time + " >>> SYNC DROP");
-            res = Pad.OK;
+            result = Pad.OK;
           }
 
           buf.free();
 
-          return res;
+          return result;
         }
 
         @Override
@@ -270,7 +270,7 @@ public abstract class Sink extends Element {
               havePreroll = false;
               this.flushing = true;
             }
-            isEOS = false;
+            eosReached = false;
           } else {
             this.flushing = false;
           }
@@ -287,35 +287,35 @@ public abstract class Sink extends Element {
   }
 
   protected WaitStatus doSync(long time) {
-    WaitStatus ret = new WaitStatus();
-    Clock.ClockID id = null;
+    WaitStatus waitStatus = new WaitStatus();
+    Clock.ClockID clockId = null;
 
     synchronized (this) {
       if (flushing) {
-        return ret.withStatus(WaitStatus.UNSCHEDULED);
+        return waitStatus.withStatus(WaitStatus.UNSCHEDULED);
       }
 
       if (time == -1) {
-        return ret.withStatus(WaitStatus.OK);
+        return waitStatus.withStatus(WaitStatus.OK);
       }
 
       time = time - segStart + baseTime;
 
       if (clock != null) {
-        id = clockID = clock.newSingleShotID(time);
+        clockId = clockID = clock.newSingleShotID(time);
       }
     }
 
-    if (id != null) {
-      ret = id.waitID();
+    if (clockId != null) {
+      waitStatus = clockId.waitID();
     } else {
-      ret = ret.withStatus(WaitStatus.OK);
+      waitStatus = waitStatus.withStatus(WaitStatus.OK);
     }
 
     synchronized (this) {
       clockID = null;
     }
-    return ret;
+    return waitStatus;
   }
 
   protected boolean setCapsFunc(Caps caps) {
@@ -369,11 +369,11 @@ public abstract class Sink extends Element {
   @Override
   protected int changeState(int transition) {
     int result = SUCCESS;
-    int presult;
+    int parentResult;
 
     switch (transition) {
       case STOP_PAUSE -> {
-        this.isEOS = false;
+        eosReached = false;
         synchronized (prerollLock) {
           needPreroll = true;
           havePreroll = false;
@@ -382,11 +382,10 @@ public abstract class Sink extends Element {
       }
       case PAUSE_PLAY -> {
         synchronized (prerollLock) {
+          needPreroll = false;
+
           if (havePreroll) {
-            needPreroll = false;
-            prerollLock.notify();
-          } else {
-            needPreroll = false;
+              prerollLock.notify();
           }
         }
       }
@@ -398,10 +397,10 @@ public abstract class Sink extends Element {
       default -> {}
     }
 
-    presult = super.changeState(transition);
-    if (presult == FAILURE) {
+    parentResult = super.changeState(transition);
+    if (parentResult == FAILURE) {
       Debug.debug(this + " super state change failed");
-      return presult;
+      return parentResult;
     }
 
     switch (transition) {
@@ -415,7 +414,7 @@ public abstract class Sink extends Element {
             Debug.debug(this + " unschedule clockID: " + clockID);
             clockID.unschedule();
           }
-          checkEOS = this.isEOS;
+          checkEOS = eosReached;
           Debug.debug(this + " checkEOS: " + checkEOS);
         }
         synchronized (prerollLock) {
@@ -434,12 +433,12 @@ public abstract class Sink extends Element {
   }
 
   public synchronized boolean setProperty(String name, java.lang.Object value) {
-    boolean res = true;
+    boolean result = true;
     if (name.equals("max-lateness")) {
       maxLateness = Long.parseLong((String) value);
     } else {
-      res = false;
+      result = false;
     }
-    return res;
+    return result;
   }
 }

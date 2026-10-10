@@ -1,6 +1,7 @@
 package com.fluendo.jst;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -129,5 +130,60 @@ public class SinkTest {
   @Test
   void testSetPropertyUnknownReturnsFalse() {
     assertFalse(sink.setProperty("unknown", "value"));
+  }
+
+  @Test
+  void testQueryPositionPausedState() {
+      sink.currentState = Element.PAUSE;
+      sink.pauseTime = 100;
+      sink.segPosition = 200;
+      sink.segStart = 300;
+
+      when(query.getType()).thenReturn(Query.POSITION);
+      when(query.parsePositionFormat()).thenReturn(Format.TIME);
+
+      assertTrue(sink.query(query));
+
+      verify(query).setPosition(Format.TIME, 600);
+  }
+
+  @Test
+  void testQueryPositionDelegatesForNonTimeFormat() {
+      Pad peer = mock(Pad.class);
+      Pad pad = spy(sink.sinkpad);
+
+      doReturn(peer).when(pad).getPeer();
+      when(peer.query(query)).thenReturn(true);
+
+      sink.sinkpad = pad;
+
+      when(query.getType()).thenReturn(Query.POSITION);
+      when(query.parsePositionFormat()).thenReturn(Format.BYTES);
+
+      assertTrue(sink.query(query));
+
+      verify(peer).query(query);
+  }
+
+  @Test
+  void testDoSyncUnknownTimestamp() {
+      WaitStatus status = sink.doSync(-1);
+
+      assertEquals(WaitStatus.OK, status.status());
+  }
+
+  @Test
+  void testStopPauseReturnsAsync() {
+      int result =
+          sink.changeState(Element.STOP_PAUSE);
+
+      assertEquals(Element.ASYNC, result);
+  }
+
+  @Test
+  void testInvalidMaxLatenessValue() {
+      assertThrows(
+          NumberFormatException.class,
+          () -> sink.setProperty("max-lateness", "abc"));
   }
 }

@@ -129,9 +129,9 @@ public class PipelineTestSuite {
     Message m1 = Message.newEOS(s1);
     Message m2 = Message.newEOS(s2);
     p.handleSyncMessage(m1);
-    assertFalse(p.isEOS());
+    assertFalse(p.eosReached());
     p.handleSyncMessage(m2);
-    assertTrue(p.isEOS());
+    assertTrue(p.eosReached());
   }
 
   @Test
@@ -143,7 +143,7 @@ public class PipelineTestSuite {
     Message m2 = Message.newEOS(s);
     p.handleSyncMessage(m1);
     p.handleSyncMessage(m2);
-    assertTrue(p.isEOS());
+    assertTrue(p.eosReached());
   }
 
   @Test
