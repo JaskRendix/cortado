@@ -28,10 +28,8 @@ import java.util.List;
 
 /* This element renders a Kate stream on incoming video */
 public class KateOverlay extends Overlay {
-  private Font font = null;
-  private String text = null;
   private final Renderer tr = new Renderer();
-  private Dimension imageDimension = null;
+  private Dimension imageDimension;
 
   /* This class allows lazy rendering, which may not even happen
   if the buffer is late, saving cycles, and ensuring buffers are

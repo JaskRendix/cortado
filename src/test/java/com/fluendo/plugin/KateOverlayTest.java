@@ -138,4 +138,11 @@ class KateOverlayTest {
         int off,
         int scansize) {}
   }
+
+  @Test
+  void testPadsExist() {
+      assertNotNull(kateOverlay.getPad("videosink"));
+      assertNotNull(kateOverlay.getPad("videosrc"));
+      assertNotNull(kateOverlay.getPad("katesink"));
+  }
 }
