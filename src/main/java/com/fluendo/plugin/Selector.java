@@ -37,11 +37,11 @@ public class Selector extends Element {
         /** Pushes the event to every sink. */
         @Override
         protected boolean eventFunc(Event event) {
-          boolean ret = true;
+          boolean result = true;
           for (Pad sink : sinks) {
-            ret &= sink.pushEvent(event);
+            result &= sink.pushEvent(event);
           }
-          return ret;
+          return result;
         }
       };
 

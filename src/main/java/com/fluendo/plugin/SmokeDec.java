@@ -64,7 +64,7 @@ public class SmokeDec extends Element {
 
         @Override
         protected int chainFunc(com.fluendo.jst.Buffer buf) {
-          int ret;
+          int result;
 
           BufferedImage img = smoke.decode(buf.data, buf.offset, buf.length);
 
@@ -87,15 +87,15 @@ public class SmokeDec extends Element {
             buf.object = img;
             buf.caps = caps;
 
-            ret = srcPad.push(buf);
+            result = srcPad.push(buf);
           } else {
             if ((smoke.getFlags() & SmokeCodec.KEYFRAME) != 0) {
               LOGGER.warning("could not decode jpeg image");
             }
             buf.free();
-            ret = OK;
+            result = OK;
           }
-          return ret;
+          return result;
         }
       };
 

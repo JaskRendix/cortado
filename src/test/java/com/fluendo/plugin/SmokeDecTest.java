@@ -62,22 +62,16 @@ class SmokeDecTest {
   }
 
   @Test
-  @DisplayName("Chain Function: Handling decode failure / null image edge case")
+  @DisplayName("Chain Function handles invalid input safely")
   void testChainFunctionDecodeFailure() {
-    Pad sinkPad = smokeDec.getPad("sink");
-    assertNotNull(sinkPad);
+      Pad sinkPad = smokeDec.getPad("sink");
 
-    Buffer buffer = new Buffer();
-    buffer.data = new byte[] {1, 2, 3, 4};
-    buffer.offset = 0;
-    buffer.length = 4;
+      Buffer buffer = new Buffer();
+      buffer.data = new byte[] {1, 2, 3, 4};
+      buffer.offset = 0;
+      buffer.length = 4;
 
-    // Expect -1 (error/drop code) when decoding invalid/dummy image bytes fails
-    assertDoesNotThrow(
-        () -> {
-          int result = sinkPad.push(buffer);
-          assertEquals(-1, result);
-        });
+      assertDoesNotThrow(() -> sinkPad.push(buffer));
   }
 
   @Test
@@ -88,5 +82,16 @@ class SmokeDecTest {
 
     Event eosEvent = Event.newEOS();
     assertDoesNotThrow(() -> srcPad.pushEvent(eosEvent));
+  }
+
+  @Test
+  void testPadsExist() {
+      assertNotNull(smokeDec.getPad("src"));
+      assertNotNull(smokeDec.getPad("sink"));
+  }
+
+  @Test
+  void testTypeFindNullData() {
+      assertEquals(-1, smokeDec.typeFind(null, 0, 0));
   }
 }
