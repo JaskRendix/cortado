@@ -223,4 +223,35 @@ class StaticCodeBookTest {
 
       assertEquals(-1, cb.unpack(readBuffer(b)));
   }
+
+  @Test
+  void packFailsWhenQuantlistMissing() {
+      int[] lengths = {2, 2, 2, 2};
+
+      StaticCodeBook cb =
+          new StaticCodeBook(
+              2, 4, lengths,
+              1,
+              0, 0, 4, 0,
+              null,
+              null, null);
+
+      assertEquals(-1, cb.pack(writeBuffer()));
+  }
+
+  @Test
+  void unquantizeReturnsNullForMaptype0() {
+      StaticCodeBook cb = new StaticCodeBook();
+
+      cb.maptype = 0;
+
+      assertNull(cb.unquantize());
+  }
+
+  @Test
+  void float32PackHandlesZero() {
+      assertDoesNotThrow(
+          () -> StaticCodeBook.float32_pack(0f)
+      );
+  }
 }

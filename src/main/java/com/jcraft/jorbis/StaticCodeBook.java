@@ -210,9 +210,10 @@ class StaticCodeBook {
     // first the basic parameters
     dim = opb.read(16);
     entries = opb.read(24);
-    if (entries == -1) {
-      clear();
-      return -1;
+
+    if (dim <= 0 || entries <= 0) {
+        clear();
+        return -1;
     }
 
     // codeword ordering.... length ordered or unordered?
@@ -298,6 +299,10 @@ class StaticCodeBook {
         }
 
         // quantized values
+        if (quantvals <= 0) {
+            clear();
+            return -1;
+        }
         quantlist = new int[quantvals];
         for (i = 0; i < quantvals; i++) {
           quantlist[i] = opb.read(q_quant);
@@ -346,7 +351,13 @@ class StaticCodeBook {
   }
 
   void clear() {
-    // Cleanup reference pointers if needed in a fully modernized codebase
+      lengthlist = null;
+      quantlist = null;
+      nearest_tree = null;
+      thresh_tree = null;
+
+      dim = 0;
+      entries = 0;
   }
 
   // unpack the quantized list of values for encode/decode
