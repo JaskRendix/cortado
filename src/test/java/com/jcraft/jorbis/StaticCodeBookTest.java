@@ -157,4 +157,70 @@ class StaticCodeBookTest {
       assertEquals(unpacked1, unpacked2);
     }
   }
+
+  @Test
+  void unpackFailsForInvalidMagic() {
+      Buffer b = writeBuffer();
+      b.write(123456, 24);
+
+      StaticCodeBook cb = new StaticCodeBook();
+
+      assertEquals(-1, cb.unpack(readBuffer(b)));
+  }
+
+  @Test
+  void unpackFailsWhenEntriesMissing() {
+      Buffer b = writeBuffer();
+
+      b.write(0x564342, 24);
+      b.write(2, 16);
+
+      StaticCodeBook cb = new StaticCodeBook();
+
+      assertEquals(-1, cb.unpack(readBuffer(b)));
+  }
+
+  @Test
+  void unpackFailsForUnsupportedMaptype() {
+      Buffer b = writeBuffer();
+
+      b.write(0x564342, 24);
+      b.write(1, 16);
+      b.write(1, 24);
+
+      b.write(0, 1); // unordered
+      b.write(0, 1); // all entries used
+      b.write(1, 5); // length
+
+      b.write(15, 4); // invalid maptype
+
+      StaticCodeBook cb = new StaticCodeBook();
+
+      assertEquals(-1, cb.unpack(readBuffer(b)));
+  }
+
+  @Test
+  void unpackFailsForTruncatedQuantlist() {
+      Buffer b = writeBuffer();
+
+      b.write(0x564342, 24);
+      b.write(1, 16);
+      b.write(1, 24);
+
+      b.write(0, 1);
+      b.write(0, 1);
+      b.write(1, 5);
+
+      b.write(1, 4); // maptype 1
+      b.write(0, 32);
+      b.write(0, 32);
+      b.write(15, 4);
+      b.write(0, 1);
+
+      // intentionally omit quantlist data
+
+      StaticCodeBook cb = new StaticCodeBook();
+
+      assertEquals(-1, cb.unpack(readBuffer(b)));
+  }
 }

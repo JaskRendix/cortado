@@ -261,4 +261,49 @@ class InfoTest {
     Mockito.verify(book).clear();
     assertNull(info.getBookParam());
   }
+
+  @Test
+  void unpackBooksFailsWhenCodebookDataMissing() {
+      Buffer b = new Buffer();
+      b.writeInit();
+
+      b.write(0, 8); // books = 1
+
+      assertEquals(-1, info.unpackBooks(b));
+  }
+
+  @Test
+  void synthesisHeaderInFailsForInvalidSetupHeader() {
+      Buffer b = new Buffer();
+      b.writeInit();
+
+      b.write(0x05, 8);
+      b.write("vorbis".getBytes());
+
+      // fake setup payload
+      b.write(0, 8);
+
+      Packet p = makePacket(b);
+
+      Comment vc = new Comment();
+      vc.vendor = "JUnit".getBytes();
+
+      info.setRate(44100);
+
+      assertEquals(-1, info.synthesisHeaderIn(vc, p));
+  }
+
+  @Test
+  void synthesisHeaderInRejectsUnknownHeaderType() {
+      Buffer b = new Buffer();
+      b.writeInit();
+
+      b.write(0x7f, 8);
+      b.write("vorbis".getBytes());
+
+      Packet p = makePacket(b);
+
+      assertEquals(-1,
+          info.synthesisHeaderIn(new Comment(), p));
+  }
 }
