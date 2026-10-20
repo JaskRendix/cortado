@@ -38,7 +38,7 @@ class CodeBookTest {
     byte[] data = new byte[(bits.length + 7) / 8];
     for (int i = 0; i < bits.length; i++) {
       if (bits[i] == 1) {
-        data[i >> 3] |= (1 << (i & 7));
+        data[i >> 3] = (byte) (data[i >> 3] | (1 << (i & 7)));
       }
     }
     Buffer b = new Buffer();

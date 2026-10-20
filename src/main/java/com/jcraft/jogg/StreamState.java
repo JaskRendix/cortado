@@ -82,10 +82,19 @@ public class StreamState {
     bodyData = null;
     lacingVals = null;
     granuleVals = null;
-  }
 
-  void destroy() {
-    clear();
+    bodyStorage = 0;
+    bodyFill = 0;
+
+    lacingStorage = 0;
+    lacingFill = 0;
+    lacingPacket = 0;
+    lacingReturned = 0;
+
+    packetNo = 0;
+    granulepos = 0;
+    e_o_s = 0;
+    b_o_s = 0;
   }
 
   void bodyExpand(int needed) {

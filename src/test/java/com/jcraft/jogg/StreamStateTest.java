@@ -276,4 +276,80 @@ class StreamStateTest {
     assertEquals(0, ss.b_o_s);
     assertEquals(-1, ss.pageno);
   }
+
+  @Test
+  void testFlushEmptyStream() {
+      Page og = new Page();
+
+      assertEquals(0, ss.flush(og));
+  }
+
+  @Test
+  void testPageOutEmptyStream() {
+      Page og = new Page();
+
+      assertEquals(0, ss.pageOut(og));
+  }
+
+  @Test
+  void testMultiplePackets() {
+      Packet p1 = new Packet();
+      p1.packetBase = new byte[10];
+      p1.bytes = 10;
+
+      Packet p2 = new Packet();
+      p2.packetBase = new byte[20];
+      p2.bytes = 20;
+
+      ss.packetin(p1);
+      ss.packetin(p2);
+
+      assertEquals(30, ss.bodyFill);
+      assertEquals(2, ss.packetNo);
+  }
+
+  @Test
+  void testPacketInZeroLengthPacket() {
+      Packet p = new Packet();
+      p.packetBase = new byte[0];
+      p.packet = 0;
+      p.bytes = 0;
+
+      assertEquals(0, ss.packetin(p));
+      assertEquals(1, ss.lacingFill);
+  }
+
+  @Test
+  void testEofReflectsEndOfStreamState() {
+      assertEquals(0, ss.eof());
+
+      ss.e_o_s = 1;
+
+      assertEquals(1, ss.eof());
+  }
+
+  @Test
+  void testDestroyClearsBuffers() {
+      ss.clear();
+
+      assertNull(ss.bodyData);
+      assertNull(ss.lacingVals);
+      assertNull(ss.granuleVals);
+  }
+
+  @Test
+  void testPageInRejectsUnsupportedVersion() {
+      Page og = new Page();
+      og.headerBase = new byte[27];
+      og.bodyBase = new byte[0];
+
+      og.header = 0;
+      og.body = 0;
+      og.headerLen = 27;
+      og.bodyLen = 0;
+
+      og.headerBase[4] = 1; // unsupported version
+
+      assertEquals(-1, ss.pagein(og));
+  }
 }
