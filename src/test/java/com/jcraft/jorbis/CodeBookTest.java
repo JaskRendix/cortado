@@ -154,4 +154,62 @@ class CodeBookTest {
     CodeBook cb = makeMinimalCodeBook();
     assertNotNull(cb.decodeTree);
   }
+
+  @Test
+  void initDecodeFailsForInvalidLengthList() {
+      StaticCodeBook scb = new StaticCodeBook();
+      scb.entries = 3;
+      scb.dim = 1;
+
+      // makeWords() returns null
+      scb.lengthlist = new int[] {1, 1, 1};
+
+      CodeBook cb = new CodeBook();
+
+      assertEquals(-1, cb.initDecode(scb));
+  }
+
+  @Test
+  void makeWordsHandlesEmptyLengthList() {
+      int[] result = CodeBook.makeWords(new int[0], 0);
+
+      assertNotNull(result);
+      assertEquals(0, result.length);
+  }
+
+  @Test
+  void decodevsHandlesUnknownAddmul() {
+      CodeBook cb = makeMinimalCodeBook();
+
+      float[] vec = new float[4];
+      Buffer b = makeBufferWithBits(0);
+
+      assertDoesNotThrow(
+          () -> cb.decodevs(vec, 0, b, 1, 99)
+      );
+  }
+
+  @Test
+  void besterrorHandlesDivideMode() {
+      CodeBook cb = makeMinimalCodeBook();
+
+      float[] vec = {2f, 4f};
+
+      int best = cb.besterror(vec, 1, 1);
+
+      assertTrue(best >= 0);
+  }
+
+  @Test
+  void besterrorHandlesZeroValueListEntries() {
+      CodeBook cb = makeMinimalCodeBook();
+
+      cb.valueList[0] = 0f;
+
+      float[] vec = {5f, 2f};
+
+      assertDoesNotThrow(
+          () -> cb.besterror(vec, 1, 1)
+      );
+  }
 }
