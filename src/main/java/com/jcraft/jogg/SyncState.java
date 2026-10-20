@@ -37,8 +37,17 @@ public class SyncState {
   int bodyBytes;
 
   public int clear() {
-    data = null;
-    return 0;
+      data = null;
+
+      storage = 0;
+      fill = 0;
+      returned = 0;
+
+      unsynced = 0;
+      headerBytes = 0;
+      bodyBytes = 0;
+
+      return 0;
   }
 
   public int buffer(int size) {
@@ -66,11 +75,16 @@ public class SyncState {
   }
 
   public int wrote(int bytes) {
-    if (fill + bytes > storage) {
-      return -1;
-    }
-    fill += bytes;
-    return 0;
+      if (bytes < 0) {
+          return -1;
+      }
+
+      if (fill + bytes > storage) {
+          return -1;
+      }
+
+      fill += bytes;
+      return 0;
   }
 
   private final Page pageSeekInstance = new Page();

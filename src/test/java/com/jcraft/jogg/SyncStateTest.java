@@ -235,4 +235,44 @@ class SyncStateTest {
     assertEquals(0, s.headerBytes);
     assertEquals(0, s.bodyBytes);
   }
+
+  @Test
+  void pageOutReturnsMinusOneOnlyOncePerUnsync() {
+      SyncState s = new SyncState();
+
+      s.buffer(30);
+      s.data[0] = 'X';
+      s.data[1] = 'g';
+      s.data[2] = 'g';
+      s.data[3] = 'S';
+      s.wrote(30);
+
+      Page p = new Page();
+
+      assertEquals(-1, s.pageOut(p));
+      assertEquals(0, s.pageOut(p));
+  }
+
+  @Test
+  void initShouldNotThrow() {
+      SyncState s = new SyncState();
+
+      assertDoesNotThrow(s::init);
+  }
+
+  @Test
+  void wroteZeroBytesSucceeds() {
+      SyncState s = new SyncState();
+
+      s.buffer(10);
+
+      assertEquals(0, s.wrote(0));
+  }
+
+  @Test
+  void wroteShouldRejectNegativeBytes() {
+      SyncState s = new SyncState();
+
+      assertEquals(-1, s.wrote(-1));
+  }
 }
